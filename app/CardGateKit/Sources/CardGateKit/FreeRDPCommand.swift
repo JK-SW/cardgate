@@ -47,8 +47,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
             "/smartcard-logon",
             "/kerberos:pkcs11-module:\(pkcs11Module)",
             "/sec:rdp",
-            // TODO: verify the gateway certificate properly instead of trust on first use.
-            "/cert:tofu",
+            // The gateway certificate must be trusted by the system CAs; never ask the user.
+            "/cert:deny",
         ]
 
         switch profile.display.mode {

@@ -63,6 +63,14 @@ struct SessionLogParserTests {
         #expect(parser.processExited(status: 1) == .ended(.failed(.wrongPIN)))
     }
 
+    @Test func untrustedGatewayCertificate() {
+        var parser = SessionLogParser()
+        parser.consume(
+            Log.line("ERROR", "com.freerdp.crypto", "[tls_verify_certificate]: certificate not trusted, aborting."))
+        parser.consume(Log.transportFailed)
+        #expect(parser.processExited(status: 1) == .ended(.failed(.untrustedCertificate)))
+    }
+
     @Test func computerUnreachableAfterGateway() {
         var parser = SessionLogParser()
         parser.consume(Log.cardReady)

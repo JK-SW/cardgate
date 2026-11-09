@@ -26,6 +26,8 @@ public enum SessionFailure: Equatable, Sendable {
     case cardLocked
     case gatewayUnreachable
     case gatewayDenied
+    /// The gateway's TLS certificate is not trusted (possible interception).
+    case untrustedCertificate
     case computerUnreachable
     /// Any other error; carries FreeRDP's error name (e.g. `ERRCONNECT_CONNECT_TRANSPORT_FAILED`).
     case other(String)
@@ -85,6 +87,7 @@ public struct SessionLogParser: Sendable {
         guard line.contains("[ERROR]") else { return nil }
         if line.contains("no suitable smartcard certificates") { return .noCertificate }
         if line.contains("WRONG PIN") { return .wrongPIN }
+        if line.contains("certificate not trusted") { return .untrustedCertificate }
         if line.contains("PIN is LOCKED") { return .cardLocked }
         if line.contains("ERRCONNECT_DNS_NAME_NOT_FOUND") || line.contains("ERRCONNECT_CONNECT_FAILED") {
             return .gatewayUnreachable

@@ -197,6 +197,7 @@ private struct FailureView: View {
         case .cardLocked: "The card is locked"
         case .gatewayUnreachable: "The gateway cannot be reached"
         case .gatewayDenied: "The gateway refused the sign-in"
+        case .untrustedCertificate: "The gateway's certificate is not trusted"
         case .computerUnreachable: "The computer cannot be reached"
         case .other: "The connection failed"
         }
@@ -214,6 +215,11 @@ private struct FailureView: View {
             "Check your internet connection and the gateway address in the connection settings."
         case .gatewayDenied:
             "Your card is not allowed to use this gateway. Contact your IT department."
+        case .untrustedCertificate:
+            """
+            The connection was stopped for your safety. Check the gateway address; if it is correct, \
+            contact your IT department.
+            """
         case .computerUnreachable:
             "The computer may be turned off or the address is wrong. Contact your IT department if it persists."
         case .other(let code):

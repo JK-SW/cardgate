@@ -35,7 +35,7 @@ struct FreeRDPCommandTests {
                 "/smartcard-logon",
                 "/kerberos:pkcs11-module:\(module)",
                 "/sec:rdp",
-                "/cert:tofu",
+                "/cert:deny",
                 "/dynamic-resolution",
                 "+clipboard",
                 "/sound:sys:mac",
