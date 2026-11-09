@@ -2,7 +2,6 @@
 # Note: SDL 3.4.20 breaks FreeRDP 3.33.0 (wrong SDL_VERSION_ATLEAST guard in sdl_utils.cpp).
 # Format: NAME VERSION SHA256 URL   (URL may contain {v} = VERSION)
 openssl   4.1.0   50c17baf54cb008f6ce42d50deb4b28050a1aad711636cabd4b241c7e90cc2fd  https://github.com/openssl/openssl/releases/download/openssl-{v}/openssl-{v}.tar.gz
-krb5      1.22.2  3243ffbc8ea4d4ac22ddc7dd2a1dc54c57874c40648b60ff97009763554eaf13  https://kerberos.org/dist/krb5/1.22/krb5-{v}.tar.gz
 cjson     1.7.19  7fa616e3046edfa7a28a32d5f9eacfd23f92900fe1f8ccd988c1662f30454562  https://github.com/DaveGamble/cJSON/archive/refs/tags/v{v}.tar.gz
 freetype  2.15.0  93cd47eb719c325107f2d3cf087d06299e944c3b48a40b55537302304dea1dd5  https://downloads.sourceforge.net/project/freetype/freetype2/{v}/freetype-{v}.tar.xz
 sdl3      3.4.18  9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3  https://github.com/libsdl-org/SDL/releases/download/release-{v}/SDL3-{v}.tar.gz

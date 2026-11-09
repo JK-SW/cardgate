@@ -15,7 +15,7 @@ adds a friendly UI: a big *Connect* button, connection profiles and settings.
 | Path | Content |
 |------|---------|
 | `app/` | SwiftUI application |
-| `patches/` | Patches applied on top of upstream sources (FreeRDP, Kerberos) |
+| `patches/` | Patches applied on top of upstream sources |
 | `scripts/` | Reproducible build of FreeRDP and its dependencies (pinned in `scripts/deps.lock`), app bundling |
 | `docs/` | User guide |
 
@@ -27,5 +27,5 @@ adds a friendly UI: a big *Connect* button, connection profiles and settings.
 ## License
 
 Apache License 2.0, see [LICENSE](LICENSE). Bundled third-party components keep
-their own licenses (FreeRDP – Apache 2.0, OpenSSL – Apache 2.0, SDL – zlib,
-MIT Kerberos – MIT).
+their own licenses (FreeRDP – Apache 2.0, OpenSSL – Apache 2.0, SDL and
+SDL_ttf – zlib, FreeType – FreeType License, cJSON – MIT).

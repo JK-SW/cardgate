@@ -2,7 +2,7 @@
 # Builds FreeRDP (with our patches) and all its runtime dependencies from pinned sources
 # into $BUILD/prefix. Re-running only rebuilds steps whose inputs changed.
 #
-# Usage: scripts/build-deps.sh [step...]   steps: openssl krb5 cjson freetype sdl3 sdl3_ttf freerdp
+# Usage: scripts/build-deps.sh [step...]   steps: openssl cjson freetype sdl3 sdl3_ttf freerdp
 # Build tools needed: Xcode command line tools, cmake, ninja, pkg-config.
 source "$(dirname "$0")/common.sh"
 
@@ -23,20 +23,6 @@ build_openssl() {
       --prefix="$PREFIX" --libdir=lib --openssldir=/private/etc/ssl \
       -mmacosx-version-min="$MACOSX_DEPLOYMENT_TARGET" \
     && make -j"$JOBS" >/dev/null && make install_sw >/dev/null)
-}
-
-build_krb5() {
-  local s; s="$(unpack krb5)"
-  log "Building MIT Kerberos"
-  # krb5 builds with -Werror=incompatible-pointer-types; OpenSSL 4 made several getters return const
-  # pointers (harmless here), so the warning flags are overridden at make time.
-  (cd "$s/src" && ./configure --prefix="$PREFIX" \
-      --with-crypto-impl=openssl --with-tls-impl=openssl --enable-pkinit \
-      --without-system-verto --without-ldap --without-libedit --without-readline \
-      --disable-nls --disable-rpath \
-      CPPFLAGS="-I$PREFIX/include" LDFLAGS="$LDFLAGS -L$PREFIX/lib" >/dev/null \
-    && make -j"$JOBS" WARN_CFLAGS="-Wall -Wno-deprecated-declarations" >/dev/null \
-    && make install >/dev/null)
 }
 
 build_cmake_dep() { # name source-subdir extra-cmake-args...
@@ -78,7 +64,7 @@ build_freerdp() {
   cmake -S "$s" -B "$OBJ/freerdp" "${CMAKE_COMMON[@]}" \
     -DWITH_CLIENT_SDL3=ON -DWITH_CLIENT_SDL2=OFF -DWITH_CLIENT_MAC=OFF -DWITH_X11=OFF -DWITH_WAYLAND=OFF \
     -DWITH_SERVER=OFF -DWITH_SAMPLE=OFF -DWITH_PROXY=OFF -DWITH_SHADOW=OFF -DWITH_PLATFORM_SERVER=OFF \
-    -DWITH_KRB5=ON -DWITH_KRB5_MIT=ON -DKRB5_ROOT_CONFIG="$PREFIX/bin/krb5-config" \
+    -DWITH_KRB5=OFF \
     -DWITH_PKCS11=ON -DWITH_SMARTCARD_PCSC=ON -DWITH_SMARTCARD_EMULATE=OFF \
     -DWITH_OPENSSL=ON -DOPENSSL_ROOT_DIR="$PREFIX" \
     -DWITH_CJSON_REQUIRED=ON -DWITH_JANSSON_REQUIRED=OFF -DWITH_JSONC_REQUIRED=OFF \
@@ -93,7 +79,7 @@ build_freerdp() {
   cmake --install "$OBJ/freerdp" >/dev/null
 }
 
-ALL=(openssl krb5 cjson freetype sdl3 sdl3_ttf freerdp)
+ALL=(openssl cjson freetype sdl3 sdl3_ttf freerdp)
 STEPS=("${@:-${ALL[@]}}")
 mkdir -p "$OBJ" "$PREFIX"
 rebuilt=0  # once a step is rebuilt, everything after it is rebuilt too

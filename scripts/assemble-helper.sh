@@ -3,14 +3,13 @@
 # same layout as inside the app bundle (Contents/...):
 #   Helpers/sdl-freerdp          the RDP client
 #   Frameworks/*.dylib           every non-system library it needs
-#   PlugIns/krb5/preauth/pkinit.so   Kerberos PKINIT plugin (+ its dependencies in Frameworks)
 # All install names are rewritten to @rpath, every file is ad-hoc signed.
 source "$(dirname "$0")/common.sh"
 
 [[ -x "$PREFIX/bin/sdl-freerdp" ]] || die "run scripts/build-deps.sh first"
 
 rm -rf "$HELPER"
-mkdir -p "$HELPER/Helpers" "$HELPER/Frameworks" "$HELPER/PlugIns/krb5/preauth"
+mkdir -p "$HELPER/Helpers" "$HELPER/Frameworks" "$HELPER/PlugIns"
 
 is_system() { [[ "$1" == /usr/lib/* || "$1" == /System/* ]]; }
 
@@ -58,9 +57,6 @@ fix() {
 
 log "Collecting files"
 cp "$PREFIX/bin/sdl-freerdp" "$HELPER/Helpers/"
-PKINIT="$(find "$PREFIX/lib/krb5/plugins" -name pkinit.so | head -1)"
-[[ -n "$PKINIT" ]] || die "pkinit.so not found"
-cp "$PKINIT" "$HELPER/PlugIns/krb5/preauth/"
 # FreeRDP may load channel/codec plugins at runtime
 if compgen -G "$PREFIX/lib/freerdp3/*.dylib" >/dev/null; then
   mkdir -p "$HELPER/PlugIns/freerdp3"; cp -L "$PREFIX"/lib/freerdp3/*.dylib "$HELPER/PlugIns/freerdp3/"
