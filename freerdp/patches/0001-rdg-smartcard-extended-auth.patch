@@ -1,0 +1,817 @@
+diff --git a/libfreerdp/core/CMakeLists.txt b/libfreerdp/core/CMakeLists.txt
+index 76d069cf9..75c1f6906 100644
+--- a/libfreerdp/core/CMakeLists.txt
++++ b/libfreerdp/core/CMakeLists.txt
+@@ -32,6 +32,8 @@ set(${MODULE_PREFIX}_GATEWAY_SRCS
+     ${${MODULE_PREFIX}_GATEWAY_DIR}/tsg.h
+     ${${MODULE_PREFIX}_GATEWAY_DIR}/rdg.c
+     ${${MODULE_PREFIX}_GATEWAY_DIR}/rdg.h
++    ${${MODULE_PREFIX}_GATEWAY_DIR}/rdg_sc.c
++    ${${MODULE_PREFIX}_GATEWAY_DIR}/rdg_sc.h
+     ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc.c
+     ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc.h
+     ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc_bind.c
+diff --git a/libfreerdp/core/gateway/http.c b/libfreerdp/core/gateway/http.c
+index 575ab784b..b4c54ca60 100644
+--- a/libfreerdp/core/gateway/http.c
++++ b/libfreerdp/core/gateway/http.c
+@@ -312,6 +312,13 @@ BOOL http_context_set_rdg_connection_id(HttpContext* context)
+ 	                               guid2str(&RdgConnectionId, buffer, sizeof(buffer)));
+ }
+ 
++const char* http_context_get_header(HttpContext* context, const char* key)
++{
++	if (!context || !key)
++		return nullptr;
++	return (const char*)HashTable_GetItemValue(context->headers, key);
++}
++
+ BOOL http_context_set_rdg_correlation_id(HttpContext* context, const GUID* RdgCorrelationId)
+ {
+ 	if (!context || !RdgCorrelationId)
+diff --git a/libfreerdp/core/gateway/http.h b/libfreerdp/core/gateway/http.h
+index e8f49ddd6..abd283440 100644
+--- a/libfreerdp/core/gateway/http.h
++++ b/libfreerdp/core/gateway/http.h
+@@ -100,6 +100,7 @@ FREERDP_LOCAL BOOL http_context_set_cookie(HttpContext* context, const char* Coo
+ 
+ WINPR_ATTR_NODISCARD
+ FREERDP_LOCAL BOOL http_context_set_rdg_connection_id(HttpContext* context);
++FREERDP_LOCAL const char* http_context_get_header(HttpContext* context, const char* key);
+ 
+ WINPR_ATTR_NODISCARD
+ FREERDP_LOCAL BOOL http_context_set_rdg_correlation_id(HttpContext* context,
+diff --git a/libfreerdp/core/gateway/rdg.c b/libfreerdp/core/gateway/rdg.c
+index 00ee1780e..e186acbdf 100644
+--- a/libfreerdp/core/gateway/rdg.c
++++ b/libfreerdp/core/gateway/rdg.c
+@@ -39,6 +39,8 @@
+ #include <freerdp/utils/smartcardlogon.h>
+ 
+ #include "rdg.h"
++#include "rdg_sc.h"
++#include <openssl/ssl.h>
+ #include "websocket.h"
+ #include "../credssp_auth.h"
+ #include "../proxy.h"
+@@ -137,6 +139,8 @@ struct rdp_rdg
+ 	rdg_http_encoding_context transferEncoding;
+ 
+ 	SmartcardCertInfo* smartcard;
++	rdgSc* sc; /* HTTP_EXTENDED_AUTH_SC inner TLS context */
++	BOOL scCbSent; /* channel binding token sent, waiting for the gateway ack */
+ 	wLog* log;
+ 
+ 	/* The header of the next packet, as much of it as has arrived: a read that would block returns
+@@ -542,6 +546,157 @@ static BOOL rdg_send_extauth_sspi(rdpRdg* rdg)
+ 	return status;
+ }
+ 
++WINPR_ATTR_NODISCARD
++static BOOL rdg_send_extauth_blob(rdpRdg* rdg, const BYTE* blob, size_t blobLen)
++{
++	WINPR_ASSERT(rdg);
++	if (blobLen > UINT16_MAX)
++		return FALSE;
++	const UINT32 packetSize = (UINT32)(8 + 4 + 2 + blobLen);
++	wStream* s = Stream_New(nullptr, packetSize);
++	if (!s)
++		return FALSE;
++	Stream_Write_UINT16(s, PKT_TYPE_EXTENDED_AUTH_MSG); /* Type (2 bytes) */
++	Stream_Write_UINT16(s, 0);                          /* Reserved (2 bytes) */
++	Stream_Write_UINT32(s, packetSize);                 /* PacketLength (4 bytes) */
++	Stream_Write_UINT32(s, ERROR_SUCCESS);              /* Error code */
++	Stream_Write_UINT16(s, (UINT16)blobLen);
++	Stream_Write(s, blob, blobLen);
++	Stream_SealLength(s);
++	const BOOL status = rdg_write_packet(rdg, s);
++	Stream_Free(s, TRUE);
++	return status;
++}
++
++static BOOL rdg_get_gateway_credentials(rdpContext* context, rdp_auth_reason reason);
++static BOOL rdg_send_tunnel_request(rdpRdg* rdg);
++
++/* HTTP_EXTENDED_AUTH_SC: pick the card certificate, ask for the PIN once, open the card. */
++WINPR_ATTR_NODISCARD
++static BOOL rdg_sc_init(rdpRdg* rdg)
++{
++	rdpContext* context = rdg->context;
++	rdpSettings* settings = context->settings;
++
++	if (!rdg->smartcard && !smartcard_getCert(context, &rdg->smartcard, TRUE))
++		return FALSE;
++
++	if (!rdg_get_gateway_credentials(context, AUTH_SMARTCARD_PIN))
++		return FALSE;
++
++	const char* pin = freerdp_settings_get_string(settings, FreeRDP_GatewayPassword);
++	const char* module = freerdp_settings_get_string(settings, FreeRDP_Pkcs11Module);
++	const char* args = rdg->smartcard->pkinitArgs;
++	const char* idp = args ? strstr(args, "certid=") : nullptr;
++	if (!pin || !*pin || !module || !idp)
++	{
++		WLog_Print(rdg->log, WLOG_ERROR,
++		           "smart card gateway auth needs PIN, /kerberos:pkcs11-module and a card "
++		           "certificate id (pin=%s module=%s args=%s)",
++		           (pin && *pin) ? "set" : "missing", module ? module : "missing",
++		           args ? args : "missing");
++		return FALSE;
++	}
++	char certId[256] = WINPR_C_ARRAY_INIT;
++	(void)sscanf(idp + 7, "%255[0-9a-fA-F]", certId);
++
++	size_t derLen = 0;
++	BYTE* der = freerdp_certificate_get_der(rdg->smartcard->certificate, &derLen);
++	if (!der)
++		return FALSE;
++
++	rdg->sc = rdg_sc_new(module, rdg->smartcard->slotId, certId, der, derLen, pin,
++	                     settings->GatewayHostname);
++	free(der);
++	return rdg->sc != nullptr;
++}
++
++WINPR_ATTR_NODISCARD
++static BOOL rdg_sc_continue(rdpRdg* rdg, const BYTE* in, size_t inLen)
++{
++	BYTE* out = nullptr;
++	size_t outLen = 0;
++	BOOL done = FALSE;
++
++	if (!rdg_sc_step(rdg->sc, in, inLen, &out, &outLen, &done))
++		return FALSE;
++
++	BOOL rc = TRUE;
++	if (outLen > 0)
++		rc = rdg_send_extauth_blob(rdg, out, outLen);
++	free(out);
++	if (!rc)
++		return FALSE;
++
++	if (done && (outLen == 0))
++	{
++		/* mstscax (CAASCAuthClient::GetEncryptedCBToken): after the handshake the client sends,
++		 * encrypted with the inner TLS session, the UTF-16 string
++		 * "<RDG-Connection-Id>:b48ab399-022e-47b7-9492-7765d9699199" incl. the terminating NUL.
++		 * This binds the smart card authentication to this HTTP connection. */
++		const char* connId = http_context_get_header(rdg->http, "RDG-Connection-Id");
++		if (!connId)
++			return FALSE;
++		char token[128] = WINPR_C_ARRAY_INIT;
++		(void)_snprintf(token, sizeof(token), "%s:b48ab399-022e-47b7-9492-7765d9699199", connId);
++		BYTE wtoken[256] = WINPR_C_ARRAY_INIT;
++		const size_t tlen = strnlen(token, sizeof(token));
++		for (size_t i = 0; i < tlen; i++)
++			wtoken[2 * i] = (BYTE)token[i];
++		const size_t wlen = 2 * tlen + 2;
++
++		if (SSL_write(rdg_sc_ssl(rdg->sc), wtoken, (int)wlen) != (int)wlen)
++			return FALSE;
++		if (!rdg_sc_drain(rdg->sc, &out, &outLen))
++			return FALSE;
++		WLog_Print(rdg->log, WLOG_DEBUG, "sending channel binding token (%" PRIuz " bytes)", outLen);
++		rc = rdg_send_extauth_blob(rdg, out, outLen);
++		free(out);
++		if (!rc)
++			return FALSE;
++		rdg->scCbSent = TRUE;
++	}
++	return TRUE;
++}
++
++WINPR_ATTR_NODISCARD
++static BOOL rdg_process_extauth_sc(rdpRdg* rdg, wStream* s)
++{
++	UINT32 errorCode = 0;
++	UINT16 blobLen = 0;
++
++	if (!Stream_CheckAndLogRequiredLengthWLog(rdg->log, s, 6))
++		return FALSE;
++	Stream_Read_UINT32(s, errorCode);
++	Stream_Read_UINT16(s, blobLen);
++	WLog_Print(rdg->log, WLOG_DEBUG, "EXTAUTH_SC message: error=0x%08" PRIX32 " blob=%" PRIu16,
++	           errorCode, blobLen);
++	if (errorCode != ERROR_SUCCESS)
++	{
++		WLog_Print(rdg->log, WLOG_ERROR, "RD Gateway rejected smart card authentication: %s",
++		           rpc_error_to_string(errorCode));
++		freerdp_set_last_error_log(rdg->context, errorCode);
++		return FALSE;
++	}
++	if (!rdg->sc)
++	{
++		WLog_Print(rdg->log, WLOG_ERROR, "unexpected EXTAUTH_SC message");
++		return FALSE;
++	}
++	if (rdg->scCbSent)
++	{
++		/* gateway acknowledged the channel binding token - authentication finished */
++		WLog_Print(rdg->log, WLOG_INFO, "RD Gateway smart card authentication done");
++		rdg_sc_free(rdg->sc);
++		rdg->sc = nullptr;
++		rdg->scCbSent = FALSE;
++		return rdg_send_tunnel_request(rdg);
++	}
++	if (!Stream_CheckAndLogRequiredLengthWLog(rdg->log, s, blobLen))
++		return FALSE;
++	return rdg_sc_continue(rdg, Stream_Pointer(s), blobLen);
++}
++
+ WINPR_ATTR_NODISCARD
+ static BOOL rdg_send_tunnel_request(rdpRdg* rdg)
+ {
+@@ -879,6 +1034,18 @@ static BOOL rdg_process_handshake_response(rdpRdg* rdg, wStream* s)
+ 	if (rdg->extAuth == HTTP_EXTENDED_AUTH_SSPI_NTLM)
+ 		return rdg_send_extauth_sspi(rdg);
+ 
++	if (rdg->extAuth == HTTP_EXTENDED_AUTH_SC)
++	{
++		if (!(extendedAuth & HTTP_EXTENDED_AUTH_SC))
++		{
++			WLog_Print(rdg->log, WLOG_ERROR, "RD Gateway does not offer smart card authentication");
++			return FALSE;
++		}
++		if (!rdg->sc && !rdg_sc_init(rdg))
++			return FALSE;
++		return rdg_sc_continue(rdg, nullptr, 0);
++	}
++
+ 	return rdg_send_tunnel_request(rdg);
+ }
+ 
+@@ -1232,7 +1399,10 @@ static BOOL rdg_process_packet(rdpRdg* rdg, wStream* s)
+ 			break;
+ 
+ 		case PKT_TYPE_EXTENDED_AUTH_MSG:
+-			status = rdg_process_extauth_sspi(rdg, s);
++			if (rdg->extAuth == HTTP_EXTENDED_AUTH_SC)
++				status = rdg_process_extauth_sc(rdg, s);
++			else
++				status = rdg_process_extauth_sspi(rdg, s);
+ 			break;
+ 
+ 		default:
+@@ -1474,6 +1644,20 @@ static BOOL rdg_establish_data_connection(rdpRdg* rdg, rdpTls* tls, const char*
+ 		return FALSE;
+ 
+ 	WINPR_ASSERT(rpcFallback);
++	if (rdg->extAuth == HTTP_EXTENDED_AUTH_SC)
++	{
++		/* mstsc sends the marshaled certificate credential of the card certificate; the gateway
++		 * checks it against the client certificate of the inner TLS handshake. */
++		if (!rdg->smartcard && !smartcard_getCert(rdg->context, &rdg->smartcard, TRUE))
++			return FALSE;
++		char* userId = rdg_sc_user_id_from_sha1(rdg->smartcard->sha1Hash);
++		if (!userId)
++			return FALSE;
++		const BOOL ok = http_context_set_header(rdg->http, "RDG-User-Id", "%s", userId);
++		free(userId);
++		if (!ok)
++			return FALSE;
++	}
+ 	if (rdg->context->settings->GatewayHttpExtAuthBearer && rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
+ 		rdg->extAuth = HTTP_EXTENDED_AUTH_BEARER;
+ 	if (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
+@@ -2357,6 +2541,11 @@ rdpRdg* rdg_new(rdpContext* context)
+ 	if (settings->GatewayAccessToken)
+ 		rdg->extAuth = HTTP_EXTENDED_AUTH_PAA;
+ 
++	/* RD Gateway smart card authentication (TLS client certificate inside the tunnel). */
++	if (freerdp_settings_get_bool(settings, FreeRDP_SmartcardLogon) &&
++	    getenv("FREERDP_RDG_SMARTCARD") && (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE))
++		rdg->extAuth = HTTP_EXTENDED_AUTH_SC;
++
+ 	rdg->tlsOut = freerdp_tls_new(rdg->context);
+ 
+ 	if (!rdg->tlsOut)
+@@ -2408,6 +2597,12 @@ rdpRdg* rdg_new(rdpContext* context)
+ 
+ 				break;
+ 
++			case HTTP_EXTENDED_AUTH_SC:
++				if (!http_context_set_rdg_auth_scheme(rdg->http, "SMARTCARD"))
++					goto rdg_alloc_error;
++
++				break;
++
+ 			default:
+ 				WLog_Print(rdg->log, WLOG_DEBUG,
+ 				           "RDG extended authentication method %d not supported", rdg->extAuth);
+@@ -2454,6 +2649,7 @@ void rdg_free(rdpRdg* rdg)
+ 	DeleteCriticalSection(&rdg->writeSection);
+ 
+ 	smartcardCertInfo_Free(rdg->smartcard);
++	rdg_sc_free(rdg->sc);
+ 
+ 	websocket_context_free(rdg->transferEncoding.websocket);
+ 
+diff --git a/libfreerdp/core/gateway/rdg_sc.c b/libfreerdp/core/gateway/rdg_sc.c
+new file mode 100644
+index 000000000..bd8ee9373
+--- /dev/null
++++ b/libfreerdp/core/gateway/rdg_sc.c
+@@ -0,0 +1,459 @@
++/**
++ * FreeRDP: A Remote Desktop Protocol Implementation
++ * RD Gateway smart card extended authentication (HTTP_EXTENDED_AUTH_SC)
++ *
++ * Observed protocol (Windows mstsc <-> RD Gateway, HTTP/websocket transport):
++ *  - HTTP request carries "RDG-Auth-Scheme: SMARTCARD", no HTTP authentication
++ *  - HANDSHAKE_REQUEST with ExtendedAuthentication = HTTP_EXTENDED_AUTH_SC
++ *  - a TLS 1.2 handshake with client certificate is tunnelled in
++ *    PKT_TYPE_EXTENDED_AUTH_MSG blobs, then the normal TUNNEL_CREATE follows.
++ *
++ * Licensed under the Apache License, Version 2.0
++ */
++
++#define OPENSSL_SUPPRESS_DEPRECATED
++
++#include <freerdp/config.h>
++
++#include <string.h>
++#include <stdlib.h>
++#include <dlfcn.h>
++
++#include <openssl/ssl.h>
++#include <openssl/rsa.h>
++#include <openssl/x509.h>
++#include <openssl/err.h>
++#include <openssl/objects.h>
++#include <openssl/evp.h>
++
++#include <winpr/crt.h>
++#include <freerdp/log.h>
++
++#include "rdg_sc.h"
++#include "../../../winpr/libwinpr/ncrypt/pkcs11-headers/pkcs11.h"
++
++#define TAG FREERDP_TAG("core.gateway.rdg_sc")
++
++struct rdg_sc
++{
++	void* lib;
++	CK_FUNCTION_LIST* p11;
++	BOOL weInitialized;
++	CK_SESSION_HANDLE session;
++	BOOL sessionOpen;
++	CK_OBJECT_HANDLE key;
++
++	RSA_METHOD* meth;
++	EVP_PKEY* pkey;
++	X509* cert;
++	SSL_CTX* ctx;
++	SSL* ssl;
++	BIO* rbio;
++	BIO* wbio;
++	unsigned signatures;
++};
++
++static const BYTE di_sha1[] = { 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e,
++	                            0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14 };
++static const BYTE di_sha256[] = { 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
++	                              0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20 };
++static const BYTE di_sha384[] = { 0x30, 0x41, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
++	                              0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30 };
++static const BYTE di_sha512[] = { 0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
++	                              0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40 };
++
++/* Raw PKCS#1 v1.5 signature over an already encoded DigestInfo, done by the card. */
++static int sc_card_sign(rdgSc* sc, const BYTE* data, size_t dataLen, BYTE* sig, size_t sigMax)
++{
++	CK_MECHANISM mech = { CKM_RSA_PKCS, NULL, 0 };
++	CK_ULONG sigLen = (CK_ULONG)sigMax;
++	CK_RV rv = sc->p11->C_SignInit(sc->session, &mech, sc->key);
++	if (rv != CKR_OK)
++	{
++		WLog_ERR(TAG, "C_SignInit failed 0x%08lx", (unsigned long)rv);
++		return -1;
++	}
++	rv = sc->p11->C_Sign(sc->session, (CK_BYTE_PTR)data, (CK_ULONG)dataLen, sig, &sigLen);
++	if (rv != CKR_OK)
++	{
++		WLog_ERR(TAG, "C_Sign failed 0x%08lx", (unsigned long)rv);
++		return -1;
++	}
++	sc->signatures++;
++	WLog_DBG(TAG, "card signature #%u done (%lu bytes)", sc->signatures, (unsigned long)sigLen);
++	return (int)sigLen;
++}
++
++static rdgSc* sc_from_rsa(const RSA* rsa)
++{
++	return (rdgSc*)RSA_meth_get0_app_data(RSA_get_method(rsa));
++}
++
++static int sc_rsa_sign(int type, const unsigned char* m, unsigned int m_length,
++                       unsigned char* sigret, unsigned int* siglen, const RSA* rsa)
++{
++	rdgSc* sc = sc_from_rsa(rsa);
++	const BYTE* prefix = NULL;
++	size_t prefixLen = 0;
++	BYTE buf[128] = { 0 };
++
++	switch (type)
++	{
++		case NID_sha1:
++			prefix = di_sha1;
++			prefixLen = sizeof(di_sha1);
++			break;
++		case NID_sha256:
++			prefix = di_sha256;
++			prefixLen = sizeof(di_sha256);
++			break;
++		case NID_sha384:
++			prefix = di_sha384;
++			prefixLen = sizeof(di_sha384);
++			break;
++		case NID_sha512:
++			prefix = di_sha512;
++			prefixLen = sizeof(di_sha512);
++			break;
++		case NID_md5_sha1:
++			break;
++		default:
++			WLog_ERR(TAG, "unsupported digest nid %d", type);
++			return 0;
++	}
++
++	if (!sc || (prefixLen + m_length > sizeof(buf)))
++		return 0;
++
++	memcpy(buf, prefix, prefixLen);
++	memcpy(buf + prefixLen, m, m_length);
++	const int rc = sc_card_sign(sc, buf, prefixLen + m_length, sigret, (size_t)RSA_size(rsa));
++	if (rc <= 0)
++		return 0;
++	*siglen = (unsigned int)rc;
++	return 1;
++}
++
++static int sc_rsa_priv_enc(int flen, const unsigned char* from, unsigned char* to, RSA* rsa,
++                           int padding)
++{
++	rdgSc* sc = sc_from_rsa(rsa);
++	if (!sc || (padding != RSA_PKCS1_PADDING))
++	{
++		WLog_ERR(TAG, "unsupported padding %d", padding);
++		return -1;
++	}
++	return sc_card_sign(sc, from, (size_t)flen, to, (size_t)RSA_size(rsa));
++}
++
++static BOOL hex_to_bin(const char* hex, BYTE** out, size_t* outLen)
++{
++	const size_t len = strlen(hex);
++	if ((len == 0) || (len % 2))
++		return FALSE;
++	BYTE* b = calloc(len / 2, 1);
++	if (!b)
++		return FALSE;
++	for (size_t i = 0; i < len / 2; i++)
++	{
++		unsigned v = 0;
++		if (sscanf(&hex[i * 2], "%2x", &v) != 1)
++		{
++			free(b);
++			return FALSE;
++		}
++		b[i] = (BYTE)v;
++	}
++	*out = b;
++	*outLen = len / 2;
++	return TRUE;
++}
++
++static BOOL sc_pkcs11_open(rdgSc* sc, const char* modulePath, UINT32 slotId, const char* certIdHex,
++                           const char* pin)
++{
++	BYTE* id = NULL;
++	size_t idLen = 0;
++	BOOL ok = FALSE;
++
++	sc->lib = dlopen(modulePath, RTLD_NOW | RTLD_LOCAL);
++	if (!sc->lib)
++	{
++		WLog_ERR(TAG, "cannot load PKCS#11 module %s: %s", modulePath, dlerror());
++		return FALSE;
++	}
++	CK_C_GetFunctionList getList = (CK_C_GetFunctionList)dlsym(sc->lib, "C_GetFunctionList");
++	if (!getList || (getList(&sc->p11) != CKR_OK) || !sc->p11)
++	{
++		WLog_ERR(TAG, "C_GetFunctionList failed");
++		return FALSE;
++	}
++
++	CK_RV rv = sc->p11->C_Initialize(NULL);
++	if (rv == CKR_OK)
++		sc->weInitialized = TRUE;
++	else if (rv != CKR_CRYPTOKI_ALREADY_INITIALIZED)
++	{
++		WLog_ERR(TAG, "C_Initialize failed 0x%08lx", (unsigned long)rv);
++		return FALSE;
++	}
++
++	rv = sc->p11->C_OpenSession((CK_SLOT_ID)slotId, CKF_SERIAL_SESSION, NULL, NULL, &sc->session);
++	if (rv != CKR_OK)
++	{
++		WLog_ERR(TAG, "C_OpenSession(slot %" PRIu32 ") failed 0x%08lx", slotId, (unsigned long)rv);
++		return FALSE;
++	}
++	sc->sessionOpen = TRUE;
++
++	/* Exactly one login attempt - a wrong PIN must not be retried (card PIN counter). */
++	rv = sc->p11->C_Login(sc->session, CKU_USER, (CK_UTF8CHAR_PTR)pin, (CK_ULONG)strlen(pin));
++	if (rv == CKR_PIN_INCORRECT)
++	{
++		WLog_ERR(TAG, "WRONG PIN - not retrying. Check remaining attempts before trying again!");
++		return FALSE;
++	}
++	if (rv == CKR_PIN_LOCKED)
++	{
++		WLog_ERR(TAG, "PIN is LOCKED");
++		return FALSE;
++	}
++	if ((rv != CKR_OK) && (rv != CKR_USER_ALREADY_LOGGED_IN))
++	{
++		WLog_ERR(TAG, "C_Login failed 0x%08lx", (unsigned long)rv);
++		return FALSE;
++	}
++
++	if (!hex_to_bin(certIdHex, &id, &idLen))
++	{
++		WLog_ERR(TAG, "invalid certificate id '%s'", certIdHex);
++		return FALSE;
++	}
++
++	CK_OBJECT_CLASS cls = CKO_PRIVATE_KEY;
++	CK_ATTRIBUTE tmpl[] = { { CKA_CLASS, &cls, sizeof(cls) }, { CKA_ID, id, (CK_ULONG)idLen } };
++	CK_ULONG found = 0;
++	rv = sc->p11->C_FindObjectsInit(sc->session, tmpl, 2);
++	if (rv == CKR_OK)
++	{
++		rv = sc->p11->C_FindObjects(sc->session, &sc->key, 1, &found);
++		sc->p11->C_FindObjectsFinal(sc->session);
++	}
++	if ((rv != CKR_OK) || (found != 1))
++		WLog_ERR(TAG, "private key with id %s not found (rv 0x%08lx)", certIdHex,
++		         (unsigned long)rv);
++	else
++		ok = TRUE;
++
++	free(id);
++	return ok;
++}
++
++static BOOL sc_openssl_setup(rdgSc* sc, const BYTE* certDer, size_t certLen, const char* sni)
++{
++	const BYTE* p = certDer;
++	sc->cert = d2i_X509(NULL, &p, (long)certLen);
++	if (!sc->cert)
++		return FALSE;
++
++	const EVP_PKEY* pub = X509_get0_pubkey(sc->cert);
++	const RSA* pubRsa = pub ? EVP_PKEY_get0_RSA(pub) : NULL;
++	if (!pubRsa)
++	{
++		WLog_ERR(TAG, "client certificate has no RSA key");
++		return FALSE;
++	}
++
++	sc->meth = RSA_meth_dup(RSA_PKCS1_OpenSSL());
++	if (!sc->meth)
++		return FALSE;
++	RSA_meth_set1_name(sc->meth, "freerdp-rdg-smartcard");
++	RSA_meth_set0_app_data(sc->meth, sc);
++	RSA_meth_set_sign(sc->meth, sc_rsa_sign);
++	RSA_meth_set_priv_enc(sc->meth, sc_rsa_priv_enc);
++
++	RSA* rsa = RSA_new();
++	if (!rsa)
++		return FALSE;
++	BIGNUM* n = BN_dup(RSA_get0_n(pubRsa));
++	BIGNUM* e = BN_dup(RSA_get0_e(pubRsa));
++	if (!n || !e || !RSA_set0_key(rsa, n, e, NULL))
++	{
++		BN_free(n);
++		BN_free(e);
++		RSA_free(rsa);
++		return FALSE;
++	}
++	RSA_set_method(rsa, sc->meth);
++	sc->pkey = EVP_PKEY_new();
++	if (!sc->pkey || !EVP_PKEY_assign_RSA(sc->pkey, rsa))
++	{
++		RSA_free(rsa);
++		return FALSE;
++	}
++
++	sc->ctx = SSL_CTX_new(TLS_client_method());
++	if (!sc->ctx)
++		return FALSE;
++	/* The gateway speaks TLS 1.2 and offers only PKCS#1 v1.5 signature algorithms. */
++	SSL_CTX_set_min_proto_version(sc->ctx, TLS1_2_VERSION);
++	SSL_CTX_set_max_proto_version(sc->ctx, TLS1_2_VERSION);
++	SSL_CTX_set1_sigalgs_list(sc->ctx, "RSA+SHA256:RSA+SHA384:RSA+SHA512:RSA+SHA1");
++	/* The outer TLS connection already verified the gateway. */
++	SSL_CTX_set_verify(sc->ctx, SSL_VERIFY_NONE, NULL);
++	if (!SSL_CTX_use_certificate(sc->ctx, sc->cert) || !SSL_CTX_use_PrivateKey(sc->ctx, sc->pkey))
++	{
++		WLog_ERR(TAG, "cannot attach smart card certificate/key to TLS context");
++		return FALSE;
++	}
++
++	sc->ssl = SSL_new(sc->ctx);
++	sc->rbio = BIO_new(BIO_s_mem());
++	sc->wbio = BIO_new(BIO_s_mem());
++	if (!sc->ssl || !sc->rbio || !sc->wbio)
++		return FALSE;
++	SSL_set_bio(sc->ssl, sc->rbio, sc->wbio); /* ssl owns the bios now */
++	if (sni)
++		SSL_set_tlsext_host_name(sc->ssl, sni);
++	SSL_set_connect_state(sc->ssl);
++	return TRUE;
++}
++
++rdgSc* rdg_sc_new(const char* modulePath, UINT32 slotId, const char* certIdHex,
++                  const BYTE* certDer, size_t certLen, const char* pin, const char* sni)
++{
++	if (!modulePath || !certIdHex || !certDer || !pin)
++	{
++		WLog_ERR(TAG, "missing PKCS#11 module, certificate id, certificate or PIN");
++		return NULL;
++	}
++	rdgSc* sc = calloc(1, sizeof(rdgSc));
++	if (!sc)
++		return NULL;
++	if (!sc_openssl_setup(sc, certDer, certLen, sni) ||
++	    !sc_pkcs11_open(sc, modulePath, slotId, certIdHex, pin))
++	{
++		rdg_sc_free(sc);
++		return NULL;
++	}
++	WLog_INFO(TAG, "smart card ready for RD Gateway authentication (module %s, slot %" PRIu32 ")",
++	          modulePath, slotId);
++	return sc;
++}
++
++void rdg_sc_free(rdgSc* sc)
++{
++	if (!sc)
++		return;
++	SSL_free(sc->ssl);
++	SSL_CTX_free(sc->ctx);
++	EVP_PKEY_free(sc->pkey);
++	X509_free(sc->cert);
++	RSA_meth_free(sc->meth);
++	if (sc->p11)
++	{
++		if (sc->sessionOpen)
++		{
++			sc->p11->C_Logout(sc->session);
++			sc->p11->C_CloseSession(sc->session);
++		}
++		if (sc->weInitialized)
++			sc->p11->C_Finalize(NULL);
++	}
++	if (sc->lib)
++		dlclose(sc->lib);
++	free(sc);
++}
++
++BOOL rdg_sc_step(rdgSc* sc, const BYTE* in, size_t inLen, BYTE** out, size_t* outLen, BOOL* done)
++{
++	*out = NULL;
++	*outLen = 0;
++	*done = FALSE;
++
++	if (in && inLen)
++	{
++		if (BIO_write(sc->rbio, in, (int)inLen) != (int)inLen)
++			return FALSE;
++	}
++
++	const int rc = SSL_do_handshake(sc->ssl);
++	if (rc == 1)
++	{
++		*done = TRUE;
++		WLog_INFO(TAG, "inner TLS handshake with RD Gateway completed (%s, %s)",
++		          SSL_get_version(sc->ssl), SSL_get_cipher_name(sc->ssl));
++	}
++	else
++	{
++		const int err = SSL_get_error(sc->ssl, rc);
++		if (err != SSL_ERROR_WANT_READ)
++		{
++			char buf[256] = { 0 };
++			ERR_error_string_n(ERR_get_error(), buf, sizeof(buf));
++			WLog_ERR(TAG, "inner TLS handshake failed: ssl error %d (%s)", err, buf);
++			return FALSE;
++		}
++	}
++
++	return rdg_sc_drain(sc, out, outLen);
++}
++
++char* rdg_sc_user_id_from_sha1(const BYTE sha1[20])
++{
++	static const char alpha[] =
++	    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#-";
++	char marshaled[64] = { '@', '@', 'B' };
++	size_t n = 3;
++	UINT32 bits = 0;
++	int nb = 0;
++	for (size_t i = 0; i < 20; i++)
++	{
++		bits |= ((UINT32)sha1[i]) << nb;
++		nb += 8;
++		while (nb >= 6)
++		{
++			marshaled[n++] = alpha[bits & 0x3f];
++			bits >>= 6;
++			nb -= 6;
++		}
++	}
++	if (nb > 0)
++		marshaled[n++] = alpha[bits & 0x3f];
++
++	BYTE wide[128] = { 0 };
++	for (size_t i = 0; i < n; i++)
++		wide[2 * i] = (BYTE)marshaled[i];
++
++	char* b64 = calloc(1, 4 * ((2 * n + 2) / 3) + 1);
++	if (!b64)
++		return NULL;
++	EVP_EncodeBlock((unsigned char*)b64, wide, (int)(2 * n));
++	return b64;
++}
++
++struct ssl_st* rdg_sc_ssl(rdgSc* sc)
++{
++	return sc ? sc->ssl : NULL;
++}
++
++BOOL rdg_sc_drain(rdgSc* sc, BYTE** out, size_t* outLen)
++{
++	*out = NULL;
++	*outLen = 0;
++	const size_t pending = BIO_ctrl_pending(sc->wbio);
++	if (pending > 0)
++	{
++		*out = malloc(pending);
++		if (!*out)
++			return FALSE;
++		if (BIO_read(sc->wbio, *out, (int)pending) != (int)pending)
++		{
++			free(*out);
++			*out = NULL;
++			return FALSE;
++		}
++		*outLen = pending;
++	}
++	return TRUE;
++}
+diff --git a/libfreerdp/core/gateway/rdg_sc.h b/libfreerdp/core/gateway/rdg_sc.h
+new file mode 100644
+index 000000000..82585aed1
+--- /dev/null
++++ b/libfreerdp/core/gateway/rdg_sc.h
+@@ -0,0 +1,38 @@
++/**
++ * FreeRDP: A Remote Desktop Protocol Implementation
++ * RD Gateway smart card extended authentication (HTTP_EXTENDED_AUTH_SC)
++ *
++ * The gateway runs a TLS 1.2 handshake with client certificate inside
++ * PKT_TYPE_EXTENDED_AUTH_MSG packets. The private key stays on the card,
++ * signatures are made through a PKCS#11 module.
++ *
++ * Licensed under the Apache License, Version 2.0
++ */
++
++#ifndef FREERDP_LIB_CORE_GATEWAY_RDG_SC_H
++#define FREERDP_LIB_CORE_GATEWAY_RDG_SC_H
++
++#include <winpr/wtypes.h>
++
++typedef struct rdg_sc rdgSc;
++
++/* modulePath: PKCS#11 module, slotId: PKCS#11 slot, certIdHex: CKA_ID of the key/cert (hex),
++ * certDer: client certificate, pin: user PIN (logs in exactly once, never retried). */
++rdgSc* rdg_sc_new(const char* modulePath, UINT32 slotId, const char* certIdHex,
++                  const BYTE* certDer, size_t certLen, const char* pin, const char* sni);
++void rdg_sc_free(rdgSc* sc);
++
++/* Feeds the gateway's handshake data (in may be NULL for the first call), advances the inner
++ * TLS handshake. *out (malloc'ed, may be NULL) receives data to send to the gateway,
++ * *done is set once the handshake completed. Returns FALSE on error. */
++BOOL rdg_sc_step(rdgSc* sc, const BYTE* in, size_t inLen, BYTE** out, size_t* outLen, BOOL* done);
++
++/* RDG-User-Id header value for smart card auth, as mstsc sends it:
++ * base64(UTF-16LE("@@B" + CredMarshalCredential(CertCredential, SHA1(cert)))). Caller frees. */
++char* rdg_sc_user_id_from_sha1(const BYTE sha1[20]);
++
++/* Access to the inner TLS session (after the handshake) and draining its pending output. */
++struct ssl_st* rdg_sc_ssl(rdgSc* sc);
++BOOL rdg_sc_drain(rdgSc* sc, BYTE** out, size_t* outLen);
++
++#endif /* FREERDP_LIB_CORE_GATEWAY_RDG_SC_H */

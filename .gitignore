@@ -1,0 +1,29 @@
+# Build outputs
+/build/
+/deps/
+/dist/
+*.dmg
+*.app/
+.build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# macOS
+.DS_Store
+
+# Never commit secrets, captures or certificates
+*.pem
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+*.key
+*.pcap
+*.pcapng
+*.evtx
+*.log
+cc-*
+krb5cc*
+.env
