@@ -23,6 +23,9 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 - The card is also checked through the middleware's PKCS#11 module (as the RDP client uses it);
   when the system lists the card but the module does not (e.g. after sleep), the app asks to
   re-insert it instead of failing the connection.
+- No more screens sliding away and back on all displays when connecting and disconnecting
+  (FreeRDP patch: displays are queried without a temporary full screen window on macOS).
+- Redesigned, centered PIN dialog.
 - FreeRDP's own connection/error dialog is turned off; errors are shown in the app only.
 - Scroll direction in the session follows this Mac by default (setting per connection).
 - FreeRDP hotkeys need Left Control + Left Option + Left Shift, so typing no longer disconnects.

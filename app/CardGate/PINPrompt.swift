@@ -1,5 +1,6 @@
 import AppKit
 import CardGateKit
+import SwiftUI
 
 /// Native PIN dialog shown when FreeRDP needs the PIN of the smart card.
 ///
@@ -18,34 +19,91 @@ enum PINPrompt {
     static func run(prompt: String) -> Never {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
+
+        var pin: String?
+        let window = NSWindow(
+            contentRect: .zero, styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
+        window.level = .floating
+        window.contentViewController = NSHostingController(
+            rootView: PINPromptView(host: AskPassCommand.host(fromPrompt: prompt)) { result in
+                pin = result
+                app.stopModal()
+            })
+        window.center()
         app.activate()
+        window.makeKeyAndOrderFront(nil)
+        app.runModal(for: window)
 
-        let alert = NSAlert()
-        alert.messageText = String(localized: "Enter the PIN of your smart card")
-        if let host = AskPassCommand.host(fromPrompt: prompt) {
-            alert.informativeText =
-                String(localized: "Signing in to \(host).") + "\n"
-                + String(localized: "Several wrong attempts lock the card.")
-        } else {
-            alert.informativeText = String(localized: "Several wrong attempts lock the card.")
-        }
-        alert.icon =
-            NSImage(systemSymbolName: "lock.rectangle", accessibilityDescription: nil)
-            ?? app.applicationIconImage
-
-        let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
-        field.placeholderString = String(localized: "PIN")
-        field.setAccessibilityLabel(String(localized: "PIN"))
-        alert.accessoryView = field
-        alert.addButton(withTitle: String(localized: "Sign In"))
-        alert.addButton(withTitle: String(localized: "Cancel"))
-        alert.window.initialFirstResponder = field
-        alert.window.level = .floating
-
-        let response = alert.runModal()
-        let pin = field.stringValue
-        guard response == .alertFirstButtonReturn, !pin.isEmpty else { exit(1) }
+        guard let pin, !pin.isEmpty else { exit(1) }
         FileHandle.standardOutput.write(Data((pin + "\n").utf8))
         exit(0)
+    }
+}
+
+private struct PINPromptView: View {
+    let host: String?
+    /// Called with the PIN, or `nil` when cancelled.
+    let finish: (String?) -> Void
+
+    @State private var pin = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "lock.rectangle.stack.fill")
+                .font(.system(size: 44))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.tint)
+                .accessibilityHidden(true)
+            VStack(spacing: 6) {
+                Text("Enter the PIN of your smart card")
+                    .font(.headline)
+                if let host {
+                    Text("Signing in to \(host).")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .multilineTextAlignment(.center)
+
+            SecureField("PIN", text: $pin)
+                .textFieldStyle(.roundedBorder)
+                .focused($focused)
+                .frame(width: 220)
+                .onSubmit(submit)
+
+            Text("Several wrong attempts lock the card.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                Button(role: .cancel) {
+                    finish(nil)
+                } label: {
+                    Text("Cancel").frame(maxWidth: .infinity)
+                }
+                .keyboardShortcut(.cancelAction)
+                Button(action: submit) {
+                    Text("Sign In").frame(maxWidth: .infinity)
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(pin.isEmpty)
+            }
+            .controlSize(.large)
+        }
+        .padding(.horizontal, 28)
+        .padding(.top, 8)
+        .padding(.bottom, 22)
+        .frame(width: 320)
+        .onAppear { focused = true }
+    }
+
+    private func submit() {
+        guard !pin.isEmpty else { return }
+        finish(pin)
     }
 }
