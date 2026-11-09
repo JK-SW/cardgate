@@ -24,6 +24,30 @@ final class SessionController {
 
     var isRunning: Bool { process != nil }
 
+    init() {
+        let center = DistributedNotificationCenter.default()
+        center.addObserver(forName: PINPrompt.shownNotification, object: nil, queue: .main) { @Sendable [weak self] _ in
+            Task { @MainActor in self?.pinPrompt(shown: true) }
+        }
+        center.addObserver(forName: PINPrompt.closedNotification, object: nil, queue: .main) {
+            @Sendable [weak self] _ in
+            Task { @MainActor in self?.pinPrompt(shown: false) }
+        }
+    }
+
+    /// The PIN dialog runs in its own process and reports when it opens and closes.
+    private func pinPrompt(shown: Bool) {
+        guard isRunning else { return }
+        switch (shown, phase) {
+        case (true, .starting?), (true, .authenticatingGateway?):
+            phase = .waitingForPIN
+        case (false, .waitingForPIN?):
+            phase = .authenticatingGateway
+        default:
+            break
+        }
+    }
+
     func start(_ command: FreeRDPCommand) throws {
         guard process == nil else { return }
 

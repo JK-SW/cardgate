@@ -16,6 +16,16 @@ enum PINPrompt {
             arguments: [argument])
     }
 
+    /// Posted (as distributed notifications, without any data) so the app can show that the
+    /// dialog is waiting for the PIN.
+    nonisolated static let shownNotification = Notification.Name("io.github.jk-sw.cardgate.pin-prompt.shown")
+    nonisolated static let closedNotification = Notification.Name("io.github.jk-sw.cardgate.pin-prompt.closed")
+
+    private static func post(_ name: Notification.Name) {
+        DistributedNotificationCenter.default().postNotificationName(
+            name, object: nil, userInfo: nil, deliverImmediately: true)
+    }
+
     static func run(prompt: String) -> Never {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
@@ -35,7 +45,9 @@ enum PINPrompt {
         placeOnScreenWithPointer(window)
         app.activate()
         window.makeKeyAndOrderFront(nil)
+        post(shownNotification)
         app.runModal(for: window)
+        post(closedNotification)
 
         guard let pin, !pin.isEmpty else { exit(1) }
         FileHandle.standardOutput.write(Data((pin + "\n").utf8))

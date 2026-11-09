@@ -3,7 +3,9 @@ import Foundation
 /// Progress of a connection as reported by the FreeRDP client log.
 public enum SessionPhase: Equatable, Sendable {
     case starting
-    /// Waiting for the smart card / PIN to authenticate to the gateway.
+    /// The PIN dialog is open.
+    case waitingForPIN
+    /// Signing in to the gateway with the card.
     case authenticatingGateway
     case connectingComputer
     /// The remote desktop is shown.

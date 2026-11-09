@@ -500,6 +500,22 @@
         }
       }
     },
+    "Enter the PIN of your card in the dialog.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadejte PIN ke kartě v dialogu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadajte PIN ku karte v dialógu."
+          }
+        }
+      }
+    },
     "Enter the PIN of your smart card": {
       "localizations": {
         "cs": {
@@ -1092,18 +1108,18 @@
         }
       }
     },
-    "Signing in to the gateway – enter the PIN of your card.": {
+    "Signing in to the gateway…": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Přihlašuji k bráně – zadejte PIN ke kartě."
+            "value": "Přihlašuji k bráně…"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prihlasujem k bráne – zadajte PIN ku karte."
+            "value": "Prihlasujem k bráne…"
           }
         }
       }

@@ -152,8 +152,10 @@ struct SessionStatusView: View {
             EmptyView()
         case .starting:
             progress("Connecting…")
+        case .waitingForPIN:
+            progress("Enter the PIN of your card in the dialog.")
         case .authenticatingGateway:
-            progress("Signing in to the gateway – enter the PIN of your card.")
+            progress("Signing in to the gateway…")
         case .connectingComputer:
             progress("Connecting to the computer…")
         case .connected:
