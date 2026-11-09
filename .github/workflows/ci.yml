@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  helper:
+    name: FreeRDP helper
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: brew install cmake ninja pkg-config
+
+      - name: Restore dependency build
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: build/prefix
+          key: deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/deps.lock', 'scripts/common.sh', 'scripts/build-deps.sh', 'patches/**/*.patch') }}
+
+      - name: Build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: scripts/build-deps.sh
+
+      - name: Assemble and check helper
+        run: scripts/assemble-helper.sh
+
+      - name: Upload helper
+        uses: actions/upload-artifact@v4
+        with:
+          name: freerdp-helper
+          path: build/helper
+          retention-days: 7
