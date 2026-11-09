@@ -1,3 +1,4 @@
+import AppKit
 import CardGateKit
 import Foundation
 import OSLog
@@ -146,7 +147,7 @@ final class AppModel {
             try clientConfig.install(for: profile)
             let command = try FreeRDPCommand(
                 executable: executable, profile: profile, pkcs11Module: module,
-                config: clientConfig, askPass: PINPrompt.command)
+                config: clientConfig, askPass: PINPrompt.command, screen: .current)
             try session.start(command)
         } catch {
             logger.error("Cannot start client: \(error, privacy: .public)")
@@ -163,4 +164,14 @@ enum AppAlert: Identifiable {
     case clientMissing
 
     var id: Self { self }
+}
+
+extension ScreenMetrics {
+    /// The display with the CardGate window (or the main display).
+    @MainActor static var current: ScreenMetrics? {
+        guard let screen = NSApp.keyWindow?.screen ?? NSScreen.main else { return nil }
+        let frame = screen.visibleFrame
+        return ScreenMetrics(
+            visibleSize: .init(width: Int(frame.width), height: Int(frame.height)), scale: screen.backingScaleFactor)
+    }
 }

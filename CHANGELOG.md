@@ -27,6 +27,8 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
   (FreeRDP patch: displays are queried without a temporary full screen window on macOS).
 - Redesigned, centered PIN dialog.
 - Compact main window that fits its content.
+- Window sizes are in screen points (as seen on Retina displays); the automatic size is 80 % of
+  the screen and only sizes that fit are offered.
 - Connection progress is shown live (FreeRDP patch: log messages are flushed immediately).
 - The last session's log is kept in `~/Library/Logs/CardGate/last-session.log`.
 - FreeRDP's own connection/error dialog is turned off; errors are shown in the app only.

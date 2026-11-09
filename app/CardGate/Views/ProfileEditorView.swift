@@ -91,9 +91,11 @@ struct ProfileEditorView: View {
         }
     }
 
-    /// Presets plus the current size if it is a custom one (e.g. imported from an .rdp file).
+    /// Presets that fit on this display, plus the current size if it is a custom one
+    /// (e.g. imported from an .rdp file).
     private var sizes: [WindowSize] {
-        var sizes = WindowSize.presets
+        let screen = ScreenMetrics.current
+        var sizes = WindowSize.presets.filter { screen?.fits($0) ?? true }
         if let current = editor.windowSize, !sizes.contains(current) { sizes.insert(current, at: 0) }
         return sizes
     }

@@ -1044,22 +1044,6 @@
         }
       }
     },
-    "Starting…": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spouštím…"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spúšťam…"
-          }
-        }
-      }
-    },
     "The PIN was not accepted. Be careful: after several wrong attempts the card gets locked.": {
       "localizations": {
         "cs": {

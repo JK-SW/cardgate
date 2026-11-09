@@ -68,6 +68,32 @@ struct FreeRDPCommandTests {
         #expect(!args.contains("/f"))
     }
 
+    @Test func windowSizeIsConvertedToPixels() throws {
+        let retina = ScreenMetrics(visibleSize: .init(width: 2560, height: 1415), scale: 2)
+        let display = DisplaySettings(mode: .window, windowSize: .init(width: 1920, height: 1080))
+        let args = try FreeRDPCommand(
+            executable: client, profile: profile(display: display), pkcs11Module: module, config: config,
+            screen: retina
+        ).arguments
+        #expect(args.contains("/size:3840x2160"))
+    }
+
+    @Test func automaticSizeIsEightyPercentOfTheScreen() throws {
+        let retina = ScreenMetrics(visibleSize: .init(width: 2560, height: 1415), scale: 2)
+        #expect(retina.defaultWindowSize == WindowSize(width: 2048, height: 1132))
+        let args = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config, screen: retina
+        ).arguments
+        #expect(args.contains("/size:4096x2264"))
+    }
+
+    @Test func screenFit() {
+        let screen = ScreenMetrics(visibleSize: .init(width: 1440, height: 875), scale: 2)
+        #expect(screen.fits(.init(width: 1280, height: 800)))
+        #expect(!screen.fits(.init(width: 1440, height: 900)))
+        #expect(ScreenMetrics(visibleSize: .init(width: 100, height: 100), scale: 0).scale == 1)
+    }
+
     @Test func ignoresInvalidWindowSize() throws {
         let display = DisplaySettings(mode: .window, windowSize: .init(width: 10, height: 10))
         let args = try command(profile(display: display)).arguments

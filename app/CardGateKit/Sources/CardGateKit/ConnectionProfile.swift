@@ -88,18 +88,19 @@ public struct WindowSize: Codable, Equatable, Hashable, Sendable, CustomStringCo
         self.height = height
     }
 
-    /// Range accepted by RDP servers.
+    /// Range accepted by RDP servers (in pixels).
     public var isValid: Bool { (200...8192).contains(width) && (200...8192).contains(height) }
 
     public var description: String { "\(width)×\(height)" }
 
-    /// Common sizes offered in the settings.
+    /// Common window sizes offered in the settings, in points (what the user sees on screen).
     public static let presets: [WindowSize] = [
+        .init(width: 1024, height: 640),
         .init(width: 1280, height: 800),
         .init(width: 1440, height: 900),
         .init(width: 1680, height: 1050),
         .init(width: 1920, height: 1080),
-        .init(width: 1920, height: 1200),
+        .init(width: 2048, height: 1152),
         .init(width: 2560, height: 1440),
     ]
 }
