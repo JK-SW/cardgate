@@ -1,0 +1,104 @@
+import CardGateKit
+import Foundation
+import Testing
+
+struct FreeRDPCommandTests {
+    let client = URL(filePath: "/Applications/CardGate.app/Contents/Helpers/sdl-freerdp")
+    let module = "/usr/local/lib/middleware/pkcs11.dylib"
+    let config = FreeRDPClientConfig(
+        directory: URL(filePath: "/Users/test/Library/Application Support/CardGate/FreeRDP"))
+
+    func profile(
+        gateway: String? = "rdg.example.com",
+        display: DisplaySettings = .init(),
+        redirection: RedirectionSettings = .init()
+    ) throws -> ConnectionProfile {
+        ConnectionProfile(
+            name: "Office",
+            computer: try HostAddress(parsing: "pc01.corp.example"),
+            gateway: try gateway.map { try HostAddress(parsing: $0) },
+            display: display,
+            redirection: redirection)
+    }
+
+    func command(_ profile: ConnectionProfile, module: String? = nil) throws -> FreeRDPCommand {
+        try FreeRDPCommand(executable: client, profile: profile, pkcs11Module: module ?? self.module, config: config)
+    }
+
+    @Test func buildsGatewaySmartCardCommand() throws {
+        let command = try command(profile())
+        #expect(command.executable == client)
+        #expect(
+            command.arguments == [
+                "/v:pc01.corp.example",
+                "/gateway:g:rdg.example.com,type:http,usage-method:direct",
+                "/smartcard-logon",
+                "/kerberos:pkcs11-module:\(module)",
+                "/sec:rdp",
+                "/cert:tofu",
+                "/dynamic-resolution",
+                "+clipboard",
+                "/sound:sys:mac",
+                "/log-level:INFO",
+            ])
+        #expect(
+            command.environment == [
+                "FREERDP_RDG_SMARTCARD": "1",
+                "XDG_CONFIG_HOME": "/Users/test/Library/Application Support/CardGate/FreeRDP",
+            ])
+    }
+
+    @Test func omitsGatewayForDirectConnections() throws {
+        let args = try command(profile(gateway: nil)).arguments
+        #expect(!args.contains { $0.hasPrefix("/gateway") })
+    }
+
+    @Test func keepsGatewayPort() throws {
+        let args = try command(profile(gateway: "rdg.example.com:8443")).arguments
+        #expect(args.contains("/gateway:g:rdg.example.com:8443,type:http,usage-method:direct"))
+    }
+
+    @Test func windowWithInitialSize() throws {
+        let display = DisplaySettings(mode: .window, windowSize: .init(width: 1920, height: 1080))
+        let args = try command(profile(display: display)).arguments
+        #expect(args.contains("/dynamic-resolution"))
+        #expect(args.contains("/size:1920x1080"))
+        #expect(!args.contains("/f"))
+    }
+
+    @Test func ignoresInvalidWindowSize() throws {
+        let display = DisplaySettings(mode: .window, windowSize: .init(width: 10, height: 10))
+        let args = try command(profile(display: display)).arguments
+        #expect(!args.contains { $0.hasPrefix("/size") })
+    }
+
+    @Test func fullScreenModes() throws {
+        let full = try command(profile(display: .init(mode: .fullScreen))).arguments
+        #expect(full.contains("/f"))
+        #expect(!full.contains("/multimon"))
+        #expect(!full.contains("/dynamic-resolution"))
+
+        let all = try command(profile(display: .init(mode: .allDisplays))).arguments
+        #expect(all.contains("/f"))
+        #expect(all.contains("/multimon"))
+    }
+
+    @Test func redirectionOff() throws {
+        let args = try command(profile(redirection: .init(clipboard: false, audio: false))).arguments
+        #expect(args.contains("-clipboard"))
+        #expect(!args.contains { $0.hasPrefix("/sound") })
+    }
+
+    @Test(arguments: ["relative/module.dylib", "/path/with,comma.dylib", "/path/with\nnewline"])
+    func rejectsUnsafeModulePaths(_ path: String) throws {
+        let profile = try profile()
+        #expect(throws: FreeRDPCommand.BuildError.invalidModulePath) {
+            try command(profile, module: path)
+        }
+    }
+
+    @Test func neverContainsSecrets() throws {
+        let args = try command(profile()).arguments
+        #expect(!args.contains { $0.hasPrefix("/p:") || $0.hasPrefix("/gp:") || $0.contains("pin") })
+    }
+}

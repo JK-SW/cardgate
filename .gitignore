@@ -27,3 +27,8 @@ xcuserdata/
 cc-*
 krb5cc*
 .env
+
+# Swift
+.swiftpm/
+Package.resolved
+*.xcodeproj/

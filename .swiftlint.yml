@@ -1,0 +1,32 @@
+included:
+  - app
+excluded:
+  - app/CardGateKit/.build
+  - app/build
+  - app/CardGate.xcodeproj
+disabled_rules:
+  - trailing_comma   # swift-format decides trailing commas
+  - todo             # TODOs are tracked in code on purpose
+  - opening_brace    # swift-format puts the brace of multi-line conditions on its own line
+opt_in_rules:
+  - closure_spacing
+  - contains_over_filter_count
+  - empty_count
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - last_where
+  - modifier_order
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - toggle_bool
+  - unused_parameter
+  - vertical_whitespace_closing_braces
+line_length:
+  warning: 120
+  error: 150
+identifier_name:
+  excluded: [id, x, y]
+type_body_length: 300
+file_length: 500
