@@ -27,6 +27,7 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
   (FreeRDP patch: displays are queried without a temporary full screen window on macOS).
 - Redesigned, centered PIN dialog.
 - Compact main window that fits its content.
+- Fixed a crash when the card was removed while the app was open.
 - Window sizes are in screen points (as seen on Retina displays); the automatic size is 80 % of
   the screen and only sizes that fit are offered.
 - Connection progress is shown live (FreeRDP patch: log messages are flushed immediately).

@@ -35,14 +35,16 @@ final class CardMonitor {
     private var observers: [any NSObjectProtocol] = []
 
     init() {
-        watcher.setInsertionHandler { [weak self] tokenID in
+        // CryptoTokenKit calls its handlers on an XPC queue: they must not be main actor isolated
+        // (Swift would trap), so they are explicitly @Sendable and hop to the main actor.
+        watcher.setInsertionHandler { @Sendable [weak self] tokenID in
             Task { @MainActor in self?.tokenInserted(tokenID) }
         }
         // The middleware may need a moment after wake-up; re-read the cards then.
         observers.append(
             NSWorkspace.shared.notificationCenter.addObserver(
                 forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
-            ) { [weak self] _ in
+            ) { @Sendable [weak self] _ in
                 Task { @MainActor in
                     self?.refresh()
                     self?.scheduleCheck()
@@ -54,7 +56,7 @@ final class CardMonitor {
     private func tokenInserted(_ tokenID: String) {
         logger.info("Token inserted: \(tokenID, privacy: .public)")
         watcher.addRemovalHandler(
-            { [weak self] removed in
+            { @Sendable [weak self] removed in
                 Task { @MainActor in
                     self?.logger.info("Token removed: \(removed, privacy: .public)")
                     self?.refresh()
