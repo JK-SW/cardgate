@@ -13,8 +13,11 @@ public struct FreeRDPCommand: Equatable, Sendable {
         case invalidModulePath
     }
 
+    /// - Parameter askPass: program FreeRDP runs to ask for the PIN (it prints the PIN to stdout).
+    ///   `nil` keeps FreeRDP's own dialog.
     public init(
-        executable: URL, profile: ConnectionProfile, pkcs11Module: String, config: FreeRDPClientConfig
+        executable: URL, profile: ConnectionProfile, pkcs11Module: String, config: FreeRDPClientConfig,
+        askPass: AskPassCommand? = nil
     ) throws(BuildError) {
         guard pkcs11Module.hasPrefix("/"), !pkcs11Module.contains(","), !pkcs11Module.contains("\n") else {
             throw .invalidModulePath
@@ -26,6 +29,9 @@ public struct FreeRDPCommand: Equatable, Sendable {
             "FREERDP_RDG_SMARTCARD": "1",
             "XDG_CONFIG_HOME": config.directory.path(percentEncoded: false),
         ]
+        if let askPass {
+            environment["FREERDP_ASKPASS"] = askPass.shellCommand
+        }
     }
 
     static func arguments(profile: ConnectionProfile, pkcs11Module: String) -> [String] {
@@ -61,5 +67,33 @@ public struct FreeRDPCommand: Equatable, Sendable {
         }
         args.append("/log-level:INFO")
         return args
+    }
+}
+
+/// Program started by FreeRDP to ask for a secret: `<executable> <arguments…> '<prompt>'`.
+public struct AskPassCommand: Equatable, Sendable {
+    public var executable: URL
+    public var arguments: [String]
+
+    public init(executable: URL, arguments: [String]) {
+        self.executable = executable
+        self.arguments = arguments
+    }
+
+    /// FreeRDP runs `FREERDP_ASKPASS` through the shell (`popen`), so every word is quoted.
+    public var shellCommand: String {
+        ([executable.path(percentEncoded: false)] + arguments).map(Self.shellQuoted).joined(separator: " ")
+    }
+
+    static func shellQuoted(_ word: String) -> String {
+        "'" + word.replacingOccurrences(of: "'", with: #"'\''"#) + "'"
+    }
+
+    /// Extracts what FreeRDP asks for from the prompt argument it passes
+    /// (`"FreeRDP authentication\nCredentials required for <host>"`): the host name, if any.
+    public static func host(fromPrompt prompt: String) -> String? {
+        guard let range = prompt.range(of: "Credentials required for ") else { return nil }
+        let host = prompt[range.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines)
+        return host.isEmpty || host == "(null)" ? nil : host
     }
 }

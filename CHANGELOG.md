@@ -16,4 +16,6 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 - macOS app: first start, connection settings (computer, gateway, display, clipboard, sound),
   multiple connections, .rdp import, connection status with clear error messages, connection log.
 - English, Czech and Slovak localization.
+- Native PIN dialog instead of the FreeRDP one (via `FREERDP_ASKPASS`); the PIN is never stored
+  or passed on a command line.
 - FreeRDP hotkeys need Left Control + Left Option + Left Shift, so typing no longer disconnects.

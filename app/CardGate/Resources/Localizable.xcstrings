@@ -404,6 +404,22 @@
         }
       }
     },
+    "Enter the PIN of your smart card": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadejte PIN ke své čipové kartě"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadajte PIN k svojej čipovej karte"
+          }
+        }
+      }
+    },
     "Enter the address of your work computer.": {
       "localizations": {
         "cs": {
@@ -708,6 +724,22 @@
         }
       }
     },
+    "PIN": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN"
+          }
+        }
+      }
+    },
     "PKCS#11 module": {
       "localizations": {
         "cs": {
@@ -804,6 +836,22 @@
         }
       }
     },
+    "Several wrong attempts lock the card.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Několik chybných pokusů kartu zablokuje."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niekoľko chybných pokusov kartu zablokuje."
+          }
+        }
+      }
+    },
     "Sharing": {
       "localizations": {
         "cs": {
@@ -832,6 +880,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zobraziť ako"
+          }
+        }
+      }
+    },
+    "Sign In": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlásit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlásiť"
+          }
+        }
+      }
+    },
+    "Signing in to %@.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlášení k %@."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlásenie k %@."
           }
         }
       }

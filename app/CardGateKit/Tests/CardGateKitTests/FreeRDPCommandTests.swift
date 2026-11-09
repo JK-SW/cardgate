@@ -102,3 +102,33 @@ struct FreeRDPCommandTests {
         #expect(!args.contains { $0.hasPrefix("/p:") || $0.hasPrefix("/gp:") || $0.contains("pin") })
     }
 }
+
+struct AskPassCommandTests {
+    @Test func quotesForTheShell() {
+        let command = AskPassCommand(
+            executable: URL(filePath: "/Users/o'brien/Apps/Card Gate.app/Contents/MacOS/CardGate"),
+            arguments: ["--askpass"])
+        #expect(command.shellCommand == #"'/Users/o'\''brien/Apps/Card Gate.app/Contents/MacOS/CardGate' '--askpass'"#)
+    }
+
+    @Test func isPassedInTheEnvironment() throws {
+        let askPass = AskPassCommand(
+            executable: URL(filePath: "/Applications/CardGate.app/Contents/MacOS/CardGate"),
+            arguments: ["--askpass"])
+        let command = try FreeRDPCommand(
+            executable: URL(filePath: "/x/sdl-freerdp"),
+            profile: ConnectionProfile(name: "x", computer: HostAddress(parsing: "pc.example.com")),
+            pkcs11Module: "/m.dylib", config: FreeRDPClientConfig(directory: URL(filePath: "/tmp/c")),
+            askPass: askPass)
+        #expect(command.environment["FREERDP_ASKPASS"] == askPass.shellCommand)
+        #expect(!command.arguments.contains { $0.contains("askpass") })
+    }
+
+    @Test func extractsHostFromPrompt() {
+        #expect(
+            AskPassCommand.host(fromPrompt: "FreeRDP authentication\nCredentials required for rdg.example.com")
+                == "rdg.example.com")
+        #expect(AskPassCommand.host(fromPrompt: "FreeRDP authentication\nCredentials required for (null)") == nil)
+        #expect(AskPassCommand.host(fromPrompt: "something else") == nil)
+    }
+}

@@ -127,7 +127,7 @@ final class AppModel {
             try clientConfig.install()
             let command = try FreeRDPCommand(
                 executable: executable, profile: profile, pkcs11Module: module,
-                config: clientConfig)
+                config: clientConfig, askPass: PINPrompt.command)
             try session.start(command)
         } catch {
             logger.error("Cannot start client: \(error, privacy: .public)")

@@ -1,6 +1,20 @@
 import SwiftUI
 
+/// Entry point: the same executable is the app and, when FreeRDP starts it with `--askpass`,
+/// the PIN dialog (see `PINPrompt`).
 @main
+@MainActor
+enum Main {
+    static func main() {
+        let arguments = CommandLine.arguments.dropFirst()
+        if arguments.first == PINPrompt.argument {
+            PINPrompt.run(prompt: arguments.dropFirst().joined(separator: " "))
+        } else {
+            CardGateApp.main()
+        }
+    }
+}
+
 struct CardGateApp: App {
     @State private var model = AppModel()
 
