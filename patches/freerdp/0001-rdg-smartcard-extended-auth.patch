@@ -1,8 +1,6 @@
-diff --git a/libfreerdp/core/CMakeLists.txt b/libfreerdp/core/CMakeLists.txt
-index 76d069cf9..75c1f6906 100644
---- a/libfreerdp/core/CMakeLists.txt
-+++ b/libfreerdp/core/CMakeLists.txt
-@@ -32,6 +32,8 @@ set(${MODULE_PREFIX}_GATEWAY_SRCS
+--- a/libfreerdp/core/CMakeLists.txt	2026-11-02 11:35:33.000000000 +0100
++++ b/libfreerdp/core/CMakeLists.txt/CMakeLists.txt	2026-11-09 23:10:45.890387382 +0100
+@@ -32,6 +32,8 @@
      ${${MODULE_PREFIX}_GATEWAY_DIR}/tsg.h
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rdg.c
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rdg.h
@@ -11,11 +9,9 @@ index 76d069cf9..75c1f6906 100644
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc.c
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc.h
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc_bind.c
-diff --git a/libfreerdp/core/gateway/http.c b/libfreerdp/core/gateway/http.c
-index 575ab784b..b4c54ca60 100644
---- a/libfreerdp/core/gateway/http.c
-+++ b/libfreerdp/core/gateway/http.c
-@@ -312,6 +312,13 @@ BOOL http_context_set_rdg_connection_id(HttpContext* context)
+--- a/libfreerdp/core/gateway/http.c	2026-11-02 11:35:33.000000000 +0100
++++ b/libfreerdp/core/gateway/http.c	2026-11-09 23:10:45.896618613 +0100
+@@ -312,6 +312,13 @@
  	                               guid2str(&RdgConnectionId, buffer, sizeof(buffer)));
  }
  
@@ -29,11 +25,9 @@ index 575ab784b..b4c54ca60 100644
  BOOL http_context_set_rdg_correlation_id(HttpContext* context, const GUID* RdgCorrelationId)
  {
  	if (!context || !RdgCorrelationId)
-diff --git a/libfreerdp/core/gateway/http.h b/libfreerdp/core/gateway/http.h
-index e8f49ddd6..abd283440 100644
---- a/libfreerdp/core/gateway/http.h
-+++ b/libfreerdp/core/gateway/http.h
-@@ -100,6 +100,7 @@ FREERDP_LOCAL BOOL http_context_set_cookie(HttpContext* context, const char* Coo
+--- a/libfreerdp/core/gateway/http.h	2026-11-02 11:35:33.000000000 +0100
++++ b/libfreerdp/core/gateway/http.h	2026-11-09 23:10:45.903176052 +0100
+@@ -100,6 +100,7 @@
  
  WINPR_ATTR_NODISCARD
  FREERDP_LOCAL BOOL http_context_set_rdg_connection_id(HttpContext* context);
@@ -41,10 +35,8 @@ index e8f49ddd6..abd283440 100644
  
  WINPR_ATTR_NODISCARD
  FREERDP_LOCAL BOOL http_context_set_rdg_correlation_id(HttpContext* context,
-diff --git a/libfreerdp/core/gateway/rdg.c b/libfreerdp/core/gateway/rdg.c
-index 00ee1780e..e186acbdf 100644
---- a/libfreerdp/core/gateway/rdg.c
-+++ b/libfreerdp/core/gateway/rdg.c
+--- a/libfreerdp/core/gateway/rdg.c	2026-11-02 11:35:33.000000000 +0100
++++ b/libfreerdp/core/gateway/rdg.c	2026-11-09 23:10:45.908965531 +0100
 @@ -39,6 +39,8 @@
  #include <freerdp/utils/smartcardlogon.h>
  
@@ -54,7 +46,7 @@ index 00ee1780e..e186acbdf 100644
  #include "websocket.h"
  #include "../credssp_auth.h"
  #include "../proxy.h"
-@@ -137,6 +139,8 @@ struct rdp_rdg
+@@ -137,6 +139,8 @@
  	rdg_http_encoding_context transferEncoding;
  
  	SmartcardCertInfo* smartcard;
@@ -63,11 +55,10 @@ index 00ee1780e..e186acbdf 100644
  	wLog* log;
  
  	/* The header of the next packet, as much of it as has arrived: a read that would block returns
-@@ -542,6 +546,157 @@ static BOOL rdg_send_extauth_sspi(rdpRdg* rdg)
- 	return status;
+@@ -543,6 +547,159 @@
  }
  
-+WINPR_ATTR_NODISCARD
+ WINPR_ATTR_NODISCARD
 +static BOOL rdg_send_extauth_blob(rdpRdg* rdg, const BYTE* blob, size_t blobLen)
 +{
 +	WINPR_ASSERT(rdg);
@@ -215,13 +206,16 @@ index 00ee1780e..e186acbdf 100644
 +	}
 +	if (!Stream_CheckAndLogRequiredLengthWLog(rdg->log, s, blobLen))
 +		return FALSE;
-+	return rdg_sc_continue(rdg, Stream_Pointer(s), blobLen);
++	const BYTE* blob = Stream_Pointer(s);
++	Stream_Seek(s, blobLen);
++	return rdg_sc_continue(rdg, blob, blobLen);
 +}
 +
- WINPR_ATTR_NODISCARD
++WINPR_ATTR_NODISCARD
  static BOOL rdg_send_tunnel_request(rdpRdg* rdg)
  {
-@@ -879,6 +1034,18 @@ static BOOL rdg_process_handshake_response(rdpRdg* rdg, wStream* s)
+ 	wStream* s = nullptr;
+@@ -879,6 +1036,18 @@
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_SSPI_NTLM)
  		return rdg_send_extauth_sspi(rdg);
  
@@ -240,7 +234,7 @@ index 00ee1780e..e186acbdf 100644
  	return rdg_send_tunnel_request(rdg);
  }
  
-@@ -1232,7 +1399,10 @@ static BOOL rdg_process_packet(rdpRdg* rdg, wStream* s)
+@@ -1232,7 +1401,10 @@
  			break;
  
  		case PKT_TYPE_EXTENDED_AUTH_MSG:
@@ -252,7 +246,7 @@ index 00ee1780e..e186acbdf 100644
  			break;
  
  		default:
-@@ -1474,6 +1644,20 @@ static BOOL rdg_establish_data_connection(rdpRdg* rdg, rdpTls* tls, const char*
+@@ -1474,6 +1646,20 @@
  		return FALSE;
  
  	WINPR_ASSERT(rpcFallback);
@@ -273,7 +267,7 @@ index 00ee1780e..e186acbdf 100644
  	if (rdg->context->settings->GatewayHttpExtAuthBearer && rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_BEARER;
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
-@@ -2357,6 +2541,11 @@ rdpRdg* rdg_new(rdpContext* context)
+@@ -2357,6 +2543,11 @@
  	if (settings->GatewayAccessToken)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_PAA;
  
@@ -285,7 +279,7 @@ index 00ee1780e..e186acbdf 100644
  	rdg->tlsOut = freerdp_tls_new(rdg->context);
  
  	if (!rdg->tlsOut)
-@@ -2408,6 +2597,12 @@ rdpRdg* rdg_new(rdpContext* context)
+@@ -2408,6 +2599,12 @@
  
  				break;
  
@@ -298,7 +292,7 @@ index 00ee1780e..e186acbdf 100644
  			default:
  				WLog_Print(rdg->log, WLOG_DEBUG,
  				           "RDG extended authentication method %d not supported", rdg->extAuth);
-@@ -2454,6 +2649,7 @@ void rdg_free(rdpRdg* rdg)
+@@ -2454,6 +2651,7 @@
  	DeleteCriticalSection(&rdg->writeSection);
  
  	smartcardCertInfo_Free(rdg->smartcard);
@@ -306,11 +300,8 @@ index 00ee1780e..e186acbdf 100644
  
  	websocket_context_free(rdg->transferEncoding.websocket);
  
-diff --git a/libfreerdp/core/gateway/rdg_sc.c b/libfreerdp/core/gateway/rdg_sc.c
-new file mode 100644
-index 000000000..bd8ee9373
 --- /dev/null
-+++ b/libfreerdp/core/gateway/rdg_sc.c
++++ b/libfreerdp/core/gateway/rdg_sc.c	2026-11-09 23:10:45.914897886 +0100
 @@ -0,0 +1,459 @@
 +/**
 + * FreeRDP: A Remote Desktop Protocol Implementation
@@ -771,11 +762,8 @@ index 000000000..bd8ee9373
 +	}
 +	return TRUE;
 +}
-diff --git a/libfreerdp/core/gateway/rdg_sc.h b/libfreerdp/core/gateway/rdg_sc.h
-new file mode 100644
-index 000000000..82585aed1
 --- /dev/null
-+++ b/libfreerdp/core/gateway/rdg_sc.h
++++ b/libfreerdp/core/gateway/rdg_sc.h	2026-11-09 23:10:45.921084199 +0100
 @@ -0,0 +1,38 @@
 +/**
 + * FreeRDP: A Remote Desktop Protocol Implementation
