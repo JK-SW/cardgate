@@ -11,14 +11,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  helper:
-    name: FreeRDP helper
-    runs-on: macos-15
+  build:
+    name: Build and test
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # build number = commit count
 
       - name: Install build tools
-        run: brew install cmake ninja pkg-config
+        run: brew install cmake ninja pkg-config xcodegen swiftlint
+
+      - name: Show toolchain
+        run: xcodebuild -version && swift --version
 
       - name: Restore dependency build
         id: cache
@@ -31,12 +36,15 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: scripts/build-deps.sh
 
-      - name: Assemble and check helper
+      - name: Assemble and check FreeRDP helper
         run: scripts/assemble-helper.sh
 
-      - name: Upload helper
+      - name: Lint, unit tests, app build, localization
+        run: scripts/test.sh
+
+      - name: Upload app
         uses: actions/upload-artifact@v4
         with:
-          name: freerdp-helper
-          path: build/helper
+          name: CardGate-debug
+          path: build/DerivedData/Build/Products/Debug/CardGate.app
           retention-days: 7
