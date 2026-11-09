@@ -1,0 +1,36 @@
+--- a/client/SDL/SDL3/sdl_window.cpp
++++ b/client/SDL/SDL3/sdl_window.cpp
+@@ -821,9 +821,21 @@
+ 	return window;
+ }
+ 
++/* On macOS a fullscreen dummy window creates a new Space on every display, which macOS animates
++ * (the screens slide away and back) at connect and disconnect. The display information is
++ * reliable there, so query it directly like on Wayland and X11. */
++static bool queryWithoutDummyWindow()
++{
++#if defined(__APPLE__)
++	return true;
++#else
++	return sdl::utils::isWaylandDriver() || sdl::utils::isX11Driver();
++#endif
++}
++
+ rdpMonitor SdlWindow::query(SDL_DisplayID id, bool forceAsPrimary)
+ {
+-	if (sdl::utils::isWaylandDriver() || sdl::utils::isX11Driver())
++	if (queryWithoutDummyWindow())
+ 		return queryDisplay(id, forceAsPrimary);
+ 
+ 	std::unique_ptr<SDL_Window, void (*)(SDL_Window*)> window(createDummy(id), SDL_DestroyWindow);
+@@ -845,6 +857,10 @@
+ 
+ SDL_Rect SdlWindow::rect(SDL_DisplayID id, bool forceAsPrimary)
+ {
++#if defined(__APPLE__)
++	const auto monitor = queryDisplay(id, forceAsPrimary);
++	return SDL_Rect{ monitor.x, monitor.y, monitor.width, monitor.height };
++#endif
+ 	std::unique_ptr<SDL_Window, void (*)(SDL_Window*)> window(createDummy(id), SDL_DestroyWindow);
+ 	if (!window)
+ 		return {};
