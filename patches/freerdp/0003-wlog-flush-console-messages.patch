@@ -1,0 +1,15 @@
+--- a/winpr/libwinpr/utils/wlog/ConsoleAppender.c
++++ b/winpr/libwinpr/utils/wlog/ConsoleAppender.c
+@@ -130,7 +130,12 @@
+ 	}
+ 
+ 	if (cmessage->Level != WLOG_OFF)
++	{
+ 		(void)fprintf(fp, "%s%s\n", prefix, cmessage->TextString);
++		/* stdout is fully buffered when it is a pipe; flush so a parent process following the
++		 * log (e.g. a GUI front end) sees each message when it happens. */
++		(void)fflush(fp);
++	}
+ #endif
+ 	return TRUE;
+ }
