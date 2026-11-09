@@ -18,7 +18,7 @@ adds a friendly UI: a big *Connect* button, connection profiles and settings.
 | `app/CardGateKit/` | UI independent logic with unit tests (Swift package) |
 | `patches/` | Patches applied on top of upstream sources |
 | `scripts/` | Reproducible build of FreeRDP and its dependencies (pinned in `scripts/deps.lock`), app bundling |
-| `docs/` | User guide |
+| `docs/` | User guide: [English](docs/user-guide.en.md), [čeština](docs/navod.cs.md), [slovenčina](docs/navod.sk.md) |
 
 ## Building
 
