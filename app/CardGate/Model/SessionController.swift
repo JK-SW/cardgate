@@ -26,12 +26,11 @@ final class SessionController {
 
     init() {
         let center = DistributedNotificationCenter.default()
-        center.addObserver(forName: PINPrompt.shownNotification, object: nil, queue: .main) { @Sendable [weak self] _ in
-            Task { @MainActor in self?.pinPrompt(shown: true) }
-        }
-        center.addObserver(forName: PINPrompt.closedNotification, object: nil, queue: .main) {
-            @Sendable [weak self] _ in
-            Task { @MainActor in self?.pinPrompt(shown: false) }
+        for (name, shown) in [(PINPrompt.shownNotification, true), (PINPrompt.closedNotification, false)] {
+            let handler: @Sendable (Notification) -> Void = { [weak self] _ in
+                Task { @MainActor in self?.pinPrompt(shown: shown) }
+            }
+            center.addObserver(forName: name, object: nil, queue: .main, using: handler)
         }
     }
 
