@@ -17,7 +17,9 @@ recipe_hash() { { declare -f "build_$1"; declare -f build_cmake_dep; echo "$COMM
 build_openssl() {
   local s; s="$(unpack openssl)"
   log "Building OpenSSL"
-  (cd "$s" && ./Configure darwin64-arm64-cc shared no-tests no-docs \
+  # no-module: providers (incl. "legacy" with RC4/MD4, required by RDP standard security)
+  # are built into libcrypto, so no ossl-modules directory has to be shipped or located.
+  (cd "$s" && ./Configure darwin64-arm64-cc shared no-module no-tests no-docs \
       --prefix="$PREFIX" --libdir=lib --openssldir=/private/etc/ssl \
       -mmacosx-version-min="$MACOSX_DEPLOYMENT_TARGET" \
     && make -j"$JOBS" >/dev/null && make install_sw >/dev/null)
