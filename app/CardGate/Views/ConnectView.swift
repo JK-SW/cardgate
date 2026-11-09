@@ -107,11 +107,24 @@ struct ReadinessView: View {
                         Link("Download ProID+", destination: url)
                     }
                 }
+            } else if model.cardNeedsReinsert {
+                VStack(spacing: 4) {
+                    Label("The card is not available to sign in.", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Remove the card or token and insert it again.")
+                        .foregroundStyle(.secondary)
+                }
             } else if let certificate = model.cards.signInCertificate {
-                Label {
-                    Text("Card ready: \(certificate.holderName)")
-                } icon: {
-                    Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
+                HStack(spacing: 8) {
+                    Label {
+                        Text("Card ready: \(certificate.holderName)")
+                    } icon: {
+                        Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
+                    }
+                    if model.cards.isChecking {
+                        ProgressView().controlSize(.small)
+                            .help("Checking the card…")
+                    }
                 }
             } else if model.cards.certificates.isEmpty {
                 Label("Insert your card or token.", systemImage: "creditcard")

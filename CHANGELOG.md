@@ -20,6 +20,9 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
   or passed on a command line.
 - Card detection: the app shows whether a card with a sign-in certificate is inserted (holder
   name) and enables Connect only then; insertion and removal are noticed immediately.
+- The card is also checked through the middleware's PKCS#11 module (as the RDP client uses it);
+  when the system lists the card but the module does not (e.g. after sleep), the app asks to
+  re-insert it instead of failing the connection.
 - FreeRDP's own connection/error dialog is turned off; errors are shown in the app only.
 - Scroll direction in the session follows this Mac by default (setting per connection).
 - FreeRDP hotkeys need Left Control + Left Option + Left Shift, so typing no longer disconnects.

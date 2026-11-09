@@ -20,6 +20,16 @@ final class CardMonitor {
     /// Called after the set of inserted cards changed.
     var onChange: (() -> Void)?
 
+    /// What the PKCS#11 module (and therefore the RDP client) sees; `nil` until checked.
+    private(set) var pkcs11State: PKCS11CardState?
+    private(set) var isChecking = false
+    /// PKCS#11 module to check with; set by the app.
+    var module: String? {
+        didSet { if oldValue != module { scheduleCheck() } }
+    }
+    nonisolated static let checkArgument = "--check-card"
+    private var checkPending = false
+
     private let watcher = TKTokenWatcher()
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "card")
     private var observers: [any NSObjectProtocol] = []
@@ -33,7 +43,10 @@ final class CardMonitor {
             NSWorkspace.shared.notificationCenter.addObserver(
                 forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
             ) { [weak self] _ in
-                Task { @MainActor in self?.refresh() }
+                Task { @MainActor in
+                    self?.refresh()
+                    self?.scheduleCheck()
+                }
             })
         refresh()
     }
@@ -55,7 +68,56 @@ final class CardMonitor {
         let found = Self.readCertificates()
         guard found != certificates else { return }
         certificates = found
+        pkcs11State = nil
         onChange?()
+        scheduleCheck()
+    }
+
+    /// Checks the card through the PKCS#11 module in a separate process (it can take seconds).
+    func scheduleCheck() {
+        guard let module, !certificates.isEmpty else {
+            pkcs11State = nil
+            return
+        }
+        guard !isChecking else {
+            checkPending = true
+            return
+        }
+        isChecking = true
+        Task { [weak self] in
+            let state = await Self.check(module: module)
+            guard let self else { return }
+            self.logger.info("PKCS#11 check: \(state.encoded, privacy: .public)")
+            self.pkcs11State = state
+            self.isChecking = false
+            if self.checkPending {
+                self.checkPending = false
+                self.scheduleCheck()
+            }
+        }
+    }
+
+    nonisolated private static func check(module: String) async -> PKCS11CardState {
+        guard let executable = Bundle.main.executableURL else { return .moduleNotLoadable }
+        return await withCheckedContinuation { continuation in
+            let process = Process()
+            process.executableURL = executable
+            process.arguments = [checkArgument, module]
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = FileHandle.nullDevice
+            process.terminationHandler = { _ in
+                let output = pipe.fileHandleForReading.readDataToEndOfFile()
+                let text = (String(bytes: output, encoding: .utf8) ?? "").trimmingCharacters(
+                    in: .whitespacesAndNewlines)
+                continuation.resume(returning: PKCS11CardState(encoded: text) ?? .failed(code: -2))
+            }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(returning: .moduleNotLoadable)
+            }
+        }
     }
 
     private static func readCertificates() -> [CardCertificate] {

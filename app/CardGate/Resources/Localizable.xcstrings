@@ -100,6 +100,22 @@
         }
       }
     },
+    "Checking the card…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ověřuji kartu…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overujem kartu…"
+          }
+        }
+      }
+    },
     "Clipboard": {
       "localizations": {
         "cs": {
@@ -548,22 +564,6 @@
         }
       }
     },
-    "Insert your card and click Connect.": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vložte kartu a klikněte na Připojit."
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vložte kartu a kliknite na Pripojiť."
-          }
-        }
-      }
-    },
     "Insert your card or token.": {
       "localizations": {
         "cs": {
@@ -820,6 +820,22 @@
         }
       }
     },
+    "Remove the card or token and insert it again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vytáhněte kartu nebo token a znovu ho zasuňte."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vytiahnite kartu alebo token a znova ho zasuňte."
+          }
+        }
+      }
+    },
     "Remove the card or token, insert it again and try once more.": {
       "localizations": {
         "cs": {
@@ -1012,22 +1028,6 @@
         }
       }
     },
-    "Smart card software: %@": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Software pro čipovou kartu: %@"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Softvér pre čipovú kartu: %@"
-          }
-        }
-      }
-    },
     "Starting…": {
       "localizations": {
         "cs": {
@@ -1088,6 +1088,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Karta je zablokovaná"
+          }
+        }
+      }
+    },
+    "The card is not available to sign in.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta teď není k přihlášení dostupná."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta teraz nie je dostupná na prihlásenie."
           }
         }
       }

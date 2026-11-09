@@ -40,7 +40,15 @@ final class AppModel {
 
     /// Everything needed to connect is in place.
     var isReadyToConnect: Bool {
-        middleware != nil && cards.signInCertificate != nil && !session.isRunning
+        middleware != nil && cards.signInCertificate != nil && !session.isRunning && !cardNeedsReinsert
+    }
+
+    /// The system lists the card but the middleware's PKCS#11 module does not see it.
+    var cardNeedsReinsert: Bool {
+        switch cards.pkcs11State {
+        case .noToken, .noCertificates: cards.signInCertificate != nil
+        default: false
+        }
     }
 
     var selectedProfile: ConnectionProfile? {
@@ -118,6 +126,7 @@ final class AppModel {
         middleware =
             locator.installed.first { $0.modulePath == module }
             ?? module.map { .init(name: URL(filePath: $0).lastPathComponent, modulePath: $0, downloadURL: nil) }
+        cards.module = middleware?.modulePath
     }
 
     func connect() {

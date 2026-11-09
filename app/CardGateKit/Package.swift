@@ -16,7 +16,9 @@ let package = Package(
         .library(name: "CardGateKit", targets: ["CardGateKit"])
     ],
     targets: [
-        .target(name: "CardGateKit", swiftSettings: strict),
+        // Minimal PKCS#11 access (public domain pkcs11.h) to check a card without a PIN.
+        .target(name: "CPKCS11"),
+        .target(name: "CardGateKit", dependencies: ["CPKCS11"], swiftSettings: strict),
         .testTarget(name: "CardGateKitTests", dependencies: ["CardGateKit"], swiftSettings: strict),
     ],
     swiftLanguageModes: [.v6]
