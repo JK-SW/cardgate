@@ -8,3 +8,8 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 ### Added
 - Repository structure and license.
 - FreeRDP 3.33.0 patch implementing RD Gateway smart card extended authentication.
+- Reproducible build of FreeRDP and its dependencies (OpenSSL, MIT Kerberos, SDL3, SDL3_ttf,
+  FreeType, cJSON) from pinned, checksum-verified sources (`scripts/build-deps.sh`).
+- Self-contained, relocatable FreeRDP helper with automatic dependency checks
+  (`scripts/assemble-helper.sh`, `scripts/check-helper.sh`).
+- GitHub Actions CI building and checking the helper.

@@ -15,8 +15,8 @@ adds a friendly UI: a big *Connect* button, connection profiles and settings.
 | Path | Content |
 |------|---------|
 | `app/` | SwiftUI application |
-| `freerdp/patches/` | Patches applied on top of upstream FreeRDP (see `freerdp/VERSION`) |
-| `scripts/` | Reproducible build of FreeRDP and its dependencies, app bundling |
+| `patches/` | Patches applied on top of upstream sources (FreeRDP, Kerberos) |
+| `scripts/` | Reproducible build of FreeRDP and its dependencies (pinned in `scripts/deps.lock`), app bundling |
 | `docs/` | User guide |
 
 ## Requirements

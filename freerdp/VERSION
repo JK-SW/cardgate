@@ -1,3 +1,0 @@
-# Upstream FreeRDP the patches in ./patches apply to
-FREERDP_TAG=3.33.0
-FREERDP_COMMIT=5a10d7b6b79a2fbc62e8eba77085cd356dc303a6
