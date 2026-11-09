@@ -13,3 +13,7 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 - Self-contained, relocatable FreeRDP helper with automatic dependency checks
   (`scripts/assemble-helper.sh`, `scripts/check-helper.sh`).
 - GitHub Actions CI building and checking the helper.
+- macOS app: first start, connection settings (computer, gateway, display, clipboard, sound),
+  multiple connections, .rdp import, connection status with clear error messages, connection log.
+- English, Czech and Slovak localization.
+- FreeRDP hotkeys need Left Control + Left Option + Left Shift, so typing no longer disconnects.

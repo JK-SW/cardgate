@@ -1,0 +1,1244 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Add a connection or show the log": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidat připojení nebo zobrazit záznam"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pridať pripojenie alebo zobraziť záznam"
+          }
+        }
+      }
+    },
+    "Advanced": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokročilé"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokročilé"
+          }
+        }
+      }
+    },
+    "Automatic": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zrušit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zrušiť"
+          }
+        }
+      }
+    },
+    "CardGate": {
+      "shouldTranslate": false
+    },
+    "Check your internet connection and the gateway address in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte připojení k internetu a adresu brány v nastavení připojení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte pripojenie k internetu a adresu brány v nastaveniach pripojenia."
+          }
+        }
+      }
+    },
+    "Clipboard": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schránka"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schránka"
+          }
+        }
+      }
+    },
+    "Computer": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač"
+          }
+        }
+      }
+    },
+    "Connect": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojiť"
+          }
+        }
+      }
+    },
+    "Connect to your work computer with your smart card.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojte se ke svému pracovnímu počítači pomocí čipové karty."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojte sa k svojmu pracovnému počítaču pomocou čipovej karty."
+          }
+        }
+      }
+    },
+    "Connected": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojeno"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojené"
+          }
+        }
+      }
+    },
+    "Connecting to the computer…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojuji k počítači…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripájam k počítaču…"
+          }
+        }
+      }
+    },
+    "Connection": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie"
+          }
+        }
+      }
+    },
+    "Connection Log": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Záznam připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Záznam pripojenia"
+          }
+        }
+      }
+    },
+    "Connections could not be saved": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení se nepodařilo uložit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenia sa nepodarilo uložiť"
+          }
+        }
+      }
+    },
+    "Copy Log": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopírovat záznam"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopírovať záznam"
+          }
+        }
+      }
+    },
+    "Copy the log to send it to your IT department": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkopírujte záznam a pošlete ho IT oddělení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skopírujte záznam a pošlite ho IT oddeleniu"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smazat"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vymazať"
+          }
+        }
+      }
+    },
+    "Delete Connection…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smazat připojení…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vymazať pripojenie…"
+          }
+        }
+      }
+    },
+    "Delete this connection?": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smazat toto připojení?"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vymazať toto pripojenie?"
+          }
+        }
+      }
+    },
+    "Details are in the connection log (%@).": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podrobnosti jsou v záznamu připojení (%@)."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podrobnosti sú v zázname pripojenia (%@)."
+          }
+        }
+      }
+    },
+    "Disconnect": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojiť"
+          }
+        }
+      }
+    },
+    "Display": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazenie"
+          }
+        }
+      }
+    },
+    "Download ProID+": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stáhnout ProID+"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stiahnuť ProID+"
+          }
+        }
+      }
+    },
+    "Edit Connection": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upravit připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upraviť pripojenie"
+          }
+        }
+      }
+    },
+    "Enter a name like pc01.example.com, without spaces or other characters.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadejte název ve tvaru pc01.example.com, bez mezer a jiných znaků."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadajte názov v tvare pc01.example.com, bez medzier a iných znakov."
+          }
+        }
+      }
+    },
+    "Enter the address of your work computer.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadejte adresu svého pracovního počítače."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadajte adresu svojho pracovného počítača."
+          }
+        }
+      }
+    },
+    "Enter the full path of the module, starting with /.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadejte úplnou cestu k modulu začínající znakem /."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadajte úplnú cestu k modulu začínajúcu znakom /."
+          }
+        }
+      }
+    },
+    "Full screen": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Celá obrazovka"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Celá obrazovka"
+          }
+        }
+      }
+    },
+    "Full screen on all displays": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Celá obrazovka na všech monitorech"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Celá obrazovka na všetkých monitoroch"
+          }
+        }
+      }
+    },
+    "Gateway": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána"
+          }
+        }
+      }
+    },
+    "Import .rdp File…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importovat soubor .rdp…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importovať súbor .rdp…"
+          }
+        }
+      }
+    },
+    "Initial window size": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počáteční velikost okna"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počiatočná veľkosť okna"
+          }
+        }
+      }
+    },
+    "Insert your card and click Connect.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vložte kartu a klikněte na Připojit."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vložte kartu a kliknite na Pripojiť."
+          }
+        }
+      }
+    },
+    "Install the software for your smart card (for example ProID+) and try again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nainstalujte software pro svou čipovou kartu (například ProID+) a zkuste to znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nainštalujte softvér pre svoju čipovú kartu (napríklad ProID+) a skúste to znova."
+          }
+        }
+      }
+    },
+    "It is not a valid Remote Desktop file or it does not contain a computer address.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nejde o platný soubor vzdálené plochy nebo neobsahuje adresu počítače."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nejde o platný súbor vzdialenej plochy alebo neobsahuje adresu počítača."
+          }
+        }
+      }
+    },
+    "Leave empty unless your IT department tells you otherwise.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ponechte prázdné, pokud vám IT oddělení neřekne jinak."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nechajte prázdne, pokiaľ vám IT oddelenie nepovie inak."
+          }
+        }
+      }
+    },
+    "More": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Další"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ďalšie"
+          }
+        }
+      }
+    },
+    "My Computer": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Můj počítač"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Môj počítač"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Název"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Názov"
+          }
+        }
+      }
+    },
+    "New Connection…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nové připojení…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nové pripojenie…"
+          }
+        }
+      }
+    },
+    "No certificate found on the card": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na kartě nebyl nalezen certifikát"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na karte sa nenašiel certifikát"
+          }
+        }
+      }
+    },
+    "No connection yet": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zatím žádné připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zatiaľ žiadne pripojenie"
+          }
+        }
+      }
+    },
+    "No smart card software found": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Software pro čipovou kartu nebyl nalezen"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Softvér pre čipovú kartu sa nenašiel"
+          }
+        }
+      }
+    },
+    "Optional": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepovinné"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepovinné"
+          }
+        }
+      }
+    },
+    "PKCS#11 module": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul PKCS#11"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul PKCS#11"
+          }
+        }
+      }
+    },
+    "Play sound on this Mac": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přehrávat zvuk na tomto Macu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prehrávať zvuk na tomto Macu"
+          }
+        }
+      }
+    },
+    "Remove the card or token, insert it again and try once more.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vytáhněte kartu nebo token, znovu ho zasuňte a zkuste to ještě jednou."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vytiahnite kartu alebo token, znova ho zasuňte a skúste to ešte raz."
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložiť"
+          }
+        }
+      }
+    },
+    "Saved connections cannot be read": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložená připojení nelze načíst"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložené pripojenia nie je možné načítať"
+          }
+        }
+      }
+    },
+    "Set Up Connection": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavit připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastaviť pripojenie"
+          }
+        }
+      }
+    },
+    "Sharing": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sdílení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdieľanie"
+          }
+        }
+      }
+    },
+    "Show as": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazit jako"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobraziť ako"
+          }
+        }
+      }
+    },
+    "Signing in to the gateway – enter the PIN of your card.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlašuji k bráně – zadejte PIN ke kartě."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlasujem k bráne – zadajte PIN ku karte."
+          }
+        }
+      }
+    },
+    "Smart card software is missing": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chybí software pro čipovou kartu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chýba softvér pre čipovú kartu"
+          }
+        }
+      }
+    },
+    "Smart card software: %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Software pro čipovou kartu: %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Softvér pre čipovú kartu: %@"
+          }
+        }
+      }
+    },
+    "Starting…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spouštím…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spúšťam…"
+          }
+        }
+      }
+    },
+    "The PIN was not accepted. Be careful: after several wrong attempts the card gets locked.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN nebyl přijat. Pozor: po několika chybných pokusech se karta zablokuje."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN nebol prijatý. Pozor: po niekoľkých chybných pokusoch sa karta zablokuje."
+          }
+        }
+      }
+    },
+    "The application is incomplete. Download and install it again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplikace je neúplná. Stáhněte ji a nainstalujte znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplikácia je neúplná. Stiahnite ju a nainštalujte znova."
+          }
+        }
+      }
+    },
+    "The card is locked": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta je zablokovaná"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta je zablokovaná"
+          }
+        }
+      }
+    },
+    "The computer cannot be reached": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač není dostupný"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač nie je dostupný"
+          }
+        }
+      }
+    },
+    "The computer may be turned off or the address is wrong. Contact your IT department if it persists.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač je možná vypnutý nebo je adresa chybná. Pokud potíže trvají, kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač je možno vypnutý alebo je adresa chybná. Ak problémy pretrvávajú, kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "The connection failed": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení se nezdařilo"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie zlyhalo"
+          }
+        }
+      }
+    },
+    "The file cannot be imported": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soubor nelze importovat"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Súbor nie je možné importovať"
+          }
+        }
+      }
+    },
+    "The file with your connections is damaged. You can set up the connection again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soubor s vašimi připojeními je poškozený. Připojení můžete nastavit znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Súbor s vašimi pripojeniami je poškodený. Pripojenie môžete nastaviť znova."
+          }
+        }
+      }
+    },
+    "The gateway cannot be reached": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bránu nelze kontaktovat"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bránu nie je možné kontaktovať"
+          }
+        }
+      }
+    },
+    "The gateway refused the sign-in": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána odmítla přihlášení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána odmietla prihlásenie"
+          }
+        }
+      }
+    },
+    "The log of the last connection appears here.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zde se zobrazí záznam posledního připojení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu sa zobrazí záznam posledného pripojenia."
+          }
+        }
+      }
+    },
+    "The port after the colon must be a number between 1 and 65535.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port za dvojtečkou musí být číslo od 1 do 65535."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port za dvojbodkou musí byť číslo od 1 do 65535."
+          }
+        }
+      }
+    },
+    "The remote desktop client cannot be started": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klienta vzdálené plochy nelze spustit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klienta vzdialenej plochy nie je možné spustiť"
+          }
+        }
+      }
+    },
+    "Too many wrong PINs were entered. Unlock the card with the PUK or contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bylo zadáno příliš mnoho chybných PINů. Odblokujte kartu kódem PUK nebo kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bolo zadaných príliš veľa chybných PINov. Odblokujte kartu kódom PUK alebo kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "Welcome to CardGate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vítejte v CardGate"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vitajte v CardGate"
+          }
+        }
+      }
+    },
+    "Window": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okno"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okno"
+          }
+        }
+      }
+    },
+    "Wrong PIN": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chybný PIN"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chybný PIN"
+          }
+        }
+      }
+    },
+    "You get both addresses from your IT department or from its .rdp file.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obě adresy získáte od IT oddělení nebo z jeho souboru .rdp."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obe adresy získate od IT oddelenia alebo z jeho súboru .rdp."
+          }
+        }
+      }
+    },
+    "Your card is not allowed to use this gateway. Contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaše karta nemá k této bráně přístup. Kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vaša karta nemá k tejto bráne prístup. Kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "Your changes will be lost when the app quits. Check the free disk space.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po ukončení aplikace se změny ztratí. Zkontrolujte volné místo na disku."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po ukončení aplikácie sa zmeny stratia. Skontrolujte voľné miesto na disku."
+          }
+        }
+      }
+    },
+    "pc01.example.com": {
+      "shouldTranslate": false
+    },
+    "via %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "přes %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cez %@"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

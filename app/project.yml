@@ -1,0 +1,73 @@
+# Xcode project definition (XcodeGen). Generate with scripts/generate-project.sh;
+# the .xcodeproj itself is not versioned. Version numbers come from the VERSION file.
+name: CardGate
+options:
+  bundleIdPrefix: io.github.jk-sw
+  deploymentTarget:
+    macOS: "15.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+packages:
+  CardGateKit:
+    path: CardGateKit
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: YES
+    MARKETING_VERSION: ${CARDGATE_VERSION}
+    CURRENT_PROJECT_VERSION: ${CARDGATE_BUILD}
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: NO
+    # No Apple Developer certificate: ad-hoc signature ("Sign to Run Locally").
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    DEAD_CODE_STRIPPING: YES
+targets:
+  CardGate:
+    type: application
+    platform: macOS
+    sources:
+      - path: CardGate
+    dependencies:
+      - package: CardGateKit
+    info:
+      path: CardGate/Info.plist
+      properties:
+        CFBundleDisplayName: CardGate
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, cs, sk]
+        LSApplicationCategoryType: public.app-category.productivity
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: "Licensed under the Apache License 2.0"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.jk-sw.cardgate
+        PRODUCT_NAME: CardGate
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    postBuildScripts:
+      - name: Embed FreeRDP helper
+        script: '"${SRCROOT}/../scripts/embed-helper.sh"'
+        basedOnDependencyAnalysis: false
+schemes:
+  CardGate:
+    build:
+      targets:
+        CardGate: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
