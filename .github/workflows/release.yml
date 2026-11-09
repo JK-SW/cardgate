@@ -1,0 +1,57 @@
+name: Release
+
+# A release is made by changing VERSION (and adding its section to CHANGELOG.md) on main.
+on:
+  push:
+    branches: [main]
+    paths: [VERSION]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$version" >/dev/null 2>&1; then
+            echo "Tag v$version already exists" >&2; exit 1
+          fi
+          scripts/release-notes.sh > release-notes.md
+
+      - name: Install build tools
+        run: brew install cmake ninja pkg-config xcodegen swiftlint
+
+      - name: Restore dependency build
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: build/prefix
+          key: deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/deps.lock', 'scripts/common.sh', 'scripts/build-deps.sh', 'patches/**/*.patch') }}
+
+      - name: Build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: scripts/build-deps.sh
+
+      - name: Build and test
+        run: scripts/assemble-helper.sh && scripts/test.sh
+
+      - name: Build release app
+        run: scripts/build-app.sh
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" "build/dist/CardGate-$VERSION.zip" \
+            --title "CardGate $VERSION" --notes-file release-notes.md --target "$GITHUB_SHA"
