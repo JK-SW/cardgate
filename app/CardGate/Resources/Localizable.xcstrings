@@ -612,6 +612,22 @@
         }
       }
     },
+    "Mouse": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Myš"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Myš"
+          }
+        }
+      }
+    },
     "My Computer": {
       "localizations": {
         "cs": {
@@ -816,6 +832,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Uložené pripojenia nie je možné načítať"
+          }
+        }
+      }
+    },
+    "Scroll in the same direction as on this Mac": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posouvat stejným směrem jako na tomto Macu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posúvať rovnakým smerom ako na tomto Macu"
           }
         }
       }

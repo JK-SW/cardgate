@@ -22,18 +22,27 @@ public struct FreeRDPClientConfig: Sendable {
 
     public var sdlConfigURL: URL { directory.appending(path: "freerdp/sdl-freerdp.json") }
 
-    /// Client hotkeys (fullscreen, disconnect, …) need Left Control + Left Option + Left Shift.
-    /// FreeRDP's default (Right Shift alone) disconnects the session when typing a capital D.
-    static let sdlConfig: [String: [String]] = [
-        "SDL_KeyModMask": ["KMOD_LCTRL", "KMOD_LALT", "KMOD_LSHIFT"]
-    ]
+    /// Contents of `sdl-freerdp.json`.
+    struct SDLConfig: Codable, Equatable {
+        /// Client hotkeys (fullscreen, disconnect, …) need Left Control + Left Option + Left Shift.
+        /// FreeRDP's default (Right Shift alone) disconnects the session when typing a capital D.
+        var hotkeyModifiers = ["KMOD_LCTRL", "KMOD_LALT", "KMOD_LSHIFT"]
+        /// `true` keeps the macOS scroll direction instead of converting it to the Windows one.
+        var useLocalMouseScrollDirection: Bool
 
-    /// Writes the client configuration (overwrites the file each time; it is owned by CardGate).
-    public func install() throws {
+        enum CodingKeys: String, CodingKey {
+            case hotkeyModifiers = "SDL_KeyModMask"
+            case useLocalMouseScrollDirection = "UseLocalMouseScrollDirection"
+        }
+    }
+
+    /// Writes the client configuration for the next connection (the file is owned by CardGate).
+    public func install(for profile: ConnectionProfile) throws {
+        let config = SDLConfig(useLocalMouseScrollDirection: profile.input.scrollLikeThisMac)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try FileManager.default.createDirectory(
             at: sdlConfigURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try encoder.encode(Self.sdlConfig).write(to: sdlConfigURL, options: .atomic)
+        try encoder.encode(config).write(to: sdlConfigURL, options: .atomic)
     }
 }

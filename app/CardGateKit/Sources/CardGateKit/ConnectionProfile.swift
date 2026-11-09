@@ -13,6 +13,7 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
     public var pkcs11Module: String?
     public var display: DisplaySettings
     public var redirection: RedirectionSettings
+    public var input: InputSettings
 
     public init(
         id: UUID = UUID(),
@@ -21,7 +22,8 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         gateway: HostAddress? = nil,
         pkcs11Module: String? = nil,
         display: DisplaySettings = .init(),
-        redirection: RedirectionSettings = .init()
+        redirection: RedirectionSettings = .init(),
+        input: InputSettings = .init()
     ) {
         self.id = id
         self.name = name
@@ -30,6 +32,30 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         self.pkcs11Module = pkcs11Module
         self.display = display
         self.redirection = redirection
+        self.input = input
+    }
+
+    // Settings added in later versions are optional so older saved profiles keep loading.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        computer = try container.decode(HostAddress.self, forKey: .computer)
+        gateway = try container.decodeIfPresent(HostAddress.self, forKey: .gateway)
+        pkcs11Module = try container.decodeIfPresent(String.self, forKey: .pkcs11Module)
+        display = try container.decodeIfPresent(DisplaySettings.self, forKey: .display) ?? .init()
+        redirection = try container.decodeIfPresent(RedirectionSettings.self, forKey: .redirection) ?? .init()
+        input = try container.decodeIfPresent(InputSettings.self, forKey: .input) ?? .init()
+    }
+}
+
+public struct InputSettings: Codable, Equatable, Sendable {
+    /// Scroll in the remote session in the same direction as on this Mac ("natural scrolling"
+    /// setting of macOS). When off, the direction is converted to the classic Windows one.
+    public var scrollLikeThisMac: Bool
+
+    public init(scrollLikeThisMac: Bool = true) {
+        self.scrollLikeThisMac = scrollLikeThisMac
     }
 }
 

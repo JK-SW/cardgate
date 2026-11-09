@@ -38,3 +38,18 @@ struct ProfileStoreTests {
         #expect(throws: (any Error).self) { try store.load() }
     }
 }
+
+struct ProfileCompatibilityTests {
+    /// Profiles saved by the first version have no `input` settings.
+    @Test func loadsProfilesWithoutNewerSettings() throws {
+        let json = """
+            {"id":"6F1C2A52-8B39-4B79-9A43-2B7D4D0B5E10","name":"Office","computer":"pc01.corp.example",
+             "display":{"mode":"window"},"redirection":{"clipboard":true,"audio":false}}
+            """
+        let profile = try JSONDecoder().decode(ConnectionProfile.self, from: Data(json.utf8))
+        #expect(profile.name == "Office")
+        #expect(profile.gateway == nil)
+        #expect(!profile.redirection.audio)
+        #expect(profile.input == InputSettings())
+    }
+}

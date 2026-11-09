@@ -17,6 +17,7 @@ final class ProfileEditorModel: Identifiable {
     var windowSize: WindowSize?
     var clipboard: Bool
     var audio: Bool
+    var scrollLikeThisMac: Bool
     var pkcs11Module: String
 
     init(profile: ConnectionProfile?, defaultName: String, isNew: Bool? = nil) {
@@ -29,6 +30,7 @@ final class ProfileEditorModel: Identifiable {
         windowSize = profile?.display.windowSize
         clipboard = profile?.redirection.clipboard ?? true
         audio = profile?.redirection.audio ?? true
+        scrollLikeThisMac = profile?.input.scrollLikeThisMac ?? true
         pkcs11Module = profile?.pkcs11Module ?? ""
     }
 
@@ -66,7 +68,8 @@ final class ProfileEditorModel: Identifiable {
             gateway: gatewayText.isEmpty ? nil : try? HostAddress(parsing: gatewayText),
             pkcs11Module: module.isEmpty ? nil : module,
             display: .init(mode: displayMode, windowSize: displayMode == .window ? windowSize : nil),
-            redirection: .init(clipboard: clipboard, audio: audio))
+            redirection: .init(clipboard: clipboard, audio: audio),
+            input: .init(scrollLikeThisMac: scrollLikeThisMac))
     }
 
     private static func validate(_ text: String, optional: Bool) -> HostAddress.ParseError? {

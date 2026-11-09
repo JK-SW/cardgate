@@ -46,6 +46,10 @@ struct ProfileEditorView: View {
                     Toggle("Play sound on this Mac", isOn: $editor.audio)
                 }
 
+                Section("Mouse") {
+                    Toggle("Scroll in the same direction as on this Mac", isOn: $editor.scrollLikeThisMac)
+                }
+
                 Section {
                     TextField("PKCS#11 module", text: $editor.pkcs11Module, prompt: Text("Automatic"))
                     if !editor.moduleIsValid {

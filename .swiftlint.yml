@@ -29,4 +29,6 @@ line_length:
 identifier_name:
   excluded: [id, x, y]
 type_body_length: 300
+nesting:
+  type_level: 2  # CodingKeys inside nested types
 file_length: 500

@@ -124,7 +124,7 @@ final class AppModel {
             return
         }
         do {
-            try clientConfig.install()
+            try clientConfig.install(for: profile)
             let command = try FreeRDPCommand(
                 executable: executable, profile: profile, pkcs11Module: module,
                 config: clientConfig, askPass: PINPrompt.command)
