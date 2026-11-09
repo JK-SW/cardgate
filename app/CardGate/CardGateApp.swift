@@ -27,9 +27,11 @@ struct CardGateApp: App {
         Window("CardGate", id: WindowID.main) {
             ContentView()
                 .environment(model)
-                .frame(minWidth: 460, minHeight: 420)
+                .frame(width: 440)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .windowResizability(.contentMinSize)
+        // The window always fits its content; there is nothing to gain from a bigger one.
+        .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Connection…") { model.beginNewProfile() }

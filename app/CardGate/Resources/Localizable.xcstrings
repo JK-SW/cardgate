@@ -212,6 +212,22 @@
         }
       }
     },
+    "Connecting…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojuji…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripájam…"
+          }
+        }
+      }
+    },
     "Connection": {
       "localizations": {
         "cs": {

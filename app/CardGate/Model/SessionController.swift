@@ -13,6 +13,11 @@ final class SessionController {
     private(set) var log: [String] = []
 
     private var process: Process?
+    /// The last session's log is also kept in a file for support (never contains the PIN).
+    private var logFile: FileHandle?
+    static var logFileURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Logs/CardGate/last-session.log")
+    }
     private var parser = SessionLogParser()
     private static let maxLogLines = 5000
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "session")
@@ -42,6 +47,7 @@ final class SessionController {
 
         parser = SessionLogParser()
         log.removeAll()
+        logFile = Self.openLogFile()
         phase = .starting
         logger.info("Starting client: \(command.arguments.joined(separator: " "), privacy: .public)")
         try process.run()
@@ -73,13 +79,23 @@ final class SessionController {
 
     private func receive(_ line: String) {
         log.append(line)
+        logFile?.write(Data((line + "\n").utf8))
         if log.count > Self.maxLogLines { log.removeFirst(log.count - Self.maxLogLines) }
         if let next = parser.consume(line) { phase = next }
     }
 
     private func finished(status: Int32) {
         process = nil
+        try? logFile?.close()
+        logFile = nil
         phase = parser.processExited(status: status)
         logger.info("Client exited with status \(status)")
+    }
+
+    private static func openLogFile() -> FileHandle? {
+        let url = logFileURL
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        guard FileManager.default.createFile(atPath: url.path(percentEncoded: false), contents: nil) else { return nil }
+        return try? FileHandle(forWritingTo: url)
     }
 }

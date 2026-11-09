@@ -6,7 +6,6 @@ struct WelcomeView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Spacer()
             AppSymbol()
                 .font(.system(size: 64))
             VStack(spacing: 8) {
@@ -33,10 +32,10 @@ struct WelcomeView: View {
             }
             ReadinessView()
                 .padding(.top, 8)
-            Spacer()
         }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 36)
+        .frame(maxWidth: .infinity)
     }
 }
 

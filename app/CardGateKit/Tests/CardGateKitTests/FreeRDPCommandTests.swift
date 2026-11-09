@@ -41,6 +41,7 @@ struct FreeRDPCommandTests {
                 "/sound:sys:mac",
                 "-sdl-connection-dialog",
                 "/log-level:INFO",
+                "/log-filters:com.freerdp.client.sdl.disp:DEBUG",
             ])
         #expect(
             command.environment == [

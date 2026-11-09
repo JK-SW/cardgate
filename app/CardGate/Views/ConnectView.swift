@@ -8,8 +8,7 @@ struct ConnectView: View {
 
     var body: some View {
         @Bindable var model = model
-        VStack(spacing: 24) {
-            Spacer(minLength: 0)
+        VStack(spacing: 20) {
             if let profile = model.selectedProfile {
                 AppSymbol()
                     .font(.system(size: 52))
@@ -34,10 +33,10 @@ struct ConnectView: View {
                 SessionStatusView(phase: model.session.phase)
                 connectButton
             }
-            Spacer(minLength: 0)
         }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 32)
+        .frame(maxWidth: .infinity)
         .toolbar {
             if model.profiles.count > 1 {
                 ToolbarItem(placement: .navigation) {
@@ -152,7 +151,7 @@ struct SessionStatusView: View {
         case nil, .ended(.closedByUser):
             EmptyView()
         case .starting:
-            progress("Starting…")
+            progress("Connecting…")
         case .authenticatingGateway:
             progress("Signing in to the gateway – enter the PIN of your card.")
         case .connectingComputer:

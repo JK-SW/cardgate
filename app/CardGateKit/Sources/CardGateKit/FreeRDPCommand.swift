@@ -68,6 +68,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
         // CardGate shows progress and errors itself; no FreeRDP connection dialog.
         args.append("-sdl-connection-dialog")
         args.append("/log-level:INFO")
+        // Display layout changes, for diagnosing window size issues.
+        args.append("/log-filters:com.freerdp.client.sdl.disp:DEBUG")
         return args
     }
 }

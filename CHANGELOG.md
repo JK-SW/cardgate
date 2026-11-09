@@ -26,6 +26,9 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 - No more screens sliding away and back on all displays when connecting and disconnecting
   (FreeRDP patch: displays are queried without a temporary full screen window on macOS).
 - Redesigned, centered PIN dialog.
+- Compact main window that fits its content.
+- Connection progress is shown live (FreeRDP patch: log messages are flushed immediately).
+- The last session's log is kept in `~/Library/Logs/CardGate/last-session.log`.
 - FreeRDP's own connection/error dialog is turned off; errors are shown in the app only.
 - Scroll direction in the session follows this Mac by default (setting per connection).
 - FreeRDP hotkeys need Left Control + Left Option + Left Shift, so typing no longer disconnects.
