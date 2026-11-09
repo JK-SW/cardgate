@@ -8,7 +8,7 @@ LANGS=(cs sk)
 
 data=()
 while IFS= read -r -d '' f; do data+=("$f"); done \
-  < <(find "$DERIVED/Build/Intermediates.noindex/CardGate.build" -name '*.stringsdata' -print0)
+  < <(find "$DERIVED/Build/Intermediates.noindex/CardGate.build/Debug" -name '*.stringsdata' -print0)
 [[ ${#data[@]} -gt 0 ]] || die "no .stringsdata found – build the app first"
 
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT

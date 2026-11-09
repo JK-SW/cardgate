@@ -32,7 +32,7 @@ enum PINPrompt {
                 pin = result
                 app.stopModal()
             })
-        window.center()
+        placeOnScreenWithPointer(window)
         app.activate()
         window.makeKeyAndOrderFront(nil)
         app.runModal(for: window)
@@ -41,6 +41,23 @@ enum PINPrompt {
         FileHandle.standardOutput.write(Data((pin + "\n").utf8))
         exit(0)
     }
+}
+
+/// Centers the dialog on the display with the mouse pointer – where the user just clicked
+/// Connect – instead of the main display, so it is not missed on another monitor.
+@MainActor
+private func placeOnScreenWithPointer(_ window: NSWindow) {
+    window.layoutIfNeeded()
+    let pointer = NSEvent.mouseLocation
+    guard let screen = NSScreen.screens.first(where: { NSMouseInRect(pointer, $0.frame, false) }) ?? NSScreen.main
+    else {
+        window.center()
+        return
+    }
+    let visible = screen.visibleFrame
+    let size = window.frame.size
+    window.setFrameOrigin(
+        NSPoint(x: visible.midX - size.width / 2, y: visible.midY - size.height / 2 + visible.height / 6))
 }
 
 private struct PINPromptView: View {

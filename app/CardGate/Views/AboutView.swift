@@ -33,14 +33,10 @@ struct AboutView: View {
                     .foregroundStyle(.secondary)
             }
             .font(.callout)
-            HStack(spacing: 16) {
-                if let url = URL(string: "https://github.com/JK-SW/cardgate") {
-                    Link("Source Code", destination: url)
-                }
-                Button("Third-Party Licenses") { showsNotices = true }
-                    .buttonStyle(.link)
-            }
-            .font(.callout)
+            // A link to the source code is added once the repository is public.
+            Button("Third-Party Licenses") { showsNotices = true }
+                .buttonStyle(.link)
+                .font(.callout)
         }
         .padding(28)
         .frame(width: 380)
