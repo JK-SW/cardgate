@@ -2,7 +2,7 @@
 # Builds FreeRDP (with our patches) and all its runtime dependencies from pinned sources
 # into $BUILD/prefix. Re-running only rebuilds steps whose inputs changed.
 #
-# Usage: scripts/build-deps.sh [step...]   steps: openssl cjson freetype sdl3 sdl3_ttf freerdp
+# Usage: scripts/build-deps.sh [step...]   steps: licenses openssl cjson freetype sdl3 sdl3_ttf freerdp
 # Build tools needed: Xcode command line tools, cmake, ninja, pkg-config.
 source "$(dirname "$0")/common.sh"
 
@@ -79,7 +79,25 @@ build_freerdp() {
   cmake --install "$OBJ/freerdp" >/dev/null
 }
 
-ALL=(openssl cjson freetype sdl3 sdl3_ttf freerdp)
+# License texts of everything shipped in the app, from the verified source archives.
+build_licenses() {
+  local dir="$PREFIX/share/licenses"
+  rm -rf "$dir"; mkdir -p "$dir"
+  local entry name files f archive top
+  for entry in "openssl:LICENSE.txt" "cjson:LICENSE" "freetype:LICENSE.TXT docs/FTL.TXT" \
+               "sdl3:LICENSE.txt" "sdl3_ttf:LICENSE.txt" "freerdp:LICENSE"; do
+    name="${entry%%:*}"; files="${entry#*:}"
+    archive="$(fetch "$name")"
+    top="$(tar -tf "$archive" | head -1 | cut -d/ -f1)"
+    mkdir -p "$dir/$name"
+    for f in $files; do
+      tar -xOf "$archive" "$top/$f" >"$dir/$name/$(basename "$f")" || die "$f missing in $name"
+    done
+  done
+  log "License texts collected"
+}
+
+ALL=(licenses openssl cjson freetype sdl3 sdl3_ttf freerdp)
 STEPS=("${@:-${ALL[@]}}")
 mkdir -p "$OBJ" "$PREFIX"
 rebuilt=0  # once a step is rebuilt, everything after it is rebuilt too

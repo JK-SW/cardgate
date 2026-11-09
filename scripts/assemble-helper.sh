@@ -66,6 +66,9 @@ chmod -R u+w "$HELPER"
 while IFS= read -r -d '' f; do copy_closure "$f"; done \
   < <(find "$HELPER/Helpers" "$HELPER/PlugIns" -type f -print0)
 
+log "Writing third-party notices"
+"$ROOT/scripts/third-party-notices.sh" >"$HELPER/ThirdPartyNotices.txt"
+
 log "Rewriting install names"
 fix "$HELPER/Helpers/sdl-freerdp" "@executable_path/../Frameworks"
 for f in "$HELPER"/Frameworks/*.dylib; do fix "$f" "@loader_path"; done

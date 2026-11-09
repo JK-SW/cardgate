@@ -47,7 +47,7 @@ targets:
         CFBundleLocalizations: [en, cs, sk]
         LSApplicationCategoryType: public.app-category.productivity
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
-        NSHumanReadableCopyright: "Licensed under the Apache License 2.0"
+        NSHumanReadableCopyright: "© 2026 Ing. Jiří Kubínek. Licensed under the Apache License 2.0."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.jk-sw.cardgate

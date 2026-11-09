@@ -31,6 +31,6 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Licensed under the Apache License 2.0</string>
+	<string>© 2026 Ing. Jiří Kubínek. Licensed under the Apache License 2.0.</string>
 </dict>
 </plist>

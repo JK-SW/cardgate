@@ -14,6 +14,8 @@ fi
 mkdir -p "$CONTENTS/Helpers" "$CONTENTS/Frameworks"
 rsync -a --delete "$HELPER/Helpers/" "$CONTENTS/Helpers/"
 rsync -a "$HELPER/Frameworks/" "$CONTENTS/Frameworks/"
+mkdir -p "$CONTENTS/Resources"
+cp "$HELPER/ThirdPartyNotices.txt" "$CONTENTS/Resources/ThirdPartyNotices.txt"
 
 IDENTITY="${EXPANDED_CODE_SIGN_IDENTITY:--}"
 [[ -n "$IDENTITY" ]] || IDENTITY="-"

@@ -33,6 +33,9 @@ struct CardGateApp: App {
         // The window always fits its content; there is nothing to gain from a bigger one.
         .windowResizability(.contentSize)
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                OpenWindowButton(title: "About CardGate", id: WindowID.about)
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Connection…") { model.beginNewProfile() }
                     .keyboardShortcut("n")
@@ -44,6 +47,12 @@ struct CardGateApp: App {
                     .keyboardShortcut("l", modifiers: [.command, .option])
             }
         }
+
+        Window("About CardGate", id: WindowID.about) {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
 
         Window("Connection Log", id: WindowID.log) {
             LogView()
@@ -57,6 +66,7 @@ struct CardGateApp: App {
 enum WindowID {
     static let main = "main"
     static let log = "log"
+    static let about = "about"
 }
 
 private struct OpenWindowButton: View {

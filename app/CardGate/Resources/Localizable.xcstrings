@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "About CardGate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O aplikaci CardGate"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O aplikácii CardGate"
+          }
+        }
+      }
+    },
     "Add a connection or show the log": {
       "localizations": {
         "cs": {
@@ -29,6 +45,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pokročilé"
+          }
+        }
+      }
+    },
+    "Author: %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autor: %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autor: %@"
           }
         }
       }
@@ -128,6 +160,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Schránka"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavřít"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavrieť"
           }
         }
       }
@@ -644,6 +692,22 @@
         }
       }
     },
+    "Licensed under the Apache License 2.0.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencováno pod Apache License 2.0."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencované pod Apache License 2.0."
+          }
+        }
+      }
+    },
     "More": {
       "localizations": {
         "cs": {
@@ -832,6 +896,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prehrávať zvuk na tomto Macu"
+          }
+        }
+      }
+    },
+    "Remote desktop through an RD Gateway with smart card sign-in.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzdálená plocha přes RD Gateway s přihlášením čipovou kartou."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzdialená plocha cez RD Gateway s prihlásením čipovou kartou."
           }
         }
       }
@@ -1044,6 +1124,22 @@
         }
       }
     },
+    "Source Code": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdrojový kód"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdrojový kód"
+          }
+        }
+      }
+    },
     "The PIN was not accepted. Be careful: after several wrong attempts the card gets locked.": {
       "localizations": {
         "cs": {
@@ -1156,6 +1252,22 @@
         }
       }
     },
+    "The connection was stopped for your safety. Check the gateway address; if it is correct, contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení bylo z bezpečnostních důvodů zastaveno. Zkontrolujte adresu brány; pokud je správná, kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie bolo z bezpečnostných dôvodov zastavené. Skontrolujte adresu brány; ak je správna, kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
     "The file cannot be imported": {
       "localizations": {
         "cs": {
@@ -1220,6 +1332,22 @@
         }
       }
     },
+    "The gateway's certificate is not trusted": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát brány není důvěryhodný"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát brány nie je dôveryhodný"
+          }
+        }
+      }
+    },
     "The inserted card has no certificate for signing in.": {
       "localizations": {
         "cs": {
@@ -1232,6 +1360,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vložená karta nemá certifikát na prihlásenie."
+          }
+        }
+      }
+    },
+    "The license texts are missing from this build.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V tomto sestavení chybí texty licencí."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V tomto zostavení chýbajú texty licencií."
           }
         }
       }
@@ -1284,6 +1428,22 @@
         }
       }
     },
+    "Third-Party Licenses": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licence komponent třetích stran"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencie komponentov tretích strán"
+          }
+        }
+      }
+    },
     "Too many wrong PINs were entered. Unlock the card with the PUK or contact your IT department.": {
       "localizations": {
         "cs": {
@@ -1296,6 +1456,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bolo zadaných príliš veľa chybných PINov. Odblokujte kartu kódom PUK alebo kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "Version %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verze %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verzia %@"
           }
         }
       }
