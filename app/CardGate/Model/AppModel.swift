@@ -19,6 +19,7 @@ final class AppModel {
     var alert: AppAlert?
 
     let session = SessionController()
+    let cards = CardMonitor()
     private(set) var middleware: PKCS11ModuleLocator.Middleware?
 
     private let store: ProfileStore?
@@ -31,6 +32,15 @@ final class AppModel {
         clientConfig = try? FreeRDPClientConfig.standard()
         load()
         refreshMiddleware()
+        cards.onChange = { [weak self] in
+            // A new card makes an old "no certificate" error irrelevant.
+            self?.session.clearFinished()
+        }
+    }
+
+    /// Everything needed to connect is in place.
+    var isReadyToConnect: Bool {
+        middleware != nil && cards.signInCertificate != nil && !session.isRunning
     }
 
     var selectedProfile: ConnectionProfile? {

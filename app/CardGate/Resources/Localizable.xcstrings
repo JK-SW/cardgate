@@ -65,6 +65,22 @@
         }
       }
     },
+    "Card ready: %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta připravena: %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta pripravená: %@"
+          }
+        }
+      }
+    },
     "CardGate": {
       "shouldTranslate": false
     },
@@ -544,6 +560,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vložte kartu a kliknite na Pripojiť."
+          }
+        }
+      }
+    },
+    "Insert your card or token.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vložte kartu nebo token."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vložte kartu alebo token."
           }
         }
       }
@@ -1168,6 +1200,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brána odmietla prihlásenie"
+          }
+        }
+      }
+    },
+    "The inserted card has no certificate for signing in.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vložená karta nemá certifikát pro přihlášení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vložená karta nemá certifikát na prihlásenie."
           }
         }
       }

@@ -18,5 +18,8 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 - English, Czech and Slovak localization.
 - Native PIN dialog instead of the FreeRDP one (via `FREERDP_ASKPASS`); the PIN is never stored
   or passed on a command line.
+- Card detection: the app shows whether a card with a sign-in certificate is inserted (holder
+  name) and enables Connect only then; insertion and removal are noticed immediately.
+- FreeRDP's own connection/error dialog is turned off; errors are shown in the app only.
 - Scroll direction in the session follows this Mac by default (setting per connection).
 - FreeRDP hotkeys need Left Control + Left Option + Left Shift, so typing no longer disconnects.

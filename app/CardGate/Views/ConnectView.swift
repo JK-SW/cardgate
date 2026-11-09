@@ -1,49 +1,43 @@
 import CardGateKit
 import SwiftUI
 
-/// Main window: the selected connection, its status and the Connect button.
+/// Main window: the selected connection, readiness of the card, status and the Connect button.
 struct ConnectView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         @Bindable var model = model
-        VStack(spacing: 0) {
+        VStack(spacing: 24) {
+            Spacer(minLength: 0)
             if let profile = model.selectedProfile {
-                VStack(spacing: 24) {
-                    Spacer(minLength: 0)
-                    AppSymbol()
-                        .font(.system(size: 52))
-                    VStack(spacing: 6) {
-                        Text(profile.name)
-                            .font(.title.weight(.semibold))
-                        Text(profile.computer.description)
-                            .font(.title3)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                        if let gateway = profile.gateway {
-                            Label {
-                                Text("via \(gateway.description)")
-                            } icon: {
-                                Image(systemName: "network.badge.shield.half.filled")
-                            }
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
+                AppSymbol()
+                    .font(.system(size: 52))
+                VStack(spacing: 6) {
+                    Text(profile.name)
+                        .font(.title.weight(.semibold))
+                    Text(profile.computer.description)
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                    if let gateway = profile.gateway {
+                        Label {
+                            Text("via \(gateway.description)")
+                        } icon: {
+                            Image(systemName: "network.badge.shield.half.filled")
                         }
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                     }
-                    SessionStatusView(phase: model.session.phase)
-                        .frame(minHeight: 44)
-                    connectButton
-                    Spacer(minLength: 0)
                 }
-                .padding(32)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ReadinessView()
+                SessionStatusView(phase: model.session.phase)
+                connectButton
             }
-            Divider()
-            MiddlewareStatusView()
-                .padding(.horizontal)
-                .padding(.vertical, 10)
+            Spacer(minLength: 0)
         }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .toolbar {
             if model.profiles.count > 1 {
                 ToolbarItem(placement: .navigation) {
@@ -94,8 +88,45 @@ struct ConnectView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.extraLarge)
             .keyboardShortcut(.defaultAction)
-            .disabled(model.middleware == nil)
+            .disabled(!model.isReadyToConnect)
         }
+    }
+}
+
+/// Whether the smart card software is installed and a card with a sign-in certificate is inserted.
+struct ReadinessView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Group {
+            if model.middleware == nil {
+                VStack(spacing: 6) {
+                    Label("No smart card software found", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    if let url = PKCS11ModuleLocator.knownMiddleware.first?.downloadURL {
+                        Link("Download ProID+", destination: url)
+                    }
+                }
+            } else if let certificate = model.cards.signInCertificate {
+                Label {
+                    Text("Card ready: \(certificate.holderName)")
+                } icon: {
+                    Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
+                }
+            } else if model.cards.certificates.isEmpty {
+                Label("Insert your card or token.", systemImage: "creditcard")
+                    .foregroundStyle(.secondary)
+            } else {
+                Label(
+                    "The inserted card has no certificate for signing in.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .foregroundStyle(.orange)
+            }
+        }
+        .font(.callout)
+        .multilineTextAlignment(.center)
+        .animation(.default, value: model.cards.signInCertificate)
     }
 }
 
@@ -106,8 +137,7 @@ struct SessionStatusView: View {
     var body: some View {
         switch phase {
         case nil, .ended(.closedByUser):
-            Text("Insert your card and click Connect.")
-                .foregroundStyle(.secondary)
+            EmptyView()
         case .starting:
             progress("Starting…")
         case .authenticatingGateway:
@@ -143,8 +173,9 @@ private struct FailureView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: 380)
+        .frame(maxWidth: 420)
     }
 
     private var title: LocalizedStringKey {
@@ -176,35 +207,5 @@ private struct FailureView: View {
         case .other(let code):
             "Details are in the connection log (\(code))."
         }
-    }
-}
-
-/// Footer showing whether smart card middleware is installed.
-struct MiddlewareStatusView: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        HStack {
-            if let middleware = model.middleware {
-                Label {
-                    Text("Smart card software: \(middleware.name)")
-                } icon: {
-                    Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                }
-            } else {
-                Label {
-                    Text("No smart card software found")
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                }
-                Spacer()
-                if let url = PKCS11ModuleLocator.knownMiddleware.first?.downloadURL {
-                    Link("Download ProID+", destination: url)
-                }
-            }
-            Spacer()
-        }
-        .font(.callout)
-        .foregroundStyle(.secondary)
     }
 }

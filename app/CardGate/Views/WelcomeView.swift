@@ -31,9 +31,9 @@ struct WelcomeView: View {
                 Button("Import .rdp File…") { model.isImportingRDP = true }
                     .buttonStyle(.link)
             }
+            ReadinessView()
+                .padding(.top, 8)
             Spacer()
-            MiddlewareStatusView()
-                .padding(.bottom)
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -61,6 +61,11 @@ final class SessionController {
         }
     }
 
+    /// Forgets the result of a finished connection (e.g. after the card was replaced).
+    func clearFinished() {
+        if process == nil, case .ended = phase { phase = nil }
+    }
+
     /// Asks the client to disconnect and quit.
     func stop() {
         process?.terminate()

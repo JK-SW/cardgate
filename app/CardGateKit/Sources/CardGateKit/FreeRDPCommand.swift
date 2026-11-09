@@ -65,6 +65,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
         if profile.redirection.audio {
             args.append("/sound:sys:mac")
         }
+        // CardGate shows progress and errors itself; no FreeRDP connection dialog.
+        args.append("-sdl-connection-dialog")
         args.append("/log-level:INFO")
         return args
     }

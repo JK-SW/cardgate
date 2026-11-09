@@ -39,6 +39,7 @@ struct FreeRDPCommandTests {
                 "/dynamic-resolution",
                 "+clipboard",
                 "/sound:sys:mac",
+                "-sdl-connection-dialog",
                 "/log-level:INFO",
             ])
         #expect(
