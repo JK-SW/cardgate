@@ -34,6 +34,16 @@ Gateway that requires smart card (or token) sign-in.
 
 Client hotkeys use **left Control + left Option + left Shift** plus a key (e.g. **Return** = full screen).
 
+## Security
+
+- The PIN is never stored. The PIN dialog accepts only PINs of the length the card allows and warns
+  when a wrong PIN was entered before or this is the last attempt.
+- While connected, the card is made available to the remote computer (for the Windows sign-in).
+  Programs in the remote session can use it as if it were inserted there. Disconnect when you are
+  done, or remove the card.
+- The app connects only to a gateway with a trusted certificate. If it reports an untrusted
+  certificate, do not continue and contact your IT department.
+
 ## Troubleshooting
 
 | Message | What to do |

@@ -39,6 +39,16 @@ Připojení můžete mít i více – přepínáte je v horní liště okna.
 Klávesové zkratky klienta (celá obrazovka, odpojení…) se používají s klávesami
 **levý Control + levý Option + levý Shift** a písmenem (např. **Enter** = celá obrazovka).
 
+## Bezpečnost
+
+- PIN se nikde neukládá. Dialog pro PIN přijme jen PIN v délce, jakou karta povoluje, a upozorní,
+  když už byl dříve zadán chybný PIN nebo jde o poslední pokus.
+- Po dobu připojení je karta zpřístupněna vzdálenému počítači (kvůli přihlášení do Windows).
+  Programy ve vzdálené relaci ji mohou používat stejně, jako by byla vložená přímo v něm.
+  Po skončení práce se odpojte, případně kartu vytáhněte.
+- Aplikace se připojí jen k bráně s důvěryhodným certifikátem. Pokud ohlásí nedůvěryhodný
+  certifikát, nepokračujte a kontaktujte IT oddělení.
+
 ## Když něco nefunguje
 
 | Hlášení | Co dělat |

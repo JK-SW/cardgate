@@ -36,6 +36,16 @@ ktorá vyžaduje prihlásenie čipovou kartou alebo tokenom.
 Klávesové skratky klienta sa používajú s klávesmi **ľavý Control + ľavý Option + ľavý Shift**
 a písmenom (napr. **Enter** = celá obrazovka).
 
+## Bezpečnosť
+
+- PIN sa nikde neukladá. Dialóg na PIN prijme len PIN v dĺžke, akú karta povoľuje, a upozorní,
+  keď už bol skôr zadaný chybný PIN alebo ide o posledný pokus.
+- Počas pripojenia je karta sprístupnená vzdialenému počítaču (kvôli prihláseniu do Windows).
+  Programy vo vzdialenej relácii ju môžu používať rovnako, ako keby bola vložená priamo v ňom.
+  Po skončení práce sa odpojte, prípadne kartu vytiahnite.
+- Aplikácia sa pripojí len k bráne s dôveryhodným certifikátom. Ak ohlási nedôveryhodný
+  certifikát, nepokračujte a kontaktujte IT oddelenie.
+
 ## Keď niečo nefunguje
 
 | Hlásenie | Čo robiť |
