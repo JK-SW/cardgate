@@ -7,7 +7,7 @@ log "SwiftLint"
 swiftlint lint --strict --quiet
 
 log "swift-format"
-swift format lint --strict -r app/CardGateKit/Sources app/CardGateKit/Tests app/CardGate
+swift format lint --strict -r app/CardGateKit/Sources app/CardGateKit/Tests app/CardGate app/CardGateUITests
 
 log "Unit tests (CardGateKit)"
 # With the assembled helper the tests also check it accepts CardGate's arguments and still logs

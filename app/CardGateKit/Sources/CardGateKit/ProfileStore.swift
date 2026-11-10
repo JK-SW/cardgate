@@ -8,11 +8,9 @@ public struct ProfileStore: Sendable {
         self.fileURL = fileURL
     }
 
-    /// `~/Library/Application Support/CardGate/profiles.json`
+    /// `~/Library/Application Support/CardGate/profiles.json` (see `AppDirectories`)
     public static func standard() throws -> ProfileStore {
-        let support = try FileManager.default.url(
-            for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        return ProfileStore(fileURL: support.appending(path: "CardGate/profiles.json"))
+        ProfileStore(fileURL: try AppDirectories.data().appending(path: "profiles.json"))
     }
 
     struct Contents: Codable, Equatable {

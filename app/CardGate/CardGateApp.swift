@@ -50,8 +50,8 @@ struct CardGateApp: App {
                     .keyboardShortcut("o")
             }
             CommandGroup(replacing: .help) {
+                // No shortcut: ⌘? (⌘⇧/) belongs to the system's Help menu search.
                 OpenWindowButton(title: "Keyboard Shortcuts", id: WindowID.shortcuts)
-                    .keyboardShortcut("/", modifiers: [.command, .shift])
             }
             CommandGroup(after: .windowArrangement) {
                 OpenWindowButton(title: "Connection Log", id: WindowID.log)

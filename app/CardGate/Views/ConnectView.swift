@@ -108,6 +108,7 @@ struct ConnectView: View {
             .controlSize(.extraLarge)
             .keyboardShortcut(.defaultAction)
             .disabled(!model.isReadyToConnect)
+            .accessibilityIdentifier("connect")
         }
     }
 }
