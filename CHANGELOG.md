@@ -6,6 +6,12 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 
 ## [Unreleased]
 
+### Fixed
+- Windows sign-in with the card failed when the Mac had more than one smart card reader (e.g. one
+  built into the keyboard): only the first reader reached the remote computer. FreeRDP's text
+  conversion on macOS cut reader lists after the first name.
+- If the reader of the card cannot be matched, all readers are redirected instead of none.
+
 ## [0.2.1] - 2026-11-10
 
 Fixes from testing on another Mac.

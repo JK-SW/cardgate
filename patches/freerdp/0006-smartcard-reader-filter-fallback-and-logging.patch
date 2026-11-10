@@ -1,0 +1,72 @@
+--- a/libfreerdp/utils/smartcard_call.c
++++ b/libfreerdp/utils/smartcard_call.c
+@@ -553,6 +553,21 @@
+ 	return FALSE;
+ }
+ 
++/* Logs the reader names of a multi-string (names only, never card data). */
++static void log_reader_names(wLog* log, const char* what, const char* msz, size_t cch)
++{
++	if (!WLog_IsLevelActive(log, WLOG_DEBUG))
++		return;
++	size_t count = 0;
++	for (size_t pos = 0; msz && pos < cch && msz[pos];)
++	{
++		const size_t len = strnlen(&msz[pos], cch - pos);
++		WLog_Print(log, WLOG_DEBUG, "%s reader %" PRIuz ": '%s'", what, count++, &msz[pos]);
++		pos += len + 1;
++	}
++	WLog_Print(log, WLOG_DEBUG, "%s: %" PRIuz " reader(s)", what, count);
++}
++
+ WINPR_ATTR_NODISCARD
+ static DWORD filter_device_by_name_a(wLinkedList* list, LPSTR* mszReaders, DWORD cchReaders)
+ {
+@@ -562,6 +577,17 @@
+ 	if (*mszReaders == nullptr || LinkedList_Count(list) < 1)
+ 		return cchReaders;
+ 
++	/* A filter matching no reader would hide every reader from the server: keep them all. */
++	BOOL anyMatch = FALSE;
++	for (size_t pos = 0; pos < cchReaders && (*mszReaders)[pos] && !anyMatch;)
++	{
++		const size_t len = strnlen(&(*mszReaders)[pos], cchReaders - pos);
++		anyMatch = filter_match(list, &(*mszReaders)[pos], len);
++		pos += len + 1;
++	}
++	if (!anyMatch)
++		return cchReaders;
++
+ 	do
+ 	{
+ 		LPCSTR rreader = &(*mszReaders)[rpos];
+@@ -647,7 +673,9 @@
+ 	}
+ 
+ 	void* original = mszReaders;
++	log_reader_names(smartcard->log, "ListReadersA local", mszReaders, cchReaders);
+ 	cchReaders = filter_device_by_name_a(smartcard->names, &mszReaders, cchReaders);
++	log_reader_names(smartcard->log, "ListReadersA redirected", mszReaders, cchReaders);
+ 	ret.msz = (BYTE*)mszReaders;
+ 	ret.cBytes = cchReaders;
+ 
+@@ -706,7 +734,19 @@
+ 	}
+ 
+ 	void* original = mszReaders.pb;
++	if (WLog_IsLevelActive(smartcard->log, WLOG_DEBUG))
++	{
++		char* local = ConvertMszWCharNToUtf8Alloc(mszReaders.pw, cchReaders, nullptr);
++		log_reader_names(smartcard->log, "ListReadersW local", local, cchReaders);
++		free(local);
++	}
+ 	cchReaders = filter_device_by_name_w(smartcard->names, &mszReaders.pw, cchReaders);
++	if (WLog_IsLevelActive(smartcard->log, WLOG_DEBUG))
++	{
++		char* redirected = ConvertMszWCharNToUtf8Alloc(mszReaders.pw, cchReaders, nullptr);
++		log_reader_names(smartcard->log, "ListReadersW redirected", redirected, cchReaders);
++		free(redirected);
++	}
+ 	ret.msz = mszReaders.pb;
+ 	ret.cBytes = cchReaders * sizeof(WCHAR);
+ 	status = smartcard_pack_list_readers_return(out, &ret, TRUE);
