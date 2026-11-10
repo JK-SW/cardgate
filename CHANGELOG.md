@@ -6,6 +6,10 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-10
+
+Security hardening after an audit, cards with several certificates, faster card check.
+
 ### Security
 - A PIN rejected by the card is never offered to it again by the same connection (reconnects or
   protocol fallbacks) and is removed from memory.
