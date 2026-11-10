@@ -174,7 +174,7 @@ final class SessionController {
         switch (pinOutcome, phase) {
         case (.cancelled?, .ended(.failed)?):
             phase = .ended(.closedByUser)  // the user cancelled the PIN dialog
-        case (.timedOut?, .ended(.failed)?):
+        case (.timedOut?, .ended?):
             phase = .ended(.failed(.pinTimedOut))
         default:
             break

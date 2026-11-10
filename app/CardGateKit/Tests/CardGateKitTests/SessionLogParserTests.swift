@@ -26,6 +26,8 @@ enum Log {
     static let transportFailed = line(
         "ERROR", "com.freerdp.core",
         "[rdp_client_wait_for_activation]: ERRCONNECT_CONNECT_TRANSPORT_FAILED [0x0002000D]")
+    static let promptCancelled = line(
+        "INFO", "com.freerdp.client.sdl", "[sdl_authenticate_ex]: Credential prompt cancelled, aborting")
     static let noise = line("WARN", "com.freerdp.codec.nsc.neon", "[nsc_init_neon_int]: TODO: Implement neon")
 }
 
@@ -47,6 +49,14 @@ struct SessionLogParserTests {
         parser.consume(Log.gdiInit)
         parser.consume(Log.cancelled)
         #expect(parser.phase == .ended(.closedByUser))
+    }
+
+    @Test func cancelledPINDialogEndsWithoutError() {
+        var parser = SessionLogParser()
+        parser.consume(Log.promptCancelled)
+        parser.consume(
+            Log.line("ERROR", "com.freerdp.core.gateway.rdg", "[rdg_connect]: ERRCONNECT_AUTHENTICATION_FAILED"))
+        #expect(parser.processExited(status: 1) == .ended(.closedByUser))
     }
 
     @Test func missingCertificate() {

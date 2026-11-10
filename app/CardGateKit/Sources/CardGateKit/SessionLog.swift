@@ -84,6 +84,7 @@ public struct SessionLogParser: Sendable {
         "certificate not trusted",
         "inner TLS certificate differs",
         "Network disconnect!",
+        "Credential prompt cancelled",
     ]
 
     private mutating func nextPhase(for line: String) -> SessionPhase? {
@@ -95,6 +96,10 @@ public struct SessionLogParser: Sendable {
         }
         if line.contains("[gdi_init_ex]") || line.contains("registered [smartcard] device") {
             return .connected
+        }
+        // The user cancelled the PIN dialog (or it timed out): the client gives up (patched FreeRDP).
+        if line.contains("Credential prompt cancelled") {
+            return .ended(.closedByUser)
         }
         if let failure = Self.failure(in: line) {
             self.failure = self.failure ?? failure

@@ -1,0 +1,17 @@
+--- a/client/SDL/SDL3/dialogs/sdl_dialogs.cpp
++++ b/client/SDL/SDL3/dialogs/sdl_dialogs.cpp
+@@ -147,6 +147,14 @@
+ 			                              fromStdin);
+ 		if (env)
+ 			p = _strdup(env);
++		// NOLINTNEXTLINE(concurrency-mt-unsafe)
++		else if (getenv("FREERDP_ASKPASS"))
++		{
++			/* The askpass program is the only prompt: when it is cancelled (or times out) the
++			 * connection attempt ends instead of falling back to the built-in dialog. */
++			WLog_Print(sdl->getWLog(), WLOG_INFO, "Credential prompt cancelled, aborting");
++			return FALSE;
++		}
+ 
+ 		*password = p;
+ 		if (p)
