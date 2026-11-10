@@ -57,3 +57,4 @@ a písmenom (napr. **Enter** = celá obrazovka).
 
 Podrobnosti nájdete v menu **Okno → Záznam pripojenia**; tlačidlom **Kopírovať záznam** ho môžete
 poslať IT oddeleniu. Záznam neobsahuje PIN.
+Záznamy posledných piatich pripojení sú aj v priečinku `~/Library/Logs/CardGate`.

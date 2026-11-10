@@ -55,3 +55,4 @@ Client hotkeys use **left Control + left Option + left Shift** plus a key (e.g. 
 
 Details are in **Window → Connection Log**; **Copy Log** lets you send it to your IT department.
 The log never contains the PIN.
+The logs of the last five connections are also in the folder `~/Library/Logs/CardGate`.

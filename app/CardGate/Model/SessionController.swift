@@ -13,11 +13,9 @@ final class SessionController {
     private(set) var log: [String] = []
 
     private var process: Process?
-    /// The last session's log is also kept in a file for support (never contains the PIN).
+    /// The last sessions' logs are also kept in files for support (never contain the PIN).
     private var logFile: FileHandle?
-    static var logFileURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Logs/CardGate/last-session.log")
-    }
+    static let logFiles = SessionLogFiles.standard
     private var parser = SessionLogParser()
     private static let maxLogLines = 5000
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "session")
@@ -183,9 +181,6 @@ final class SessionController {
     }
 
     private static func openLogFile() -> FileHandle? {
-        let url = logFileURL
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        guard FileManager.default.createFile(atPath: url.path(percentEncoded: false), contents: nil) else { return nil }
-        return try? FileHandle(forWritingTo: url)
+        try? logFiles.startNew()
     }
 }
