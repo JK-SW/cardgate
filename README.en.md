@@ -53,4 +53,10 @@ CardGate is free. If it helps you, you can support the author on
 
 Apache License 2.0, see [LICENSE](LICENSE). Bundled third-party components keep
 their own licenses (FreeRDP – Apache 2.0, OpenSSL – Apache 2.0, SDL and
-SDL_ttf – zlib, FreeType – FreeType License, cJSON – MIT).
+SDL_ttf – zlib, FreeType – FreeType License, cJSON and Sparkle – MIT).
+
+## AI assistance
+
+CardGate was developed with the help of AI (Claude by Anthropic), which assisted with design,
+code, tests and documentation. The author directed the development, decided on the changes and
+tested the app with a real smart card.
