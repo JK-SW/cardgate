@@ -22,32 +22,87 @@ final class SessionController {
     private static let maxLogLines = 5000
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "session")
 
-    var isRunning: Bool { process != nil }
+    /// The gateway is being checked before the client starts.
+    private var preflight: Task<Void, Never>?
+    /// How the PIN dialog of the current session ended, if it did not deliver a PIN.
+    private var pinOutcome: PINPrompt.Event?
+
+    var isRunning: Bool { process != nil || preflight != nil }
 
     init() {
         let center = DistributedNotificationCenter.default()
-        for (name, shown) in [(PINPrompt.shownNotification, true), (PINPrompt.closedNotification, false)] {
+        for event in PINPrompt.Event.allCases {
             let handler: @Sendable (Notification) -> Void = { [weak self] _ in
-                Task { @MainActor in self?.pinPrompt(shown: shown) }
+                Task { @MainActor in self?.pinPrompt(event) }
             }
-            center.addObserver(forName: name, object: nil, queue: .main, using: handler)
+            center.addObserver(forName: event.notification, object: nil, queue: .main, using: handler)
         }
     }
 
-    /// The PIN dialog runs in its own process and reports when it opens and closes.
-    private func pinPrompt(shown: Bool) {
-        guard isRunning else { return }
-        switch (shown, phase) {
-        case (true, .starting?), (true, .authenticatingGateway?):
+    /// The PIN dialog runs in its own process and reports what happens to it.
+    private func pinPrompt(_ event: PINPrompt.Event) {
+        guard process != nil else { return }
+        switch (event, phase) {
+        case (.shown, .starting?), (.shown, .authenticatingGateway?):
             phase = .waitingForPIN
-        case (false, .waitingForPIN?):
+        case (.submitted, .waitingForPIN?):
             phase = .authenticatingGateway
+        case (.cancelled, _), (.timedOut, _):
+            pinOutcome = event
         default:
             break
         }
     }
 
-    func start(_ command: FreeRDPCommand) throws {
+    /// Checks the gateway with the system's certificate trust (keychain, revocation) and starts
+    /// the client only if it is trusted, so a bad certificate never reaches the card.
+    func connect(_ command: FreeRDPCommand, gateway: HostAddress?) {
+        guard !isRunning else { return }
+        log.removeAll()
+        phase = .starting
+        guard let gateway, let url = GatewayCheckResult.url(for: gateway) else {
+            launch(command)
+            return
+        }
+        preflight = Task { [weak self] in
+            let result = await Self.check(url)
+            guard let self, !Task.isCancelled else { return }
+            self.preflight = nil
+            self.logger.info("Gateway check \(url, privacy: .public): \(String(describing: result), privacy: .public)")
+            switch result {
+            case .untrusted:
+                self.phase = .ended(.failed(.untrustedCertificate))
+            case .unreachable:
+                self.phase = .ended(.failed(.gatewayUnreachable))
+            case .trusted, .unknown:
+                self.launch(command)
+            }
+        }
+    }
+
+    nonisolated private static func check(_ url: URL) async -> GatewayCheckResult {
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+        request.httpMethod = "HEAD"
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.finishTasksAndInvalidate() }
+        do {
+            _ = try await session.data(for: request)
+            return GatewayCheckResult(error: nil)
+        } catch {
+            return GatewayCheckResult(error: error)
+        }
+    }
+
+    private func launch(_ command: FreeRDPCommand) {
+        do {
+            try start(command)
+        } catch {
+            logger.error("Cannot start client: \(error.localizedDescription, privacy: .public)")
+            phase = .ended(.failed(.other(error.localizedDescription)))
+        }
+    }
+
+    private func start(_ command: FreeRDPCommand) throws {
         guard process == nil else { return }
 
         let process = Process()
@@ -69,9 +124,8 @@ final class SessionController {
         }
 
         parser = SessionLogParser()
-        log.removeAll()
+        pinOutcome = nil
         logFile = Self.openLogFile()
-        phase = .starting
         logger.info("Starting client: \(command.arguments.joined(separator: " "), privacy: .public)")
         try process.run()
         self.process = process
@@ -95,8 +149,13 @@ final class SessionController {
         if process == nil, case .ended = phase { phase = nil }
     }
 
-    /// Asks the client to disconnect and quit.
+    /// Asks the client to disconnect and quit (or cancels the gateway check).
     func stop() {
+        if let preflight {
+            preflight.cancel()
+            self.preflight = nil
+            phase = .ended(.closedByUser)
+        }
         process?.terminate()
     }
 
@@ -112,6 +171,14 @@ final class SessionController {
         try? logFile?.close()
         logFile = nil
         phase = parser.processExited(status: status)
+        switch (pinOutcome, phase) {
+        case (.cancelled?, .ended(.failed)?):
+            phase = .ended(.closedByUser)  // the user cancelled the PIN dialog
+        case (.timedOut?, .ended(.failed)?):
+            phase = .ended(.failed(.pinTimedOut))
+        default:
+            break
+        }
         logger.info("Client exited with status \(status)")
     }
 

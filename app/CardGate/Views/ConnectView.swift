@@ -98,7 +98,10 @@ struct ReadinessView: View {
 
     var body: some View {
         Group {
-            if model.middleware == nil {
+            if model.moduleUntrusted {
+                Label("The smart card module is not signed and was not loaded.", systemImage: "xmark.shield.fill")
+                    .foregroundStyle(.red)
+            } else if model.middleware == nil {
                 VStack(spacing: 6) {
                     Label("No smart card software found", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
@@ -113,6 +116,15 @@ struct ReadinessView: View {
                     Text("Remove the card or token and insert it again.")
                         .foregroundStyle(.secondary)
                 }
+            } else if model.isCheckingCardFirstTime {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Checking the card…")
+                }
+                .foregroundStyle(.secondary)
+            } else if CardCertificate.isAmbiguous(model.cards.certificates) {
+                Label("The card has several sign-in certificates", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
             } else if let certificate = model.cards.signInCertificate {
                 HStack(spacing: 8) {
                     Label {
@@ -200,6 +212,8 @@ private struct FailureView: View {
         case .gatewayUnreachable: "The gateway cannot be reached"
         case .gatewayDenied: "The gateway refused the sign-in"
         case .untrustedCertificate: "The gateway's certificate is not trusted"
+        case .multipleCertificates: "The card has several sign-in certificates"
+        case .pinTimedOut: "The PIN was not entered in time"
         case .computerUnreachable: "The computer cannot be reached"
         case .other: "The connection failed"
         }
@@ -222,6 +236,13 @@ private struct FailureView: View {
             The connection was stopped for your safety. Check the gateway address; if it is correct, \
             contact your IT department.
             """
+        case .multipleCertificates:
+            """
+            CardGate cannot choose between them yet. Use a card with one sign-in certificate or contact \
+            your IT department.
+            """
+        case .pinTimedOut:
+            "The gateway does not wait long for the PIN. Click Connect and enter the PIN right away."
         case .computerUnreachable:
             "The computer may be turned off or the address is wrong. Contact your IT department if it persists."
         case .other(let code):

@@ -22,11 +22,13 @@ enum Main {
 
 struct CardGateApp: App {
     @State private var model = AppModel()
+    @NSApplicationDelegateAdaptor private var delegate: AppDelegate
 
     var body: some Scene {
         Window("CardGate", id: WindowID.main) {
             ContentView()
                 .environment(model)
+                .onAppear { delegate.model = model }
                 .frame(width: 440)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -76,5 +78,24 @@ private struct OpenWindowButton: View {
 
     var body: some View {
         Button(title) { openWindow(id: id) }
+    }
+}
+
+/// Asks before quitting while a connection is open, and ends that connection then – a client
+/// left running without the app would have no status, log or PIN dialog guard.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    weak var model: AppModel?
+
+    func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {
+        guard let session = model?.session, session.isRunning else { return .terminateNow }
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Quit CardGate and disconnect?")
+        alert.informativeText = String(localized: "The remote desktop connection will be closed.")
+        alert.addButton(withTitle: String(localized: "Quit and Disconnect"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return .terminateCancel }
+        session.stop()
+        return .terminateNow
     }
 }

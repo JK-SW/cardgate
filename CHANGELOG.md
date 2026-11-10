@@ -12,6 +12,21 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 - The PIN dialog ignores typing in the first moment after it appears (keystrokes meant for another
   app), sends only PINs of the length the card accepts, and shows warnings from the card: a wrong
   PIN was entered before, last attempt, or card locked.
+- The gateway's certificate is checked with the macOS trust evaluation (keychain, revocation)
+  before the client starts; the smart card sign-in additionally requires the gateway to present
+  the same certificate inside the tunnel.
+- Only validly code signed PKCS#11 modules are loaded.
+- Release downloads come with SHA-256 checksums; CI actions are pinned to commits.
+
+### Added
+- IPv6 addresses (in brackets) for computer and gateway.
+- Clear messages when the PIN was not entered in time (the dialog gives up after 2 minutes) or the
+  card has several sign-in certificates; cancelling the PIN dialog simply ends the attempt.
+- Quitting CardGate with an open connection asks first and disconnects.
+
+### Fixed
+- The PIN dialog closes when its connection ends.
+- Connect is enabled only after the first check of a newly inserted card.
 
 ## [0.1.0] - 2026-11-09
 

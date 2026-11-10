@@ -14,7 +14,7 @@ jobs:
   release:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -33,7 +33,7 @@ jobs:
 
       - name: Restore dependency build
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: build/prefix
           key: deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/deps.lock', 'scripts/common.sh', 'scripts/build-deps.sh', 'patches/**/*.patch') }}
@@ -53,5 +53,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "v$VERSION" "build/dist/CardGate-$VERSION.zip" \
-            --title "CardGate $VERSION" --notes-file release-notes.md --target "$GITHUB_SHA"
+          cd build/dist
+          shasum -a 256 "CardGate-$VERSION.zip" > SHA256SUMS.txt
+          { cat ../../release-notes.md; printf '\n### SHA-256\n```\n'; cat SHA256SUMS.txt; printf '```\n'; } > notes.md
+          gh release create "v$VERSION" "CardGate-$VERSION.zip" SHA256SUMS.txt \
+            --title "CardGate $VERSION" --notes-file notes.md --target "$GITHUB_SHA"

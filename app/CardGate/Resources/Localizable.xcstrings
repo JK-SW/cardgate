@@ -132,6 +132,22 @@
     "CardGate": {
       "shouldTranslate": false
     },
+    "CardGate cannot choose between them yet. Use a card with one sign-in certificate or contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate zatím neumí vybrat, který použít. Použijte kartu s jedním přihlašovacím certifikátem nebo kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate zatiaľ nevie vybrať, ktorý použiť. Použite kartu s jedným prihlasovacím certifikátom alebo kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
     "Check your internet connection and the gateway address in the connection settings.": {
       "localizations": {
         "cs": {
@@ -948,6 +964,38 @@
         }
       }
     },
+    "Quit CardGate and disconnect?": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukončit CardGate a odpojit?"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukončiť CardGate a odpojiť?"
+          }
+        }
+      }
+    },
+    "Quit and Disconnect": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukončit a odpojit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukončiť a odpojiť"
+          }
+        }
+      }
+    },
     "Remote desktop through an RD Gateway with smart card sign-in.": {
       "localizations": {
         "cs": {
@@ -1204,6 +1252,22 @@
         }
       }
     },
+    "The PIN was not entered in time": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN nebyl zadán včas"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN nebol zadaný včas"
+          }
+        }
+      }
+    },
     "The application is incomplete. Download and install it again.": {
       "localizations": {
         "cs": {
@@ -1216,6 +1280,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aplikácia je neúplná. Stiahnite ju a nainštalujte znova."
+          }
+        }
+      }
+    },
+    "The card has several sign-in certificates": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta má několik přihlašovacích certifikátů"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta má niekoľko prihlasovacích certifikátov"
           }
         }
       }
@@ -1380,6 +1460,22 @@
         }
       }
     },
+    "The gateway does not wait long for the PIN. Click Connect and enter the PIN right away.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána na PIN dlouho nečeká. Klikněte na Připojit a PIN zadejte hned."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána na PIN dlho nečaká. Kliknite na Pripojiť a PIN zadajte hneď."
+          }
+        }
+      }
+    },
     "The gateway refused the sign-in": {
       "localizations": {
         "cs": {
@@ -1488,6 +1584,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Klienta vzdialenej plochy nie je možné spustiť"
+          }
+        }
+      }
+    },
+    "The remote desktop connection will be closed.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení ke vzdálené ploše se ukončí."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie k vzdialenej ploche sa ukončí."
+          }
+        }
+      }
+    },
+    "The smart card module is not signed and was not loaded.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul pro čipovou kartu není podepsaný, a proto nebyl načten."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul pre čipovú kartu nie je podpísaný, a preto nebol načítaný."
           }
         }
       }

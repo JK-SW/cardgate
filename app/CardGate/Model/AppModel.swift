@@ -3,6 +3,7 @@ import CardGateKit
 import Foundation
 import OSLog
 import Observation
+import Security
 
 /// State of the whole app: profiles, the profile being edited and the running session.
 @MainActor
@@ -41,8 +42,15 @@ final class AppModel {
 
     /// Everything needed to connect is in place.
     var isReadyToConnect: Bool {
-        middleware != nil && cards.signInCertificate != nil && !session.isRunning && !cardNeedsReinsert
+        middleware != nil && !moduleUntrusted && cards.signInCertificate != nil && !session.isRunning
+            && !cardNeedsReinsert && !isCheckingCardFirstTime
     }
+
+    /// The card has not been checked through PKCS#11 yet (first seconds after inserting it).
+    var isCheckingCardFirstTime: Bool { cards.pkcs11State == nil && cards.isChecking }
+
+    /// The configured PKCS#11 module is not validly code signed and is therefore not loaded.
+    private(set) var moduleUntrusted = false
 
     /// The system lists the card but the middleware's PKCS#11 module does not see it.
     var cardNeedsReinsert: Bool {
@@ -123,7 +131,10 @@ final class AppModel {
     // MARK: - Middleware and connection
 
     func refreshMiddleware() {
-        let module = locator.resolve(configured: selectedProfile?.pkcs11Module)
+        var module = locator.resolve(configured: selectedProfile?.pkcs11Module)
+        // The module is loaded into the client: accept only intact, signed code.
+        moduleUntrusted = module.map { !CodeSignature.isValid(atPath: $0) } ?? false
+        if moduleUntrusted { module = nil }
         middleware =
             locator.installed.first { $0.modulePath == module }
             ?? module.map { .init(name: URL(filePath: $0).lastPathComponent, modulePath: $0, downloadURL: nil) }
@@ -148,7 +159,7 @@ final class AppModel {
             let command = try FreeRDPCommand(
                 executable: executable, profile: profile, pkcs11Module: module,
                 config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current)
-            try session.start(command)
+            session.connect(command, gateway: profile.gateway)
         } catch {
             logger.error("Cannot start client: \(error, privacy: .public)")
             alert = .clientMissing
@@ -173,5 +184,16 @@ extension ScreenMetrics {
         let frame = screen.visibleFrame
         return ScreenMetrics(
             visibleSize: .init(width: Int(frame.width), height: Int(frame.height)), scale: screen.backingScaleFactor)
+    }
+}
+
+/// Code signature check of libraries loaded into the RDP client (PKCS#11 modules).
+enum CodeSignature {
+    static func isValid(atPath path: String) -> Bool {
+        var code: SecStaticCode?
+        guard SecStaticCodeCreateWithPath(URL(filePath: path) as CFURL, [], &code) == errSecSuccess, let code
+        else { return false }
+        return SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSCheckAllArchitectures), nil)
+            == errSecSuccess
     }
 }

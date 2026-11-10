@@ -22,14 +22,30 @@ enum PINPrompt {
             arguments: [argument, moduleArgument, module])
     }
 
-    /// Posted (as distributed notifications, without any data) so the app can show that the
-    /// dialog is waiting for the PIN.
-    nonisolated static let shownNotification = Notification.Name("io.github.jk-sw.cardgate.pin-prompt.shown")
-    nonisolated static let closedNotification = Notification.Name("io.github.jk-sw.cardgate.pin-prompt.closed")
+    /// Without a PIN for this long the dialog gives up (the gateway closes idle connections).
+    static let timeout: Duration = .seconds(120)
 
-    private static func post(_ name: Notification.Name) {
+    /// What happens to the dialog; posted as distributed notifications without any data so the
+    /// app can show the right status.
+    enum Event: String, CaseIterable, Sendable {
+        case shown, submitted, cancelled, timedOut
+
+        nonisolated var notification: Notification.Name {
+            Notification.Name("io.github.jk-sw.cardgate.pin-prompt.\(rawValue)")
+        }
+    }
+
+    private static func post(_ event: Event) {
         DistributedNotificationCenter.default().postNotificationName(
-            name, object: nil, userInfo: nil, deliverImmediately: true)
+            event.notification, object: nil, userInfo: nil, deliverImmediately: true)
+    }
+
+    /// Closes the dialog when the RDP client that asked for the PIN goes away (disconnect, crash).
+    private static func exitWithParent() -> any DispatchSourceProcess {
+        let source = DispatchSource.makeProcessSource(identifier: getppid(), eventMask: .exit, queue: .main)
+        source.setEventHandler { exit(1) }
+        source.resume()
+        return source
     }
 
     /// - Parameter arguments: the arguments after `--askpass`.
@@ -44,6 +60,7 @@ enum PINPrompt {
 
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
+        let parentWatch = exitWithParent()
 
         let model = PINPromptModel(host: AskPassCommand.host(fromPrompt: prompt))
         var pin: String?
@@ -62,11 +79,26 @@ enum PINPrompt {
         app.activate()
         window.makeKeyAndOrderFront(nil)
         model.start(module: module)
-        post(shownNotification)
+        var timedOut = false
+        let timer = Task {
+            try? await Task.sleep(for: timeout)
+            timedOut = true
+            app.stopModal()
+        }
+        post(.shown)
         app.runModal(for: window)
-        post(closedNotification)
+        timer.cancel()
+        parentWatch.cancel()
 
-        guard let pin, model.policy.accepts(pin) else { exit(1) }
+        guard !timedOut else {
+            post(.timedOut)
+            exit(1)
+        }
+        guard let pin, model.policy.accepts(pin) else {
+            post(.cancelled)
+            exit(1)
+        }
+        post(.submitted)
         FileHandle.standardOutput.write(Data((pin + "\n").utf8))
         exit(0)
     }
