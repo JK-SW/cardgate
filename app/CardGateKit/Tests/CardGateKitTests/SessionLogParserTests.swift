@@ -71,6 +71,22 @@ struct SessionLogParserTests {
         #expect(parser.processExited(status: 1) == .ended(.failed(.untrustedCertificate)))
     }
 
+    @Test func multipleCertificatesAndInnerCertificateMismatch() {
+        var parser = SessionLogParser()
+        parser.consume(
+            Log.line(
+                "ERROR", "com.freerdp.smartcardlogon",
+                "[smartcard_getCert]: more than one suitable smartcard certificate was found"))
+        #expect(parser.processExited(status: 1) == .ended(.failed(.multipleCertificates)))
+
+        var mismatch = SessionLogParser()
+        mismatch.consume(
+            Log.line(
+                "ERROR", "com.freerdp.core.gateway.rdg_sc",
+                "[sc_verify_peer]: inner TLS certificate differs from the RD Gateway certificate, aborting"))
+        #expect(mismatch.processExited(status: 1) == .ended(.failed(.untrustedCertificate)))
+    }
+
     @Test func computerUnreachableAfterGateway() {
         var parser = SessionLogParser()
         parser.consume(Log.cardReady)

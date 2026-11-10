@@ -26,6 +26,22 @@ struct HostAddressTests {
         #expect(throws: (any Error).self) { try HostAddress(parsing: text) }
     }
 
+    @Test(arguments: [
+        ("[2001:db8::1]", "2001:db8::1", UInt16?.none), ("[::1]:3390", "::1", 3390), ("[FE80::A]", "fe80::a", nil),
+    ])
+    func acceptsBracketedIPv6(_ text: String, _ host: String, _ port: UInt16?) throws {
+        let address = try HostAddress(parsing: text)
+        #expect(address.isIPv6)
+        #expect(address.host == host)
+        #expect(address.port == port)
+        #expect(try HostAddress(parsing: address.description) == address)
+    }
+
+    @Test(arguments: ["[2001:db8::1", "[not-an-address]", "[::1]x", "[::1]:", "2001:db8::1", "[::1],x"])
+    func rejectsMalformedIPv6(_ text: String) {
+        #expect(throws: (any Error).self) { try HostAddress(parsing: text) }
+    }
+
     @Test func rejectsEmpty() {
         #expect(throws: HostAddress.ParseError.empty) { try HostAddress(parsing: "   ") }
     }

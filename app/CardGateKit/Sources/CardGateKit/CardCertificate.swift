@@ -32,4 +32,9 @@ public struct CardCertificate: Equatable, Sendable, Identifiable {
         certificates.first { $0.extendedKeyUsages.contains(smartCardLogonOID) }
             ?? certificates.first(where: \.canSignIn)
     }
+
+    /// More than one smart card logon certificate: the RDP client cannot pick one by itself.
+    public static func isAmbiguous(_ certificates: [CardCertificate]) -> Bool {
+        certificates.filter { $0.extendedKeyUsages.contains(smartCardLogonOID) }.count > 1
+    }
 }

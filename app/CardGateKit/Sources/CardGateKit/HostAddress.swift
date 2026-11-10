@@ -1,13 +1,16 @@
 import Foundation
 
-/// A network endpoint given as `host` or `host:port`.
+/// A network endpoint given as `host`, `host:port`, `[ipv6]` or `[ipv6]:port`.
 ///
 /// Values end up inside FreeRDP command line options (some of them comma separated sub-options),
-/// so only plain DNS names and IPv4 addresses are accepted: no spaces, commas, colons in the host
-/// part or other characters that could change the meaning of an option.
+/// so only plain ASCII DNS names, IPv4 and bracketed IPv6 addresses are accepted: no spaces, commas
+/// or other characters that could change the meaning of an option. Internationalized domain names
+/// have to be entered in their ASCII (punycode, `xn--…`) form.
 public struct HostAddress: Equatable, Hashable, Sendable, CustomStringConvertible {
     public let host: String
     public let port: UInt16?
+    /// `host` is an IPv6 address (written in brackets).
+    public let isIPv6: Bool
 
     public enum ParseError: Error, Equatable, Sendable {
         case empty
@@ -18,8 +21,14 @@ public struct HostAddress: Equatable, Hashable, Sendable, CustomStringConvertibl
     public init(host: String, port: UInt16? = nil) throws(ParseError) {
         let host = host.trimmingCharacters(in: .whitespaces)
         guard !host.isEmpty else { throw .empty }
-        guard Self.isValidHost(host) else { throw .invalidHost }
         if let port, port == 0 { throw .invalidPort }
+        if Self.isValidHost(host) {
+            isIPv6 = false
+        } else if Self.isIPv6(host) {
+            isIPv6 = true
+        } else {
+            throw .invalidHost
+        }
         self.host = host.lowercased()
         self.port = port
     }
@@ -28,6 +37,19 @@ public struct HostAddress: Equatable, Hashable, Sendable, CustomStringConvertibl
     public init(parsing text: String) throws(ParseError) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { throw .empty }
+        if text.hasPrefix("[") {
+            guard let close = text.firstIndex(of: "]") else { throw .invalidHost }
+            let address = String(text[text.index(after: text.startIndex)..<close])
+            let rest = text[text.index(after: close)...]
+            guard Self.isIPv6(address) else { throw .invalidHost }
+            if rest.isEmpty {
+                try self.init(host: address)
+            } else {
+                guard rest.hasPrefix(":"), let port = UInt16(rest.dropFirst()) else { throw .invalidPort }
+                try self.init(host: address, port: port)
+            }
+            return
+        }
         let parts = text.split(separator: ":", omittingEmptySubsequences: false)
         switch parts.count {
         case 1:
@@ -41,7 +63,13 @@ public struct HostAddress: Equatable, Hashable, Sendable, CustomStringConvertibl
     }
 
     public var description: String {
-        port.map { "\(host):\($0)" } ?? host
+        let host = isIPv6 ? "[\(self.host)]" : self.host
+        return port.map { "\(host):\($0)" } ?? host
+    }
+
+    static func isIPv6(_ text: String) -> Bool {
+        var address = in6_addr()
+        return text.utf8.allSatisfy { $0 < 0x80 } && inet_pton(AF_INET6, text, &address) == 1
     }
 
     static func isValidHost(_ host: String) -> Bool {

@@ -22,4 +22,10 @@ struct CardCertificateTests {
         #expect(CardCertificate.signInCertificate(in: [signing]) == nil)
         #expect(CardCertificate.signInCertificate(in: []) == nil)
     }
+
+    @Test func ambiguousLogonCertificates() {
+        #expect(!CardCertificate.isAmbiguous([signing, client, logon]))
+        #expect(CardCertificate.isAmbiguous([logon, logon]))
+        #expect(!CardCertificate.isAmbiguous([]))
+    }
 }
