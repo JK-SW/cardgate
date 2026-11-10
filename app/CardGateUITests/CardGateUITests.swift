@@ -56,8 +56,8 @@ final class CardGateUITests: XCTestCase {
 
         let picker = app.popUpButtons["Connection"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Edit Connection"].isHittable)
-        XCTAssertTrue(app.descendants(matching: .any)["More"].firstMatch.isHittable)
+        XCTAssertTrue(app.buttons["toolbar.edit"].isHittable)
+        XCTAssertTrue(app.menuButtons["toolbar.more"].isHittable)
 
         picker.click()
         app.menuItems["Office"].click()
@@ -70,7 +70,7 @@ final class CardGateUITests: XCTestCase {
         app.buttons["Set Up Connection"].click()
         addConnection(app, name: "Office", computer: "pc01.example.com")
 
-        app.buttons["Edit Connection"].click()
+        app.buttons["toolbar.edit"].click()
         let name = app.textFields["profile.name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.click()
@@ -79,10 +79,11 @@ final class CardGateUITests: XCTestCase {
         app.buttons["Save"].click()
         XCTAssertTrue(app.staticTexts["Home Office"].waitForExistence(timeout: 5))
 
-        app.buttons["Edit Connection"].click()
+        app.buttons["toolbar.edit"].click()
         XCTAssertTrue(app.buttons["Delete Connection…"].waitForExistence(timeout: 5))
         app.buttons["Delete Connection…"].click()
-        app.buttons["Delete"].firstMatch.click()
+        // Only in the app's windows: CI runners also show the button on a virtual Touch Bar.
+        app.windows.buttons["Delete"].firstMatch.click()
         XCTAssertTrue(app.staticTexts["Welcome to CardGate"].waitForExistence(timeout: 5))
     }
 
@@ -183,7 +184,7 @@ final class CardGateUITests: XCTestCase {
         audio.click()
         addConnection(app, name: "Office", computer: "pc01.example.com")
 
-        app.buttons["Edit Connection"].click()
+        app.buttons["toolbar.edit"].click()
         XCTAssertTrue(clipboard.waitForExistence(timeout: 5))
         XCTAssertEqual(clipboard.value as? Int, 0)
         XCTAssertEqual(audio.value as? Int, 0)
@@ -193,7 +194,7 @@ final class CardGateUITests: XCTestCase {
         let app = launch()
         openNewConnection(app)
         addConnection(app, name: "Office", computer: "pc01.example.com")
-        app.buttons["Edit Connection"].click()
+        app.buttons["toolbar.edit"].click()
         let computer = app.textFields["profile.computer"]
         XCTAssertTrue(computer.waitForExistence(timeout: 5))
         computer.click()
@@ -274,7 +275,7 @@ final class CardGateUITests: XCTestCase {
         XCTAssertTrue(file.menuItems["Import .rdp File…"].isEnabled)
         app.typeKey(.escape, modifierFlags: [])
 
-        let more = app.descendants(matching: .any)["More"].firstMatch
+        let more = app.menuButtons["toolbar.more"]
         more.click()
         for item in ["New Connection…", "Import .rdp File…", "Keyboard Shortcuts", "Connection Log"] {
             XCTAssertTrue(app.menuItems[item].firstMatch.exists, "More menu offers \(item)")
