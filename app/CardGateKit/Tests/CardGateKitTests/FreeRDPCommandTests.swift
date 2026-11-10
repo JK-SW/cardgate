@@ -3,7 +3,8 @@ import Foundation
 import Testing
 
 struct FreeRDPCommandTests {
-    let client = URL(filePath: "/Applications/CardGate.app/Contents/Helpers/sdl-freerdp")
+    let client = URL(filePath: "/Applications/CardGate.app/Contents")
+        .appending(path: FreeRDPCommand.bundledClientPath)
     let module = "/usr/local/lib/middleware/pkcs11.dylib"
     let config = FreeRDPClientConfig(
         directory: URL(filePath: "/Users/test/Library/Application Support/CardGate/FreeRDP"))
@@ -31,6 +32,7 @@ struct FreeRDPCommandTests {
         #expect(
             command.arguments == [
                 "/v:pc01.corp.example",
+                "/title:Office – CardGate",
                 "/gateway:g:rdg.example.com,type:http,usage-method:direct,auth:smartcard",
                 "/smartcard-logon",
                 "/kerberos:pkcs11-module:\(module)",
@@ -46,8 +48,15 @@ struct FreeRDPCommandTests {
             ])
         #expect(
             command.environment == [
-                "XDG_CONFIG_HOME": "/Users/test/Library/Application Support/CardGate/FreeRDP"
+                "XDG_CONFIG_HOME": "/Users/test/Library/Application Support/CardGate/FreeRDP",
+                "SDL_MAC_BACKGROUND_APP": "1",
             ])
+    }
+
+    @Test func namesTheWindowAfterTheConnection() throws {
+        var unnamed = try profile()
+        unnamed.name = "  "
+        #expect(try command(unnamed).arguments.contains("/title:pc01.corp.example – CardGate"))
     }
 
     @Test func redirectsOnlyTheReaderWithTheCard() throws {

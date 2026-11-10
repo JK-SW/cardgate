@@ -5,6 +5,16 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Okno **CardGate → Nastavení…** s volbou automatického vyhledávání aktualizací.
+
+### Změněno
+- Vzdálená plocha už nemá v Docku vlastní ikonu („exec“) ani název „sdl-freerdp“: v Docku
+  a v přepínání ⌘Tab je jen CardGate a kliknutím na něj se vrátíte ke vzdálené ploše. Vždy je
+  vidět jedno okno: během připojení vzdálená plocha, po odpojení zase CardGate. Pravé tlačítko
+  na ikoně v Docku nabízí Odpojit.
+- Okno vzdálené plochy se jmenuje podle připojení („Kancelář – CardGate“).
+
 ## [0.3.0] - 2026-11-10
 
 První veřejná verze: aktualizace jedním kliknutím, oprava přihlášení kartou na Macu s více čtečkami,

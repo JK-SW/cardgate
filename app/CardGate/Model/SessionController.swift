@@ -1,5 +1,5 @@
+import AppKit
 import CardGateKit
-import Foundation
 import OSLog
 import Observation
 
@@ -26,6 +26,11 @@ final class SessionController {
     private var pinOutcome: PINPrompt.Event?
 
     var isRunning: Bool { process != nil || preflight != nil }
+
+    /// The running client (an agent app without a Dock icon), to bring its window forward.
+    var clientApplication: NSRunningApplication? {
+        process.flatMap { NSRunningApplication(processIdentifier: $0.processIdentifier) }
+    }
 
     /// Called when a connection reached the remote desktop and when a session ended.
     var onConnected: (() -> Void)?

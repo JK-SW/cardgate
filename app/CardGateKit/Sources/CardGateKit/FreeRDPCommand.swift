@@ -8,6 +8,11 @@ public struct FreeRDPCommand: Equatable, Sendable {
     public var arguments: [String]
     public var environment: [String: String]
 
+    /// Where the client is in the app bundle (relative to `Contents`) and in the assembled helper
+    /// (`build/helper`). It is wrapped in a small agent app (`LSUIElement`), so the Dock and the
+    /// app switcher show only CardGate; CardGate brings the session window forward itself.
+    public static let bundledClientPath = "Helpers/CardGateSession.app/Contents/MacOS/sdl-freerdp"
+
     public enum BuildError: Error, Equatable, Sendable {
         /// The PKCS#11 module path cannot be passed safely as a FreeRDP sub-option.
         case invalidModulePath
@@ -36,7 +41,9 @@ public struct FreeRDPCommand: Equatable, Sendable {
             arguments.insert("/smartcard:\(reader)", at: position)
         }
         self.environment = [
-            "XDG_CONFIG_HOME": config.directory.path(percentEncoded: false)
+            "XDG_CONFIG_HOME": config.directory.path(percentEncoded: false),
+            // SDL would otherwise make the client a regular app with its own Dock icon.
+            "SDL_MAC_BACKGROUND_APP": "1",
         ]
         if let askPass {
             environment["FREERDP_ASKPASS"] = askPass.shellCommand
@@ -53,7 +60,12 @@ public struct FreeRDPCommand: Equatable, Sendable {
     }
 
     static func arguments(profile: ConnectionProfile, pkcs11Module: String, screen: ScreenMetrics?) -> [String] {
-        var args = ["/v:\(profile.computer)"]
+        let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        var args = [
+            "/v:\(profile.computer)",
+            // The window is named after the connection, not "FreeRDP: <address>".
+            "/title:\(name.isEmpty ? profile.computer.description : name) – CardGate",
+        ]
         if let gateway = profile.gateway {
             // auth:smartcard = smart card authentication to the RD Gateway (patched FreeRDP).
             args.append("/gateway:g:\(gateway),type:http,usage-method:direct,auth:smartcard")

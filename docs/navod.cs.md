@@ -34,7 +34,10 @@ Připojení můžete mít i více – přepínáte je v horní liště okna.
 1. Vložte kartu nebo token.
 2. Klikněte na **Připojit**.
 3. Zadejte **PIN** ke kartě. Pozor: po několika chybných pokusech se karta zablokuje.
-4. Otevře se okno se vzdálenou plochou.
+4. Otevře se okno se vzdálenou plochou a okno CardGate se schová. V Docku je stále jen ikona
+   CardGate: kliknutím na ni (nebo přes ⌘Tab) se vrátíte ke vzdálené ploše. Zelené tlačítko
+   v záhlaví okna přepíná celou obrazovku. Pravým tlačítkem na ikoně v Docku zvolíte **Odpojit**.
+5. Po odpojení nebo zavření vzdálené plochy se okno CardGate zase zobrazí.
 
 Klávesové zkratky klienta (celá obrazovka, odpojení…) se používají s klávesami
 **levý Control + levý Option + levý Shift** a písmenem (např. **Enter** = celá obrazovka).
@@ -42,6 +45,7 @@ Klávesové zkratky klienta (celá obrazovka, odpojení…) se používají s kl
 ## Aktualizace
 
 Při druhém spuštění se CardGate zeptá, zda má nové verze hledat automaticky (jednou denně).
+Volbu změníte v **CardGate → Nastavení…** (⌘,).
 Ručně: menu **CardGate → Zkontrolovat aktualizace…**. Nová verze se nainstaluje jedním kliknutím;
 aplikace přijme jen aktualizaci podepsanou klíčem autora. Kontrola jen stáhne seznam verzí
 z GitHubu a nic o vás neodesílá.

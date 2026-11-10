@@ -102,12 +102,84 @@ private struct OpenWindowButton: View {
 
 /// Asks before quitting while a connection is open, and ends that connection then – a client
 /// left running without the app would have no status, log or PIN dialog guard.
+///
+/// The client runs as an agent app without a Dock icon, so CardGate stands for the connection
+/// and shows one window at a time (see `SessionWindowPolicy`).
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    weak var model: AppModel?
+    weak var model: AppModel? {
+        didSet {
+            model?.onDesktopShown = { [weak self] in self?.desktopShown() }
+            model?.onClientEnded = { [weak self] in self?.clientEnded() }
+        }
+    }
+    private var windows = SessionWindowPolicy()
+
+    private var mainWindow: NSWindow? {
+        NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.main) == true }
+    }
+
+    private func desktopShown() {
+        windows.desktopShown()
+        mainWindow?.orderOut(nil)
+        // The client never activates itself (agent app).
+        showDesktop()
+    }
+
+    private func clientEnded() {
+        guard windows.sessionEnded() else { return }
+        mainWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+    }
+
+    private func showDesktop() {
+        guard windows.isShowingDesktop, let client = model?.session.clientApplication else { return }
+        NSApp.yieldActivation(to: client)
+        client.activate()
+    }
+
+    func applicationDidBecomeActive(_: Notification) {
+        // Only an active app can hand over activation, so this waits until the activation has
+        // finished (next run loop turn).
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated { self?.forwardActivation() }
+        }
+    }
+
+    /// Dock or app switcher while connected: the user wants the remote desktop.
+    private func forwardActivation() {
+        let windowVisible = NSApp.windows.contains { $0.isVisible && ($0.canBecomeMain || $0.canBecomeKey) }
+        if windows.forwardsActivation(windowVisible: windowVisible, modalOpen: NSApp.modalWindow != nil) {
+            showDesktop()
+        }
+    }
+
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
+        switch windows.reopen(isActive: NSApp.isActive) {
+        case .standard: return true
+        case .showDesktop: showDesktop()
+        case .nothing: break
+        }
+        return false
+    }
+
+    @objc private func disconnect() {
+        model?.session.stop()
+    }
+
+    func applicationDockMenu(_: NSApplication) -> NSMenu? {
+        guard windows.isShowingDesktop else { return nil }
+        let menu = NSMenu()
+        let item = NSMenuItem(title: String(localized: "Disconnect"), action: #selector(disconnect), keyEquivalent: "")
+        item.target = self
+        menu.addItem(item)
+        return menu
+    }
 
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {
         guard let session = model?.session, session.isRunning else { return .terminateNow }
+        // E.g. Quit in the Dock menu while the remote desktop is in front.
+        NSApp.activate()
         let alert = NSAlert()
         alert.messageText = String(localized: "Quit CardGate and disconnect?")
         alert.informativeText = String(localized: "The remote desktop connection will be closed.")
