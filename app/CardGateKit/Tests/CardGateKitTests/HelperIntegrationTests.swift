@@ -12,7 +12,7 @@ struct HelperIntegrationTests {
     func clientContainsLogMarker(_ marker: String) throws {
         let directory = try #require(Self.helper)
         let binaries =
-            [directory.appending(path: "Helpers/sdl-freerdp")]
+            [directory.appending(path: FreeRDPCommand.bundledClientPath)]
             + (try FileManager.default.contentsOfDirectory(
                 at: directory.appending(path: "Frameworks"), includingPropertiesForKeys: nil))
         let needle = Data(marker.utf8)
@@ -29,7 +29,7 @@ struct HelperIntegrationTests {
             name: "x", computer: try HostAddress(parsing: "127.0.0.1:1"),
             gateway: try HostAddress(parsing: "127.0.0.1:1"), display: .init(mode: mode))
         let command = try FreeRDPCommand(
-            executable: directory.appending(path: "Helpers/sdl-freerdp"), profile: profile,
+            executable: directory.appending(path: FreeRDPCommand.bundledClientPath), profile: profile,
             pkcs11Module: "/nonexistent/module.dylib", config: config,
             screen: ScreenMetrics(visibleSize: .init(width: 1440, height: 900), scale: 2),
             smartCardReader: "Example USB Reader 0")

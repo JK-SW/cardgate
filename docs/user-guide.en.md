@@ -31,12 +31,17 @@ Gateway that requires smart card (or token) sign-in.
 1. Insert your card or token.
 2. Click **Connect**.
 3. Enter the **PIN** of your card. Several wrong attempts lock the card.
+4. The remote desktop opens and the CardGate window hides. The Dock still shows only CardGate:
+   click it (or use ⌘Tab) to return to the remote desktop. The green button in the window's title
+   bar switches full screen. Right-click the Dock icon for **Disconnect**.
+5. When you disconnect or close the remote desktop, the CardGate window comes back.
 
 Client hotkeys use **left Control + left Option + left Shift** plus a key (e.g. **Return** = full screen).
 
 ## Updates
 
 On its second launch CardGate asks whether to look for new versions automatically (once a day).
+Change it in **CardGate → Settings…** (⌘,).
 Manually: **CardGate → Check for Updates…**. A new version installs with one click; the app only
 accepts updates signed with the author's key. A check only downloads the list of versions from
 GitHub and sends nothing about you.

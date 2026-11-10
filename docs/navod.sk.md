@@ -32,6 +32,10 @@ ktorá vyžaduje prihlásenie čipovou kartou alebo tokenom.
 1. Vložte kartu alebo token.
 2. Kliknite na **Pripojiť**.
 3. Zadajte **PIN** ku karte. Pozor: po niekoľkých chybných pokusoch sa karta zablokuje.
+4. Otvorí sa okno so vzdialenou plochou a okno CardGate sa skryje. V Docku je stále len ikona
+   CardGate: kliknutím na ňu (alebo cez ⌘Tab) sa vrátite k vzdialenej ploche. Zelené tlačidlo
+   v záhlaví okna prepína celú obrazovku. Pravým tlačidlom na ikone v Docku zvolíte **Odpojiť**.
+5. Po odpojení alebo zatvorení vzdialenej plochy sa okno CardGate znova zobrazí.
 
 Klávesové skratky klienta sa používajú s klávesmi **ľavý Control + ľavý Option + ľavý Shift**
 a písmenom (napr. **Enter** = celá obrazovka).
@@ -39,6 +43,7 @@ a písmenom (napr. **Enter** = celá obrazovka).
 ## Aktualizácie
 
 Pri druhom spustení sa CardGate opýta, či má nové verzie hľadať automaticky (raz denne).
+Voľbu zmeníte v **CardGate → Nastavenia…** (⌘,).
 Ručne: menu **CardGate → Skontrolovať aktualizácie…**. Nová verzia sa nainštaluje jedným kliknutím;
 aplikácia prijme len aktualizáciu podpísanú kľúčom autora. Kontrola len stiahne zoznam verzií
 z GitHubu a nič o vás neodosiela.

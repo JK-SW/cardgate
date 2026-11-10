@@ -26,13 +26,17 @@ while IFS= read -r -d '' f; do
 done < <(find "$HELPER" -type f -print0)
 
 # The client must start and load all libraries from the helper only.
-out="$(env -i HOME="$HOME" DYLD_PRINT_LIBRARIES=1 "$HELPER/Helpers/sdl-freerdp" /version 2>&1)" || err "sdl-freerdp /version failed"
+out="$(env -i HOME="$HOME" DYLD_PRINT_LIBRARIES=1 "$HELPER/$CLIENT" /version 2>&1)" || err "sdl-freerdp /version failed"
 grep -E 'dyld.*(/opt/homebrew|/usr/local|/opt/local)' <<<"$out" && err "library loaded from a package manager path"
 grep -q 'This is FreeRDP version' <<<"$out" || err "unexpected /version output"
 # RC4/MD4 come from the OpenSSL legacy provider; without them RDP standard security fails.
 syms="$(nm "$HELPER"/Frameworks/libcrypto.*.dylib 2>/dev/null)"
 grep -q ' _ossl_legacy_provider_init$' <<<"$syms" \
   || err "OpenSSL legacy provider (RC4/MD4) is not built into libcrypto"
+
+codesign --verify --strict "$HELPER/$SESSION_APP" 2>/dev/null || err "$SESSION_APP: invalid signature"
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :LSUIElement' "$HELPER/$SESSION_APP/Contents/Info.plist")" == true ]] \
+  || err "$SESSION_APP is not an agent app (LSUIElement)"
 
 [[ $fail -eq 0 ]] || die "helper check failed"
 log "Helper check passed: $(grep -m1 'This is FreeRDP version' <<<"$out")"

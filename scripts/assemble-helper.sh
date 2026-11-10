@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Assembles a self-contained FreeRDP helper from $BUILD/prefix into $BUILD/helper, using the
 # same layout as inside the app bundle (Contents/...):
-#   Helpers/sdl-freerdp          the RDP client
+#   Helpers/CardGateSession.app  the RDP client (Contents/MacOS/sdl-freerdp) in an agent app
 #   Frameworks/*.dylib           every non-system library it needs
 # All install names are rewritten to @rpath, every file is ad-hoc signed.
 source "$(dirname "$0")/common.sh"
@@ -9,7 +9,7 @@ source "$(dirname "$0")/common.sh"
 [[ -x "$PREFIX/bin/sdl-freerdp" ]] || die "run scripts/build-deps.sh first"
 
 rm -rf "$HELPER"
-mkdir -p "$HELPER/Helpers" "$HELPER/Frameworks" "$HELPER/PlugIns"
+mkdir -p "$HELPER/$SESSION_APP/Contents/MacOS" "$HELPER/Frameworks" "$HELPER/PlugIns"
 
 is_system() { [[ "$1" == /usr/lib/* || "$1" == /System/* ]]; }
 
@@ -56,7 +56,28 @@ fix() {
 }
 
 log "Collecting files"
-cp "$PREFIX/bin/sdl-freerdp" "$HELPER/Helpers/"
+cp "$PREFIX/bin/sdl-freerdp" "$HELPER/$CLIENT"
+# LSUIElement: no Dock icon of its own (SDL keeps it with SDL_MAC_BACKGROUND_APP=1).
+VERSION="$(tr -d '[:space:]' <"$ROOT/VERSION")"
+cat >"$HELPER/$SESSION_APP/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key><string>sdl-freerdp</string>
+  <key>CFBundleIdentifier</key><string>io.github.jk-sw.cardgate.session</string>
+  <key>CFBundleName</key><string>CardGate</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleVersion</key><string>$VERSION</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>LSUIElement</key><true/>
+  <key>LSMinimumSystemVersion</key><string>$MACOSX_DEPLOYMENT_TARGET</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+PLIST
+plutil -lint -s "$HELPER/$SESSION_APP/Contents/Info.plist"
 # FreeRDP may load channel/codec plugins at runtime
 if compgen -G "$PREFIX/lib/freerdp3/*.dylib" >/dev/null; then
   mkdir -p "$HELPER/PlugIns/freerdp3"; cp -L "$PREFIX"/lib/freerdp3/*.dylib "$HELPER/PlugIns/freerdp3/"
@@ -64,13 +85,13 @@ fi
 chmod -R u+w "$HELPER"
 
 while IFS= read -r -d '' f; do copy_closure "$f"; done \
-  < <(find "$HELPER/Helpers" "$HELPER/PlugIns" -type f -print0)
+  < <(find "$HELPER/$SESSION_APP/Contents/MacOS" "$HELPER/PlugIns" -type f -print0)
 
 log "Writing third-party notices"
 "$ROOT/scripts/third-party-notices.sh" >"$HELPER/ThirdPartyNotices.txt"
 
 log "Rewriting install names"
-fix "$HELPER/Helpers/sdl-freerdp" "@executable_path/../Frameworks"
+fix "$HELPER/$CLIENT" "@executable_path/../../../../Frameworks"   # Contents/Frameworks
 for f in "$HELPER"/Frameworks/*.dylib; do fix "$f" "@loader_path"; done
 while IFS= read -r -d '' f; do
   rel="$(python3 -c 'import os,sys;print(os.path.relpath(sys.argv[1],os.path.dirname(sys.argv[2])))' \
@@ -80,7 +101,7 @@ done < <(find "$HELPER/PlugIns" -type f -print0)
 
 log "Ad-hoc signing"
 find "$HELPER" -type f \( -name '*.dylib' -o -name '*.so' \) -exec codesign --force -s - {} \; 2>/dev/null
-codesign --force -s - "$HELPER/Helpers/sdl-freerdp"
+codesign --force -s - "$HELPER/$SESSION_APP"
 
 "$ROOT/scripts/check-helper.sh"
 log "Helper ready in $HELPER ($(du -sh "$HELPER" | cut -f1))"

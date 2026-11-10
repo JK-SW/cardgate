@@ -12,7 +12,7 @@ swift format lint --strict -r app/CardGateKit/Sources app/CardGateKit/Tests app/
 log "Unit tests (CardGateKit)"
 # With the assembled helper the tests also check it accepts CardGate's arguments and still logs
 # the texts the status display depends on.
-if [[ -x "$HELPER/Helpers/sdl-freerdp" ]]; then export CARDGATE_HELPER="$HELPER"; fi
+if [[ -x "$HELPER/$CLIENT" ]]; then export CARDGATE_HELPER="$HELPER"; fi
 swift test --package-path app/CardGateKit --quiet
 
 log "App build"

@@ -8,6 +8,10 @@ SRC="$BUILD/src"          # downloaded archives and extracted sources
 OBJ="$BUILD/obj"          # out-of-tree build directories
 PREFIX="$BUILD/prefix"    # install prefix of all dependencies
 HELPER="$BUILD/helper"    # self-contained FreeRDP helper (bin + lib)
+# The client inside the helper and the app's Contents (FreeRDPCommand.bundledClientPath): a small
+# agent app without a Dock icon, so the Dock and the app switcher show only CardGate.
+SESSION_APP="Helpers/CardGateSession.app"
+CLIENT="$SESSION_APP/Contents/MacOS/sdl-freerdp"
 
 export CC="${CC:-/usr/bin/clang}" CXX="${CXX:-/usr/bin/clang++}"
 export SDKROOT="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path)}"

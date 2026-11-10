@@ -26,6 +26,9 @@ final class AppModel {
     /// The one-time offer to support the author is shown (after a disconnect, see `DonationPrompt`).
     private(set) var showsDonationOffer = false
     private var sessionReachedDesktop = false
+    /// The remote desktop was shown, and the session ended (with or without reaching it).
+    var onDesktopShown: (() -> Void)?
+    var onClientEnded: (() -> Void)?
     private(set) var middleware: PKCS11ModuleLocator.Middleware?
 
     private let store: ProfileStore?
@@ -45,10 +48,12 @@ final class AppModel {
         session.onConnected = { [weak self] in
             self?.sessionReachedDesktop = true
             self?.donation.recordSuccessfulConnection()
+            self?.onDesktopShown?()
         }
         session.onEnded = { [weak self] end in
             guard let self else { return }
             defer { sessionReachedDesktop = false }
+            onClientEnded?()
             // Only after a normal disconnect from a working session, never after an error.
             if sessionReachedDesktop, end == .closedByUser, donation.isDue() { showsDonationOffer = true }
         }
@@ -172,7 +177,8 @@ final class AppModel {
             alert = .noMiddleware
             return
         }
-        let executable = Bundle.main.bundleURL.appending(path: "Contents/Helpers/sdl-freerdp")
+        let executable = Bundle.main.bundleURL.appending(path: "Contents")
+            .appending(path: FreeRDPCommand.bundledClientPath)
         guard let clientConfig, FileManager.default.isExecutableFile(atPath: executable.path(percentEncoded: false))
         else {
             alert = .clientMissing
