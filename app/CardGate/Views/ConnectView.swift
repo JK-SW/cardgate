@@ -65,6 +65,7 @@ struct ConnectView: View {
                     Label("Edit Connection", systemImage: "slider.horizontal.3")
                 }
                 .help("Edit Connection")
+                .accessibilityIdentifier("toolbar.edit")
                 .disabled(model.session.isRunning)
 
                 Menu {
@@ -77,6 +78,7 @@ struct ConnectView: View {
                     Label("More", systemImage: "plus")
                 }
                 .help("Add a connection or show the log")
+                .accessibilityIdentifier("toolbar.more")
             }
         }
         // With the connection picker there is no room for the window title (the name is shown below).
