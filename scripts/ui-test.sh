@@ -12,5 +12,5 @@ log "UI tests"
 rm -rf "$BUILD/ui-tests.xcresult"
 xcodebuild -project app/CardGate.xcodeproj -scheme CardGate -configuration Debug \
   -destination "platform=macOS,arch=arm64" -derivedDataPath "$BUILD/DerivedData" \
-  -resultBundlePath "$BUILD/ui-tests.xcresult" "${filter[@]}" -quiet test
+  -resultBundlePath "$BUILD/ui-tests.xcresult" ${filter[@]+"${filter[@]}"} -quiet test
 log "UI tests passed"
