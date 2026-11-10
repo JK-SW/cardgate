@@ -1,0 +1,63 @@
+--- a/libfreerdp/core/smartcardlogon.c
++++ b/libfreerdp/core/smartcardlogon.c
+@@ -34,6 +34,9 @@
+ #include <freerdp/utils/helpers.h>
+ 
+ #include <openssl/obj_mac.h>
++#include <openssl/x509.h>
++
++#include "../crypto/certificate.h"
+ 
+ #define TAG FREERDP_TAG("smartcardlogon")
+ 
+@@ -225,6 +228,17 @@
+ 		return FALSE;
+ 	}
+ 
++	/* A renewed certificate usually stays on the card next to the expired one; expired or not yet
++	 * valid certificates cannot sign in and must not make the choice ambiguous. */
++	X509* x509 = freerdp_certificate_get_x509(cert->certificate);
++	if (x509 && ((X509_cmp_current_time(X509_get0_notAfter(x509)) < 0) ||
++	             (X509_cmp_current_time(X509_get0_notBefore(x509)) > 0)))
++	{
++		WLog_INFO(TAG, "discarding certificate outside its validity period for key %s",
++		          cert->keyName);
++		return FALSE;
++	}
++
+ 	if (!treat_sc_cert(cert))
+ 	{
+ 		WLog_DBG(TAG, "error treating cert");
+@@ -991,9 +1005,29 @@
+ 	{
+ 		DWORD index = 0;
+ 
+-		if (!instance->ChooseSmartcard ||
+-		    !instance->ChooseSmartcard(context->instance, cert_list, (UINT32)count, &index,
+-		                               gateway))
++		/* A front end may preselect the certificate by its SHA-1 fingerprint (hex). */
++		// NOLINTNEXTLINE(concurrency-mt-unsafe)
++		const char* wanted = getenv("FREERDP_SMARTCARD_CERT_SHA1");
++		BOOL preselected = FALSE;
++		for (size_t i = 0; wanted && (i < count); i++)
++		{
++			char* hex = winpr_BinToHexString(cert_list[i]->sha1Hash, sizeof(cert_list[i]->sha1Hash),
++			                                 FALSE);
++			if (hex && (_stricmp(hex, wanted) == 0))
++			{
++				index = (DWORD)i;
++				preselected = TRUE;
++			}
++			free(hex);
++		}
++
++		if (!preselected && wanted)
++			WLog_WARN(TAG, "preselected smartcard certificate %s not found", wanted);
++
++		if (!preselected &&
++		    (!instance->ChooseSmartcard ||
++		     !instance->ChooseSmartcard(context->instance, cert_list, (UINT32)count, &index,
++		                                gateway)))
+ 		{
+ 			WLog_ERR(TAG, "more than one suitable smartcard certificate was found");
+ 			smartcardCertList_Free(cert_list, count);
