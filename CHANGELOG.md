@@ -6,6 +6,22 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-10
+
+Fixes from testing on another Mac.
+
+### Fixed
+- Cancelling the PIN dialog (or letting it time out) ends the connection attempt; the client's
+  own credentials dialog no longer appears instead.
+- With several smart card readers (e.g. one built into the keyboard), Windows sign-in on the
+  remote computer asked to insert the card. Only the reader holding the card is redirected now.
+
+### Changed
+- The connection log records smart card redirection operations and their results (never the
+  data sent to the card) to help diagnose sign-in problems.
+- The logs of the last five connections are kept (`last-session.log`, `last-session.1.log`, …),
+  so a failed attempt can still be examined after trying again.
+
 ## [0.2.0] - 2026-11-10
 
 Security hardening after an audit, cards with several certificates, faster card check.
