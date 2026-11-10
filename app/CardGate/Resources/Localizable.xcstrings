@@ -308,6 +308,22 @@
         }
       }
     },
+    "Check for updates automatically": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky vyhledávat aktualizace"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky kontrolovať aktualizácie"
+          }
+        }
+      }
+    },
     "Check your internet connection and the gateway address in the connection settings.": {
       "localizations": {
         "cs": {
@@ -1152,6 +1168,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Softvér pre čipovú kartu sa nenašiel"
+          }
+        }
+      }
+    },
+    "Once a day CardGate asks GitHub whether a new version is available. Nothing about you is sent.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate jednou denně zjistí na GitHubu, zda je k dispozici nová verze. Nic o vás neodesílá."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate raz denne zistí na GitHube, či je k dispozícii nová verzia. Nič o vás neodosiela."
           }
         }
       }
@@ -2098,6 +2130,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bolo zadaných príliš veľa chybných PINov. Odblokujte kartu kódom PUK alebo kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "Updates are not available in this build.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V této verzi aplikace nejsou aktualizace k dispozici."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V tejto verzii aplikácie nie sú aktualizácie k dispozícii."
           }
         }
       }
