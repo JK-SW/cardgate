@@ -56,3 +56,14 @@ Client hotkeys use **left Control + left Option + left Shift** plus a key (e.g. 
 Details are in **Window → Connection Log**; **Copy Log** lets you send it to your IT department.
 The log never contains the PIN.
 The logs of the last five connections are also in the folder `~/Library/Logs/CardGate`.
+
+## For IT administrators
+
+After a while (20 successful connections, at the earliest after a week) the app once shows an
+unobtrusive offer to support the author; once closed it never appears again. To turn it off:
+
+```sh
+defaults write io.github.jk-sw.cardgate DonationPromptDisabled -bool true
+```
+
+(or with a configuration profile for the `io.github.jk-sw.cardgate` domain).

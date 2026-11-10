@@ -27,6 +27,10 @@ final class SessionController {
 
     var isRunning: Bool { process != nil || preflight != nil }
 
+    /// Called when a connection reached the remote desktop and when a session ended.
+    var onConnected: (() -> Void)?
+    var onEnded: ((SessionEnd) -> Void)?
+
     init() {
         let center = DistributedNotificationCenter.default()
         for event in PINPrompt.Event.allCases {
@@ -161,7 +165,10 @@ final class SessionController {
         log.append(line)
         logFile?.write(Data((line + "\n").utf8))
         if log.count > Self.maxLogLines { log.removeFirst(log.count - Self.maxLogLines) }
-        if let next = parser.consume(line) { phase = next }
+        if let next = parser.consume(line) {
+            phase = next
+            if next == .connected { onConnected?() }
+        }
     }
 
     private func finished(status: Int32) {
@@ -177,6 +184,7 @@ final class SessionController {
         default:
             break
         }
+        if case .ended(let end)? = phase { onEnded?(end) }
         logger.info("Client exited with status \(status)")
     }
 

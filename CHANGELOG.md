@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Okno O aplikaci odkazuje na zdrojový kód a na možnost podpořit autora (Ko-fi).
+- Po delším používání (20 úspěšných připojení, nejdřív za týden) aplikace jednou nenápadně nabídne
+  podporu autora; po zavření se už neukáže. Správci ji mohou vypnout (viz návod).
+
 ### Opraveno
 - Přihlášení kartou ve Windows nefungovalo na Macu s více čtečkami karet (např. se čtečkou
   v klávesnici): do vzdáleného počítače se dostala jen první čtečka. Převod textu ve FreeRDP

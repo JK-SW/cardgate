@@ -61,3 +61,14 @@ Klávesové zkratky klienta (celá obrazovka, odpojení…) se používají s kl
 Podrobnosti najdete v menu **Okno → Záznam připojení**; tlačítkem **Kopírovat záznam** ho můžete
 poslat IT oddělení. Záznam neobsahuje PIN.
 Záznamy posledních pěti připojení jsou také ve složce `~/Library/Logs/CardGate`.
+
+## Pro správce IT
+
+Po delším používání (20 úspěšných připojení, nejdřív za týden) aplikace jednou nenápadně nabídne
+podporu autora; po zavření se už nikdy neukáže. Nabídku lze plošně vypnout:
+
+```sh
+defaults write io.github.jk-sw.cardgate DonationPromptDisabled -bool true
+```
+
+(nebo konfiguračním profilem pro doménu `io.github.jk-sw.cardgate`).

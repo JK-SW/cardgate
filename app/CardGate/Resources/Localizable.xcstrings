@@ -372,6 +372,22 @@
         }
       }
     },
+    "Close and do not show again": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavřít a už nezobrazovat"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zavrieť a už nezobrazovať"
+          }
+        }
+      }
+    },
     "Computer": {
       "localizations": {
         "cs": {
@@ -1460,6 +1476,54 @@
         }
       }
     },
+    "Source Code": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdrojový kód"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zdrojový kód"
+          }
+        }
+      }
+    },
+    "Support on Ko-fi": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podpořit na Ko-fi"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podporiť na Ko-fi"
+          }
+        }
+      }
+    },
+    "Support the Author": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podpořit autora"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podporiť autora"
+          }
+        }
+      }
+    },
     "Switch between window and full screen": {
       "localizations": {
         "cs": {
@@ -2098,6 +2162,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Obe adresy získate od IT oddelenia alebo z jeho súboru .rdp."
+          }
+        }
+      }
+    },
+    "You have been using CardGate for a while. If it helps you, you can support the author.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate už nějakou dobu používáte. Pokud vám pomáhá, můžete podpořit autora."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate už nejaký čas používate. Ak vám pomáha, môžete podporiť autora."
           }
         }
       }

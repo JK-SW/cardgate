@@ -1,3 +1,4 @@
+import CardGateKit
 import SwiftUI
 
 /// About window: version, author, license and the third-party notices.
@@ -33,10 +34,13 @@ struct AboutView: View {
                     .foregroundStyle(.secondary)
             }
             .font(.callout)
-            // A link to the source code is added once the repository is public.
-            Button("Third-Party Licenses") { showsNotices = true }
-                .buttonStyle(.link)
-                .font(.callout)
+            HStack(spacing: 16) {
+                Link("Source Code", destination: ProjectLinks.sourceCode)
+                Link("Support the Author", destination: ProjectLinks.donation)
+                Button("Third-Party Licenses") { showsNotices = true }
+                    .buttonStyle(.link)
+            }
+            .font(.callout)
         }
         .padding(28)
         .frame(width: 380)

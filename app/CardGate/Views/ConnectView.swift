@@ -32,6 +32,10 @@ struct ConnectView: View {
                 ReadinessView()
                 SessionStatusView(phase: model.session.phase)
                 connectButton
+                if model.showsDonationOffer && !model.session.isRunning {
+                    DonationOfferView()
+                        .transition(.opacity)
+                }
             }
         }
         .padding(.horizontal, 28)
@@ -295,5 +299,36 @@ private struct FailureView: View {
         case .other(let code):
             "Details are in the connection log (\(code))."
         }
+    }
+}
+
+/// One-time, unobtrusive offer to support the author (see `DonationPrompt`).
+private struct DonationOfferView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "heart.fill")
+                .foregroundStyle(.pink)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("You have been using CardGate for a while. If it helps you, you can support the author.")
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Support on Ko-fi") { model.finishDonationOffer(openingPage: true) }
+                    .buttonStyle(.link)
+            }
+            Button {
+                model.finishDonationOffer(openingPage: false)
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.borderless)
+            .help("Close and do not show again")
+            .accessibilityLabel(Text("Close and do not show again"))
+        }
+        .font(.callout)
+        .padding(12)
+        .frame(maxWidth: 380)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 }

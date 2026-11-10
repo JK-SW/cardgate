@@ -58,3 +58,14 @@ a písmenom (napr. **Enter** = celá obrazovka).
 Podrobnosti nájdete v menu **Okno → Záznam pripojenia**; tlačidlom **Kopírovať záznam** ho môžete
 poslať IT oddeleniu. Záznam neobsahuje PIN.
 Záznamy posledných piatich pripojení sú aj v priečinku `~/Library/Logs/CardGate`.
+
+## Pre správcov IT
+
+Po dlhšom používaní (20 úspešných pripojení, najskôr po týždni) aplikácia raz nenápadne ponúkne
+podporu autora; po zatvorení sa už nikdy neukáže. Ponuku možno plošne vypnúť:
+
+```sh
+defaults write io.github.jk-sw.cardgate DonationPromptDisabled -bool true
+```
+
+(alebo konfiguračným profilom pre doménu `io.github.jk-sw.cardgate`).

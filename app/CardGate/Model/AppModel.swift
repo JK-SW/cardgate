@@ -22,6 +22,10 @@ final class AppModel {
 
     let session = SessionController()
     let cards = CardMonitor()
+    private let donation = DonationPrompt()
+    /// The one-time offer to support the author is shown (after a disconnect, see `DonationPrompt`).
+    private(set) var showsDonationOffer = false
+    private var sessionReachedDesktop = false
     private(set) var middleware: PKCS11ModuleLocator.Middleware?
 
     private let store: ProfileStore?
@@ -38,6 +42,23 @@ final class AppModel {
             // A new card makes an old "no certificate" error irrelevant.
             self?.session.clearFinished()
         }
+        session.onConnected = { [weak self] in
+            self?.sessionReachedDesktop = true
+            self?.donation.recordSuccessfulConnection()
+        }
+        session.onEnded = { [weak self] end in
+            guard let self else { return }
+            defer { sessionReachedDesktop = false }
+            // Only after a normal disconnect from a working session, never after an error.
+            if sessionReachedDesktop, end == .closedByUser, donation.isDue() { showsDonationOffer = true }
+        }
+    }
+
+    /// The support offer was used or closed; it is never shown again.
+    func finishDonationOffer(openingPage: Bool) {
+        showsDonationOffer = false
+        donation.finish()
+        if openingPage { NSWorkspace.shared.open(ProjectLinks.donation) }
     }
 
     /// Everything needed to connect is in place.
