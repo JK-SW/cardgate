@@ -3,29 +3,57 @@ import Foundation
 import Testing
 
 struct CardCertificateTests {
-    let signing = CardCertificate(tokenID: "t", holderName: "Signature", extendedKeyUsages: [Data([0x2B, 0x06, 0x01])])
-    let client = CardCertificate(
-        tokenID: "t", holderName: "Client", extendedKeyUsages: [CardCertificate.clientAuthOID])
-    let logon = CardCertificate(
-        tokenID: "t", holderName: "Logon",
-        extendedKeyUsages: [CardCertificate.clientAuthOID, CardCertificate.smartCardLogonOID])
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let day: TimeInterval = 86_400
+    let logonOID = CardCertificate.smartCardLogonOID
+    let otherOID = Data([0x2B, 0x06, 0x01])
 
-    @Test func signInUsage() {
-        #expect(!signing.canSignIn)
-        #expect(client.canSignIn)
-        #expect(logon.canSignIn)
+    func cert(_ sha: Character, logon: Bool = true, from start: Double = -400, to end: Double) -> CardCertificate {
+        CardCertificate(
+            tokenID: "t", holderName: "Holder \(sha)", sha1: String(repeating: sha, count: 40),
+            extendedKeyUsages: logon ? [logonOID] : [otherOID],
+            notBefore: now.addingTimeInterval(start * day), notAfter: now.addingTimeInterval(end * day))
     }
 
-    @Test func prefersSmartCardLogon() {
-        #expect(CardCertificate.signInCertificate(in: [signing, client, logon]) == logon)
-        #expect(CardCertificate.signInCertificate(in: [signing, client]) == client)
-        #expect(CardCertificate.signInCertificate(in: [signing]) == nil)
-        #expect(CardCertificate.signInCertificate(in: []) == nil)
+    @Test func validity() {
+        #expect(cert("a", to: 10).isValid(at: now))
+        #expect(!cert("a", to: -1).isValid(at: now))
+        #expect(!cert("a", from: 1, to: 300).isValid(at: now))
+        #expect(CardCertificate(tokenID: "t", holderName: "x", sha1: "", extendedKeyUsages: []).isValid(at: now))
     }
 
-    @Test func ambiguousLogonCertificates() {
-        #expect(!CardCertificate.isAmbiguous([signing, client, logon]))
-        #expect(CardCertificate.isAmbiguous([logon, logon]))
-        #expect(!CardCertificate.isAmbiguous([]))
+    @Test func picksNewestValidLogonCertificate() {
+        let expired = cert("a", to: -5)
+        let old = cert("b", to: 20)
+        let renewed = cert("c", to: 700)
+        let signature = cert("d", logon: false, to: 900)
+        let all = [expired, old, signature, renewed]
+        #expect(CardCertificate.signInCandidates(in: all, at: now) == [renewed, old])
+        #expect(CardCertificate.signInCertificate(in: all, at: now) == renewed)
+    }
+
+    @Test func preferredCertificateWinsIfValid() {
+        let old = cert("b", to: 20)
+        let renewed = cert("c", to: 700)
+        let expired = cert("a", to: -5)
+        #expect(
+            CardCertificate.signInCertificate(in: [old, renewed], preferredSHA1: old.sha1.uppercased(), at: now) == old)
+        #expect(
+            CardCertificate.signInCertificate(in: [renewed, expired], preferredSHA1: expired.sha1, at: now) == renewed)
+        #expect(CardCertificate.signInCertificate(in: [renewed], preferredSHA1: "missing", at: now) == renewed)
+    }
+
+    @Test func expiredOnly() {
+        #expect(
+            CardCertificate.allLogonCertificatesExpired([cert("a", to: -1), cert("d", logon: false, to: 9)], at: now))
+        #expect(!CardCertificate.allLogonCertificatesExpired([cert("a", to: -1), cert("b", to: 9)], at: now))
+        #expect(!CardCertificate.allLogonCertificatesExpired([cert("d", logon: false, to: 9)], at: now))
+        #expect(CardCertificate.signInCertificate(in: [cert("d", logon: false, to: 9)], at: now) == nil)
+    }
+
+    @Test func fingerprintFormat() {
+        #expect(CardCertificate.isFingerprint(String(repeating: "aF", count: 20)))
+        #expect(!CardCertificate.isFingerprint("abc"))
+        #expect(!CardCertificate.isFingerprint(String(repeating: "g", count: 40)))
     }
 }

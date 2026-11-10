@@ -125,6 +125,16 @@ struct FreeRDPCommandTests {
         }
     }
 
+    @Test func passesChosenCertificate() throws {
+        let sha = String(repeating: "AB", count: 20)
+        let command = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config, certificateSHA1: sha)
+        #expect(command.environment["FREERDP_SMARTCARD_CERT_SHA1"] == sha.lowercased())
+        let bad = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config, certificateSHA1: "x;rm")
+        #expect(bad.environment["FREERDP_SMARTCARD_CERT_SHA1"] == nil)
+    }
+
     @Test func neverContainsSecrets() throws {
         let args = try command(profile()).arguments
         #expect(!args.contains { $0.hasPrefix("/p:") || $0.hasPrefix("/gp:") || $0.contains("pin") })

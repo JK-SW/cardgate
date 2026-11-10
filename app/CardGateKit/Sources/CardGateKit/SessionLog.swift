@@ -78,6 +78,7 @@ public struct SessionLogParser: Sendable {
         "registered [",
         "no suitable smartcard certificates",
         "more than one suitable smartcard certificate",
+        "FREERDP_SMARTCARD_CERT_SHA1",
         "WRONG PIN",
         "PIN is LOCKED",
         "certificate not trusted",

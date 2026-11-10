@@ -11,6 +11,8 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
     public var gateway: HostAddress?
     /// Explicit PKCS#11 module of the smart card middleware; `nil` = detect automatically.
     public var pkcs11Module: String?
+    /// SHA-1 fingerprint of the certificate to sign in with; `nil` = newest valid one on the card.
+    public var certificateSHA1: String?
     public var display: DisplaySettings
     public var redirection: RedirectionSettings
     public var input: InputSettings
@@ -21,6 +23,7 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         computer: HostAddress,
         gateway: HostAddress? = nil,
         pkcs11Module: String? = nil,
+        certificateSHA1: String? = nil,
         display: DisplaySettings = .init(),
         redirection: RedirectionSettings = .init(),
         input: InputSettings = .init()
@@ -30,6 +33,7 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         self.computer = computer
         self.gateway = gateway
         self.pkcs11Module = pkcs11Module
+        self.certificateSHA1 = certificateSHA1
         self.display = display
         self.redirection = redirection
         self.input = input
@@ -43,6 +47,7 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         computer = try container.decode(HostAddress.self, forKey: .computer)
         gateway = try container.decodeIfPresent(HostAddress.self, forKey: .gateway)
         pkcs11Module = try container.decodeIfPresent(String.self, forKey: .pkcs11Module)
+        certificateSHA1 = try container.decodeIfPresent(String.self, forKey: .certificateSHA1)
         display = try container.decodeIfPresent(DisplaySettings.self, forKey: .display) ?? .init()
         redirection = try container.decodeIfPresent(RedirectionSettings.self, forKey: .redirection) ?? .init()
         input = try container.decodeIfPresent(InputSettings.self, forKey: .input) ?? .init()

@@ -17,9 +17,10 @@ public struct FreeRDPCommand: Equatable, Sendable {
     ///   - askPass: program FreeRDP runs to ask for the PIN (it prints the PIN to stdout).
     ///     `nil` keeps FreeRDP's own dialog.
     ///   - screen: the display the window opens on; window sizes are given in its points.
+    ///   - certificateSHA1: card certificate to sign in with (when the card holds several).
     public init(
         executable: URL, profile: ConnectionProfile, pkcs11Module: String, config: FreeRDPClientConfig,
-        askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil
+        askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil, certificateSHA1: String? = nil
     ) throws(BuildError) {
         guard pkcs11Module.hasPrefix("/"), !pkcs11Module.contains(","), !pkcs11Module.contains("\n") else {
             throw .invalidModulePath
@@ -33,6 +34,10 @@ public struct FreeRDPCommand: Equatable, Sendable {
         ]
         if let askPass {
             environment["FREERDP_ASKPASS"] = askPass.shellCommand
+        }
+        // Certificate chosen by CardGate when the card holds several (patched FreeRDP).
+        if let certificateSHA1, CardCertificate.isFingerprint(certificateSHA1) {
+            environment["FREERDP_SMARTCARD_CERT_SHA1"] = certificateSHA1.lowercased()
         }
     }
 
