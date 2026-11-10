@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-10
+
+První veřejná verze: aktualizace jedním kliknutím, oprava přihlášení kartou na Macu s více čtečkami,
+dokumentace v češtině.
+
 ### Přidáno
 - Aktualizace jedním kliknutím (Sparkle): aplikace se při druhém spuštění zeptá, zda hledat nové
   verze automaticky; ručně v menu CardGate → Zkontrolovat aktualizace…. Aktualizace jsou podepsané
@@ -18,6 +23,9 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
   v klávesnici): do vzdáleného počítače se dostala jen první čtečka. Převod textu ve FreeRDP
   na macOS seznam čteček usekl za prvním názvem.
 - Když nejde určit čtečku s kartou, přesměrují se všechny čtečky místo žádné.
+
+### Změněno
+- README, změny a poznámky k vydání jsou v češtině (README pro vývojáře v angličtině).
 
 ## [0.2.1] - 2026-11-10
 
