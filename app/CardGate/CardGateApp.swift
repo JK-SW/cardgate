@@ -44,11 +44,20 @@ struct CardGateApp: App {
                 Button("Import .rdp File…") { model.isImportingRDP = true }
                     .keyboardShortcut("o")
             }
+            CommandGroup(replacing: .help) {
+                OpenWindowButton(title: "Keyboard Shortcuts", id: WindowID.shortcuts)
+                    .keyboardShortcut("/", modifiers: [.command, .shift])
+            }
             CommandGroup(after: .windowArrangement) {
                 OpenWindowButton(title: "Connection Log", id: WindowID.log)
                     .keyboardShortcut("l", modifiers: [.command, .option])
             }
         }
+
+        Window("Keyboard Shortcuts", id: WindowID.shortcuts) {
+            KeyboardShortcutsView()
+        }
+        .windowResizability(.contentSize)
 
         Window("About CardGate", id: WindowID.about) {
             AboutView()
@@ -69,6 +78,7 @@ enum WindowID {
     static let main = "main"
     static let log = "log"
     static let about = "about"
+    static let shortcuts = "shortcuts"
 }
 
 private struct OpenWindowButton: View {

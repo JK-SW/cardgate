@@ -1,5 +1,6 @@
 import AppKit
 import CardGateKit
+import CryptoKit
 import CryptoTokenKit
 import OSLog
 import Observation
@@ -14,15 +15,18 @@ final class CardMonitor {
     /// Certificates with a private key on all inserted cards.
     private(set) var certificates: [CardCertificate] = []
 
-    /// The certificate used to sign in, if a suitable card is inserted.
-    var signInCertificate: CardCertificate? { CardCertificate.signInCertificate(in: certificates) }
+    /// The certificate to sign in with: the preferred one or the newest valid logon certificate.
+    func signInCertificate(preferredSHA1: String?) -> CardCertificate? {
+        CardCertificate.signInCertificate(in: certificates, preferredSHA1: preferredSHA1, at: Date())
+    }
 
     /// Called after the set of inserted cards changed.
     var onChange: (() -> Void)?
 
     /// What the PKCS#11 module (and therefore the RDP client) sees; `nil` until checked.
     private(set) var pkcs11State: PKCS11CardState?
-    private(set) var isChecking = false
+    var isChecking: Bool { checkTask != nil }
+    private var checkTask: Task<PKCS11CardState, Never>?
     /// PKCS#11 module to check with; set by the app.
     var module: String? {
         didSet { if oldValue != module { scheduleCheck() } }
@@ -75,28 +79,35 @@ final class CardMonitor {
         scheduleCheck()
     }
 
-    /// Checks the card through the PKCS#11 module in a separate process (it can take seconds).
+    /// Checks the card through the PKCS#11 module in a separate process (takes about 2–3 s).
     func scheduleCheck() {
         guard let module, !certificates.isEmpty else {
             pkcs11State = nil
             return
         }
-        guard !isChecking else {
+        guard checkTask == nil else {
             checkPending = true
             return
         }
-        isChecking = true
+        let task = Task { await Self.check(module: module) }
+        checkTask = task
         Task { [weak self] in
-            let state = await Self.check(module: module)
+            let state = await task.value
             guard let self else { return }
             self.logger.info("PKCS#11 check: \(state.encoded, privacy: .public)")
             self.pkcs11State = state
-            self.isChecking = false
+            self.checkTask = nil
             if self.checkPending {
                 self.checkPending = false
                 self.scheduleCheck()
             }
         }
+    }
+
+    /// The result of the running check, or the last one; waits if a check is in progress.
+    func currentState() async -> PKCS11CardState? {
+        if let checkTask { return await checkTask.value }
+        return pkcs11State
     }
 
     nonisolated private static func check(module: String) async -> PKCS11CardState {
@@ -147,18 +158,34 @@ final class CardMonitor {
                 return nil
             }
             let name = SecCertificateCopySubjectSummary(certificate) as String? ?? tokenID
+            let der = SecCertificateCopyData(certificate) as Data
+            let sha1 = Insecure.SHA1.hash(data: der).map { String(format: "%02x", $0) }.joined()
+            let values =
+                SecCertificateCopyValues(
+                    certificate,
+                    [kSecOIDExtendedKeyUsage, kSecOIDX509V1ValidityNotBefore, kSecOIDX509V1ValidityNotAfter] as CFArray,
+                    nil) as? [String: Any] ?? [:]
             return CardCertificate(
-                tokenID: tokenID, holderName: name, extendedKeyUsages: extendedKeyUsages(of: certificate))
+                tokenID: tokenID, holderName: name, sha1: sha1,
+                extendedKeyUsages: extendedKeyUsages(in: values),
+                notBefore: date(in: values, key: kSecOIDX509V1ValidityNotBefore),
+                notAfter: date(in: values, key: kSecOIDX509V1ValidityNotAfter))
         }
         .sorted { $0.holderName < $1.holderName }
     }
 
-    private static func extendedKeyUsages(of certificate: SecCertificate) -> [Data] {
-        let keys = [kSecOIDExtendedKeyUsage] as CFArray
-        guard let values = SecCertificateCopyValues(certificate, keys, nil) as? [String: Any],
-            let eku = values[kSecOIDExtendedKeyUsage as String] as? [String: Any],
+    private static func extendedKeyUsages(in values: [String: Any]) -> [Data] {
+        guard let eku = values[kSecOIDExtendedKeyUsage as String] as? [String: Any],
             let usages = eku[kSecPropertyKeyValue as String] as? [Data]
         else { return [] }
         return usages
+    }
+
+    /// Validity dates are given as seconds since the reference date (CFAbsoluteTime).
+    private static func date(in values: [String: Any], key: CFString) -> Date? {
+        guard let entry = values[key as String] as? [String: Any],
+            let seconds = entry[kSecPropertyKeyValue as String] as? NSNumber
+        else { return nil }
+        return Date(timeIntervalSinceReferenceDate: seconds.doubleValue)
     }
 }

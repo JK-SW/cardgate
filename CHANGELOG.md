@@ -19,10 +19,19 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 - Release downloads come with SHA-256 checksums; CI actions are pinned to commits.
 
 ### Added
+- Cards with several certificates: expired or not yet valid certificates are ignored (FreeRDP
+  patch), the newest valid sign-in certificate is used automatically and a specific one can be
+  chosen in the connection settings; the window shows its expiry date and warns when the sign-in
+  certificate has expired.
+- Keyboard Shortcuts window (Help menu) explaining the remote desktop hotkeys.
 - IPv6 addresses (in brackets) for computer and gateway.
 - Clear messages when the PIN was not entered in time (the dialog gives up after 2 minutes) or the
   card has several sign-in certificates; cancelling the PIN dialog simply ends the attempt.
 - Quitting CardGate with an open connection asks first and disconnects.
+
+### Changed
+- The card check takes about 2–3 s instead of 6 s and no longer blocks Connect; clicking Connect
+  during the check waits for it.
 
 ### Fixed
 - The PIN dialog closes when its connection ends.

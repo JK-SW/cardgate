@@ -19,6 +19,8 @@ final class ProfileEditorModel: Identifiable {
     var audio: Bool
     var scrollLikeThisMac: Bool
     var pkcs11Module: String
+    /// `nil` = automatic (newest valid certificate on the card).
+    var certificateSHA1: String?
 
     init(profile: ConnectionProfile?, defaultName: String, isNew: Bool? = nil) {
         id = profile?.id ?? UUID()
@@ -32,6 +34,7 @@ final class ProfileEditorModel: Identifiable {
         audio = profile?.redirection.audio ?? true
         scrollLikeThisMac = profile?.input.scrollLikeThisMac ?? true
         pkcs11Module = profile?.pkcs11Module ?? ""
+        certificateSHA1 = profile?.certificateSHA1
     }
 
     /// Editor for a profile read from an `.rdp` file: new, but pre-filled.
@@ -67,6 +70,7 @@ final class ProfileEditorModel: Identifiable {
             computer: computer,
             gateway: gatewayText.isEmpty ? nil : try? HostAddress(parsing: gatewayText),
             pkcs11Module: module.isEmpty ? nil : module,
+            certificateSHA1: certificateSHA1,
             display: .init(mode: displayMode, windowSize: displayMode == .window ? windowSize : nil),
             redirection: .init(clipboard: clipboard, audio: audio),
             input: .init(scrollLikeThisMac: scrollLikeThisMac))

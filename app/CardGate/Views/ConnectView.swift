@@ -61,6 +61,7 @@ struct ConnectView: View {
                     Button("New Connection…") { model.beginNewProfile() }
                     Button("Import .rdp File…") { model.isImportingRDP = true }
                     Divider()
+                    Button("Keyboard Shortcuts") { openWindow(id: WindowID.shortcuts) }
                     Button("Connection Log") { openWindow(id: WindowID.log) }
                 } label: {
                     Label("More", systemImage: "plus")
@@ -82,7 +83,14 @@ struct ConnectView: View {
             Button {
                 model.connect()
             } label: {
-                Text("Connect").frame(minWidth: 200)
+                Group {
+                    if model.isPreparingConnection {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Text("Connect")
+                    }
+                }
+                .frame(minWidth: 200)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.extraLarge)
@@ -116,26 +124,34 @@ struct ReadinessView: View {
                     Text("Remove the card or token and insert it again.")
                         .foregroundStyle(.secondary)
                 }
-            } else if model.isCheckingCardFirstTime {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
-                    Text("Checking the card…")
+            } else if let certificate = model.signInCertificate {
+                VStack(spacing: 3) {
+                    HStack(spacing: 8) {
+                        Label {
+                            Text("Card ready: \(certificate.holderName)")
+                        } icon: {
+                            Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
+                        }
+                        if model.cards.isChecking {
+                            ProgressView().controlSize(.small)
+                                .help("Checking the card…")
+                        }
+                    }
+                    if let notAfter = certificate.notAfter {
+                        Text("Certificate valid until \(notAfter.formatted(date: .long, time: .omitted))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                .foregroundStyle(.secondary)
-            } else if CardCertificate.isAmbiguous(model.cards.certificates) {
-                Label("The card has several sign-in certificates", systemImage: "exclamationmark.triangle.fill")
+            } else if CardCertificate.allLogonCertificatesExpired(model.cards.certificates, at: Date()) {
+                VStack(spacing: 4) {
+                    Label(
+                        "The sign-in certificate on the card has expired.",
+                        systemImage: "calendar.badge.exclamationmark"
+                    )
                     .foregroundStyle(.orange)
-            } else if let certificate = model.cards.signInCertificate {
-                HStack(spacing: 8) {
-                    Label {
-                        Text("Card ready: \(certificate.holderName)")
-                    } icon: {
-                        Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                    }
-                    if model.cards.isChecking {
-                        ProgressView().controlSize(.small)
-                            .help("Checking the card…")
-                    }
+                    Text("Contact your IT department to renew it.")
+                        .foregroundStyle(.secondary)
                 }
             } else if model.cards.certificates.isEmpty {
                 Label("Insert your card or token.", systemImage: "creditcard")
@@ -150,7 +166,7 @@ struct ReadinessView: View {
         }
         .font(.callout)
         .multilineTextAlignment(.center)
-        .animation(.default, value: model.cards.signInCertificate)
+        .animation(.default, value: model.signInCertificate)
     }
 }
 

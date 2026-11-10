@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ – valid until %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ – platný do %2$@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ – platný do %2$@"
+          }
+        }
+      }
+    },
     "A wrong PIN was entered before. Only a few attempts remain.": {
       "localizations": {
         "cs": {
@@ -65,6 +81,38 @@
         }
       }
     },
+    "All other key combinations are sent to Windows.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Všechny ostatní kombinace kláves se posílají do Windows."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Všetky ostatné kombinácie kláves sa posielajú do Windows."
+          }
+        }
+      }
+    },
+    "Allow or prevent resizing the window": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povolit nebo zakázat změnu velikosti okna"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Povoliť alebo zakázať zmenu veľkosti okna"
+          }
+        }
+      }
+    },
     "Author: %@": {
       "localizations": {
         "cs": {
@@ -97,6 +145,22 @@
         }
       }
     },
+    "Automatic (newest valid)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky (nejnovější platný)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky (najnovší platný)"
+          }
+        }
+      }
+    },
     "Cancel": {
       "localizations": {
         "cs": {
@@ -109,6 +173,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zrušiť"
+          }
+        }
+      }
+    },
+    "Capture keyboard and mouse (system shortcuts go to Windows)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zachytit klávesnici a myš (systémové zkratky jdou do Windows)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zachytiť klávesnicu a myš (systémové skratky idú do Windows)"
+          }
+        }
+      }
+    },
+    "Card": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta"
           }
         }
       }
@@ -148,6 +244,38 @@
         }
       }
     },
+    "Certificate not on the inserted card": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát není na vložené kartě"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát nie je na vloženej karte"
+          }
+        }
+      }
+    },
+    "Certificate valid until %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát platný do %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát platný do %@"
+          }
+        }
+      }
+    },
     "Check your internet connection and the gateway address in the connection settings.": {
       "localizations": {
         "cs": {
@@ -176,6 +304,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Overujem kartu…"
+          }
+        }
+      }
+    },
+    "Choose a certificate only if your card holds several valid sign-in certificates.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát vybírejte jen tehdy, když má karta několik platných přihlašovacích certifikátů."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát vyberajte len vtedy, keď má karta niekoľko platných prihlasovacích certifikátov."
           }
         }
       }
@@ -352,6 +496,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojenia sa nepodarilo uložiť"
+          }
+        }
+      }
+    },
+    "Contact your IT department to renew it.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro obnovení kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pre obnovenie kontaktujte IT oddelenie."
           }
         }
       }
@@ -660,6 +820,22 @@
         }
       }
     },
+    "In the remote desktop window hold the left ⌃ Control, ⌥ Option and ⇧ Shift keys and press:": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V okně vzdálené plochy podržte levé klávesy ⌃ Control, ⌥ Option a ⇧ Shift a stiskněte:"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V okne vzdialenej plochy podržte ľavé klávesy ⌃ Control, ⌥ Option a ⇧ Shift a stlačte:"
+          }
+        }
+      }
+    },
     "Initial window size": {
       "localizations": {
         "cs": {
@@ -724,6 +900,22 @@
         }
       }
     },
+    "Keyboard Shortcuts": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klávesové zkratky"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klávesové skratky"
+          }
+        }
+      }
+    },
     "Last attempt! Another wrong PIN locks the card.": {
       "localizations": {
         "cs": {
@@ -768,6 +960,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Licencované pod Apache License 2.0."
+          }
+        }
+      }
+    },
+    "Minimize the window": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimalizovat okno"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimalizovať okno"
           }
         }
       }
@@ -1172,6 +1380,22 @@
         }
       }
     },
+    "Sign-in certificate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlašovací certifikát"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlasovací certifikát"
+          }
+        }
+      }
+    },
     "Signing in to %@.": {
       "localizations": {
         "cs": {
@@ -1216,6 +1440,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chýba softvér pre čipovú kartu"
+          }
+        }
+      }
+    },
+    "Switch between window and full screen": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přepnout mezi oknem a celou obrazovkou"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepnúť medzi oknom a celou obrazovkou"
           }
         }
       }
@@ -1604,6 +1844,22 @@
         }
       }
     },
+    "The sign-in certificate on the card has expired.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platnost přihlašovacího certifikátu na kartě vypršela."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platnosť prihlasovacieho certifikátu na karte vypršala."
+          }
+        }
+      }
+    },
     "The smart card module is not signed and was not loaded.": {
       "localizations": {
         "cs": {
@@ -1779,6 +2035,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "cez %@"
+          }
+        }
+      }
+    },
+    "⌃⌥⇧ %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌃⌥⇧ %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌃⌥⇧ %@"
           }
         }
       }

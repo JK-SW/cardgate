@@ -46,6 +46,25 @@ struct ProfileEditorView: View {
                     Toggle("Play sound on this Mac", isOn: $editor.audio)
                 }
 
+                Section {
+                    Picker("Sign-in certificate", selection: $editor.certificateSHA1) {
+                        Text("Automatic (newest valid)").tag(String?.none)
+                        ForEach(certificateChoices) { certificate in
+                            Text(label(for: certificate)).tag(Optional(certificate.sha1))
+                        }
+                        if let chosen = editor.certificateSHA1,
+                            !certificateChoices.contains(where: { $0.sha1 == chosen })
+                        {
+                            Text("Certificate not on the inserted card").tag(Optional(chosen))
+                        }
+                    }
+                } header: {
+                    Text("Card")
+                } footer: {
+                    Text("Choose a certificate only if your card holds several valid sign-in certificates.")
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Mouse") {
                     Toggle("Scroll in the same direction as on this Mac", isOn: $editor.scrollLikeThisMac)
                 }
@@ -89,6 +108,18 @@ struct ProfileEditorView: View {
                 if let profile = model.profiles.first(where: { $0.id == editor.id }) { model.delete(profile) }
             }
         }
+    }
+
+    /// Valid sign-in certificates of the inserted card.
+    private var certificateChoices: [CardCertificate] {
+        CardCertificate.signInCandidates(in: model.cards.certificates, at: Date())
+    }
+
+    private func label(for certificate: CardCertificate) -> String {
+        guard let notAfter = certificate.notAfter else { return certificate.holderName }
+        return String(
+            localized:
+                "\(certificate.holderName) – valid until \(notAfter.formatted(date: .abbreviated, time: .omitted))")
     }
 
     /// Presets that fit on this display, plus the current size if it is a custom one

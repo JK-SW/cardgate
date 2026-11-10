@@ -41,23 +41,26 @@ final class AppModel {
     }
 
     /// Everything needed to connect is in place.
+    /// Connect is possible while the card check still runs; connecting then waits for its result.
     var isReadyToConnect: Bool {
-        middleware != nil && !moduleUntrusted && cards.signInCertificate != nil && !session.isRunning
-            && !cardNeedsReinsert && !isCheckingCardFirstTime
+        middleware != nil && !moduleUntrusted && signInCertificate != nil && !session.isRunning
+            && !cardNeedsReinsert && !isPreparingConnection
     }
 
-    /// The card has not been checked through PKCS#11 yet (first seconds after inserting it).
-    var isCheckingCardFirstTime: Bool { cards.pkcs11State == nil && cards.isChecking }
+    /// The certificate the selected connection signs in with.
+    var signInCertificate: CardCertificate? {
+        cards.signInCertificate(preferredSHA1: selectedProfile?.certificateSHA1)
+    }
+
+    /// Connect was clicked and waits for the card check to finish.
+    private(set) var isPreparingConnection = false
 
     /// The configured PKCS#11 module is not validly code signed and is therefore not loaded.
     private(set) var moduleUntrusted = false
 
     /// The system lists the card but the middleware's PKCS#11 module does not see it.
     var cardNeedsReinsert: Bool {
-        switch cards.pkcs11State {
-        case .noToken, .noCertificates: cards.signInCertificate != nil
-        default: false
-        }
+        cards.pkcs11State == .noToken && !cards.certificates.isEmpty
     }
 
     var selectedProfile: ConnectionProfile? {
@@ -142,7 +145,7 @@ final class AppModel {
     }
 
     func connect() {
-        guard let profile = selectedProfile else { return }
+        guard let profile = selectedProfile, !isPreparingConnection else { return }
         refreshMiddleware()
         guard let module = middleware?.modulePath else {
             alert = .noMiddleware
@@ -154,15 +157,23 @@ final class AppModel {
             alert = .clientMissing
             return
         }
-        do {
-            try clientConfig.install(for: profile)
-            let command = try FreeRDPCommand(
-                executable: executable, profile: profile, pkcs11Module: module,
-                config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current)
-            session.connect(command, gateway: profile.gateway)
-        } catch {
-            logger.error("Cannot start client: \(error, privacy: .public)")
-            alert = .clientMissing
+        isPreparingConnection = true
+        Task {
+            defer { isPreparingConnection = false }
+            // The card check (PKCS#11) may still run right after inserting the card or starting.
+            if await cards.currentState() == .noToken { return }
+            guard let certificate = signInCertificate else { return }
+            do {
+                try clientConfig.install(for: profile)
+                let command = try FreeRDPCommand(
+                    executable: executable, profile: profile, pkcs11Module: module,
+                    config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current,
+                    certificateSHA1: certificate.sha1)
+                session.connect(command, gateway: profile.gateway)
+            } catch {
+                logger.error("Cannot start client: \(error, privacy: .public)")
+                alert = .clientMissing
+            }
         }
     }
 }
