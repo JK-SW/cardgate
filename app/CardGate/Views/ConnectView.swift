@@ -49,7 +49,13 @@ struct ConnectView: View {
                             Text(profile.name).tag(Optional(profile.id))
                         }
                     }
+                    // A long name is shortened; otherwise the buttons would move to an overflow menu.
+                    .frame(maxWidth: 220)
                     .disabled(model.session.isRunning)
+                }
+                // Keeps the buttons on the right, where the title's space used to put them.
+                if #available(macOS 26, *) {
+                    ToolbarSpacer(.flexible)
                 }
             }
             ToolbarItemGroup(placement: .primaryAction) {
@@ -73,6 +79,8 @@ struct ConnectView: View {
                 .help("Add a connection or show the log")
             }
         }
+        // With the connection picker there is no room for the window title (the name is shown below).
+        .toolbar(removing: model.profiles.count > 1 ? .title : nil)
     }
 
     @ViewBuilder private var connectButton: some View {
