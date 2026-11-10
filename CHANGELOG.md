@@ -5,6 +5,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-10
+
+Jedna ikona v Docku pro aplikaci i vzdálenou plochu, nastavení aktualizací.
+
 ### Přidáno
 - Okno **CardGate → Nastavení…** s volbou automatického vyhledávání aktualizací.
 
