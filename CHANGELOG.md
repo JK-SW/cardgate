@@ -1,92 +1,91 @@
-# Changelog
+# Změny
 
-All notable changes to this project are documented here.
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-and the project uses [Semantic Versioning](https://semver.org/). The current version is in `VERSION`.
+Všechny podstatné změny aplikace. Formát vychází z [Keep a Changelog](https://keepachangelog.com/cs/1.1.0/),
+verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Aktuální verze je v souboru `VERSION`.
 
 ## [Unreleased]
 
-### Fixed
-- Windows sign-in with the card failed when the Mac had more than one smart card reader (e.g. one
-  built into the keyboard): only the first reader reached the remote computer. FreeRDP's text
-  conversion on macOS cut reader lists after the first name.
-- If the reader of the card cannot be matched, all readers are redirected instead of none.
+### Opraveno
+- Přihlášení kartou ve Windows nefungovalo na Macu s více čtečkami karet (např. se čtečkou
+  v klávesnici): do vzdáleného počítače se dostala jen první čtečka. Převod textu ve FreeRDP
+  na macOS seznam čteček usekl za prvním názvem.
+- Když nejde určit čtečku s kartou, přesměrují se všechny čtečky místo žádné.
 
 ## [0.2.1] - 2026-11-10
 
-Fixes from testing on another Mac.
+Opravy z testování na dalším Macu.
 
-### Fixed
-- Cancelling the PIN dialog (or letting it time out) ends the connection attempt; the client's
-  own credentials dialog no longer appears instead.
-- With several smart card readers (e.g. one built into the keyboard), Windows sign-in on the
-  remote computer asked to insert the card. Only the reader holding the card is redirected now.
+### Opraveno
+- Zrušení okna pro PIN (nebo vypršení času) ukončí pokus o připojení; místo něj se už neobjeví
+  vlastní okno klienta pro přihlašovací údaje.
+- S více čtečkami karet (např. čtečka v klávesnici) chtělo přihlášení do Windows vložit kartu.
+  Do vzdáleného počítače se teď přesměruje jen čtečka s kartou.
 
-### Changed
-- The connection log records smart card redirection operations and their results (never the
-  data sent to the card) to help diagnose sign-in problems.
-- The logs of the last five connections are kept (`last-session.log`, `last-session.1.log`, …),
-  so a failed attempt can still be examined after trying again.
+### Změněno
+- Záznam připojení obsahuje operace s přesměrovanou kartou a jejich výsledky (nikdy data posílaná
+  kartě) pro řešení potíží s přihlášením.
+- Uchovávají se záznamy posledních pěti připojení (`last-session.log`, `last-session.1.log`, …),
+  takže neúspěšný pokus jde prohlédnout i po dalším připojení.
 
 ## [0.2.0] - 2026-11-10
 
-Security hardening after an audit, cards with several certificates, faster card check.
+Zabezpečení po auditu, karty s více certifikáty, rychlejší kontrola karty.
 
-### Security
-- A PIN rejected by the card is never offered to it again by the same connection (reconnects or
-  protocol fallbacks) and is removed from memory.
-- The PIN dialog ignores typing in the first moment after it appears (keystrokes meant for another
-  app), sends only PINs of the length the card accepts, and shows warnings from the card: a wrong
-  PIN was entered before, last attempt, or card locked.
-- The gateway's certificate is checked with the macOS trust evaluation (keychain, revocation)
-  before the client starts; the smart card sign-in additionally requires the gateway to present
-  the same certificate inside the tunnel.
-- Only validly code signed PKCS#11 modules are loaded.
-- Release downloads come with SHA-256 checksums; CI actions are pinned to commits.
+### Zabezpečení
+- PIN, který karta odmítla, se jí v rámci stejného připojení už nikdy znovu nenabídne (opětovné
+  připojení, změna protokolu) a smaže se z paměti.
+- Okno pro PIN v prvním okamžiku po zobrazení ignoruje psaní (určené jiné aplikaci), odešle jen PIN
+  délky, kterou karta přijímá, a zobrazí varování karty: dříve zadaný chybný PIN, poslední pokus,
+  zablokovaná karta.
+- Certifikát brány se před spuštěním klienta ověří systémem macOS (klíčenka, odvolání); přihlášení
+  kartou navíc vyžaduje, aby brána uvnitř tunelu předložila stejný certifikát.
+- Načítají se jen platně podepsané moduly PKCS#11.
+- Soubory ke stažení mají kontrolní součty SHA-256; akce CI jsou připnuté na konkrétní commity.
 
-### Added
-- Cards with several certificates: expired or not yet valid certificates are ignored (FreeRDP
-  patch), the newest valid sign-in certificate is used automatically and a specific one can be
-  chosen in the connection settings; the window shows its expiry date and warns when the sign-in
-  certificate has expired.
-- Warning on the main window when the newest sign-in certificate expires in less than 14 days.
-- Keyboard Shortcuts window (Help menu) explaining the remote desktop hotkeys.
-- IPv6 addresses (in brackets) for computer and gateway.
-- Clear messages when the PIN was not entered in time (the dialog gives up after 2 minutes) or the
-  card has several sign-in certificates; cancelling the PIN dialog simply ends the attempt.
-- Quitting CardGate with an open connection asks first and disconnects.
+### Přidáno
+- Karty s více certifikáty: prošlé a ještě neplatné certifikáty se ignorují (patch FreeRDP),
+  automaticky se použije nejnovější platný přihlašovací certifikát a v nastavení připojení jde
+  zvolit konkrétní; okno ukazuje datum konce platnosti a varuje, když certifikát vypršel.
+- Upozornění v hlavním okně, když nejnovějšímu přihlašovacímu certifikátu zbývá méně než 14 dní.
+- Okno Klávesové zkratky (menu Nápověda) s popisem zkratek vzdálené plochy.
+- Adresy IPv6 (v hranatých závorkách) pro počítač i bránu.
+- Srozumitelné hlášky, když PIN nebyl zadán včas (okno to po 2 minutách vzdá) nebo má karta více
+  přihlašovacích certifikátů; zrušení okna pro PIN jednoduše ukončí pokus.
+- Ukončení CardGate při otevřeném připojení se nejdřív zeptá a pak odpojí.
 
-### Changed
-- The card check takes about 2–3 s instead of 6 s and no longer blocks Connect; clicking Connect
-  during the check waits for it.
+### Změněno
+- Kontrola karty trvá asi 2–3 s místo 6 s a neblokuje tlačítko Připojit; kliknutí během kontroly
+  na ni počká.
 
-### Fixed
-- The PIN dialog closes when its connection ends.
-- Connect is enabled only after the first check of a newly inserted card.
+### Opraveno
+- Okno pro PIN se zavře, když jeho připojení skončí.
+- Připojit je aktivní až po první kontrole nově vložené karty.
 
 ## [0.1.0] - 2026-11-09
 
-First version for testing. Apple silicon, macOS 15 or later; requires smart card software with
-a PKCS#11 module (e.g. ProID+). The app is not notarized – see the user guide for the first start.
+První verze k testování. Apple Silicon, macOS 15 nebo novější; vyžaduje software ke kartě s modulem
+PKCS#11 (např. ProID+). Aplikace není notarizovaná – postup při prvním spuštění je v návodu.
 
-### Added
-- Connect to a Windows computer through an RD Gateway that requires smart card sign-in
-  (the `HTTP_EXTENDED_AUTH_SC` scheme of the Microsoft client), with the card redirected into
-  the session for the Windows sign-in.
-- First start guide, connection settings (computer, gateway, window or full screen, initial
-  window size, clipboard, sound, scroll direction, PKCS#11 module), multiple connections and
-  import of `.rdp` files.
-- Card detection: shows the card holder and enables Connect only with a usable card; insertion
-  and removal are noticed immediately, and a card the middleware lost (e.g. after sleep) is
-  reported with a request to re-insert it.
-- Native PIN dialog on the display where you clicked Connect; the PIN is never stored, logged or
-  passed on a command line, and a wrong PIN is never retried.
-- Live connection status and clear error messages with advice; connection log window and
-  `~/Library/Logs/CardGate/last-session.log` for support.
-- The gateway certificate must be trusted by the system certificate authorities.
-- Safe client hotkeys (Left Control + Left Option + Left Shift), so typing cannot disconnect.
-- Window sizes in screen points with sharp Retina rendering; automatic size is 80 % of the screen.
-- About window with author and third-party licenses.
-- English, Czech and Slovak user interface and user guide.
-- Self-contained app: FreeRDP 3.33.0 with CardGate patches, OpenSSL, SDL, SDL_ttf, FreeType and
-  cJSON built from pinned, checksum-verified sources.
+### Přidáno
+- Připojení k počítači s Windows přes RD Gateway s přihlášením čipovou kartou (schéma
+  `HTTP_EXTENDED_AUTH_SC` klienta Microsoftu), s přesměrováním karty do relace kvůli přihlášení
+  do Windows.
+- Průvodce prvním spuštěním, nastavení připojení (počítač, brána, okno nebo celá obrazovka,
+  počáteční velikost okna, schránka, zvuk, směr posouvání, modul PKCS#11), více připojení a import
+  souborů `.rdp`.
+- Rozpoznání karty: ukazuje držitele a Připojit povolí jen s použitelnou kartou; vložení a vytažení
+  pozná hned a kartu, kterou software ke kartě ztratil (např. po spánku), ohlásí s žádostí o nové
+  vložení.
+- Vlastní okno pro PIN na monitoru, kde jste klikli na Připojit; PIN se nikdy neukládá, nezapisuje
+  do záznamu ani nepředává na příkazové řádce a chybný PIN se nikdy neopakuje.
+- Průběžný stav připojení a srozumitelné chybové hlášky s doporučením; okno se záznamem připojení
+  a soubor `~/Library/Logs/CardGate/last-session.log` pro podporu.
+- Certifikát brány musí být důvěryhodný podle systémových certifikačních autorit.
+- Bezpečné klávesové zkratky klienta (levý Control + levý Option + levý Shift), takže psaní nemůže
+  odpojit.
+- Velikost okna v bodech obrazovky s ostrým vykreslením na Retina; automatická velikost je 80 %
+  obrazovky.
+- Okno O aplikaci s autorem a licencemi třetích stran.
+- Uživatelské rozhraní a návod v angličtině, češtině a slovenštině.
+- Samostatná aplikace: FreeRDP 3.33.0 s úpravami CardGate, OpenSSL, SDL, SDL_ttf, FreeType a cJSON
+  sestavené z připnutých zdrojů s ověřeným kontrolním součtem.
