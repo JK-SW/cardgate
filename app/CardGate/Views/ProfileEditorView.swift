@@ -12,11 +12,14 @@ struct ProfileEditorView: View {
             Form {
                 Section {
                     TextField("Name", text: $editor.name)
+                        .accessibilityIdentifier("profile.name")
                     TextField("Computer", text: $editor.computer, prompt: Text("pc01.example.com"))
                         .textContentType(.URL)
+                        .accessibilityIdentifier("profile.computer")
                     validation(editor.computerError, empty: "Enter the address of your work computer.")
                     TextField("Gateway", text: $editor.gateway, prompt: Text("Optional"))
                         .textContentType(.URL)
+                        .accessibilityIdentifier("profile.gateway")
                     validation(editor.gatewayError, empty: nil)
                 } header: {
                     Text("Connection")
@@ -31,6 +34,7 @@ struct ProfileEditorView: View {
                         Text("Full screen").tag(DisplaySettings.Mode.fullScreen)
                         Text("Full screen on all displays").tag(DisplaySettings.Mode.allDisplays)
                     }
+                    .accessibilityIdentifier("profile.displayMode")
                     if editor.displayMode == .window {
                         Picker("Initial window size", selection: $editor.windowSize) {
                             Text("Automatic").tag(WindowSize?.none)
@@ -38,12 +42,15 @@ struct ProfileEditorView: View {
                                 Text(size.description).tag(Optional(size))
                             }
                         }
+                        .accessibilityIdentifier("profile.windowSize")
                     }
                 }
 
                 Section("Sharing") {
                     Toggle("Clipboard", isOn: $editor.clipboard)
+                        .accessibilityIdentifier("profile.clipboard")
                     Toggle("Play sound on this Mac", isOn: $editor.audio)
+                        .accessibilityIdentifier("profile.audio")
                 }
 
                 Section {
@@ -71,6 +78,7 @@ struct ProfileEditorView: View {
 
                 Section {
                     TextField("PKCS#11 module", text: $editor.pkcs11Module, prompt: Text("Automatic"))
+                        .accessibilityIdentifier("profile.module")
                     if !editor.moduleIsValid {
                         Text("Enter the full path of the module, starting with /.")
                             .foregroundStyle(.red)

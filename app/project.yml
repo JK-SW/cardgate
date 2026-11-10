@@ -69,14 +69,29 @@ targets:
       - name: Embed FreeRDP helper
         script: '"${SRCROOT}/../scripts/embed-helper.sh"'
         basedOnDependencyAnalysis: false
+  CardGateUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: CardGateUITests
+    dependencies:
+      - target: CardGate
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.jk-sw.cardgate.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: CardGate
 schemes:
   CardGate:
     build:
       targets:
         CardGate: all
+        CardGateUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
+      targets:
+        - CardGateUITests
     archive:
       config: Release

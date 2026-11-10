@@ -11,7 +11,11 @@ import Security
 final class AppModel {
     private(set) var profiles: [ConnectionProfile] = []
     var selectedID: UUID? {
-        didSet { if oldValue != selectedID { persist() } }
+        didSet {
+            guard oldValue != selectedID else { return }
+            persist()
+            refreshMiddleware()  // each connection may name its own PKCS#11 module
+        }
     }
 
     /// Profile shown in the editor sheet; `nil` when the sheet is closed.
@@ -134,6 +138,7 @@ final class AppModel {
         selectedID = profile.id
         editing = nil
         persist()
+        refreshMiddleware()  // the module setting may have changed
     }
 
     func delete(_ profile: ConnectionProfile) {

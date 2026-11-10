@@ -15,9 +15,7 @@ public struct FreeRDPClientConfig: Sendable {
 
     /// `~/Library/Application Support/CardGate/FreeRDP`
     public static func standard() throws -> FreeRDPClientConfig {
-        let support = try FileManager.default.url(
-            for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        return FreeRDPClientConfig(directory: support.appending(path: "CardGate/FreeRDP"))
+        FreeRDPClientConfig(directory: try AppDirectories.data().appending(path: "FreeRDP"))
     }
 
     public var sdlConfigURL: URL { directory.appending(path: "freerdp/sdl-freerdp.json") }

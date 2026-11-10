@@ -12,6 +12,7 @@ struct SettingsView: View {
             Section {
                 Toggle("Check for updates automatically", isOn: $updater.automaticallyChecksForUpdates)
                     .disabled(!updater.isAvailable)
+                    .accessibilityIdentifier("settings.automaticUpdates")
             } footer: {
                 Text(updater.isAvailable ? Self.updatesExplanation : "Updates are not available in this build.")
                     .foregroundStyle(.secondary)
