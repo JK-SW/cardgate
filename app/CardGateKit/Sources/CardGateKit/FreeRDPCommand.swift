@@ -36,9 +36,7 @@ public struct FreeRDPCommand: Equatable, Sendable {
             arguments.insert("/smartcard:\(reader)", at: position)
         }
         self.environment = [
-            // Smart card authentication to the RD Gateway (patched FreeRDP).
-            "FREERDP_RDG_SMARTCARD": "1",
-            "XDG_CONFIG_HOME": config.directory.path(percentEncoded: false),
+            "XDG_CONFIG_HOME": config.directory.path(percentEncoded: false)
         ]
         if let askPass {
             environment["FREERDP_ASKPASS"] = askPass.shellCommand
@@ -57,7 +55,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
     static func arguments(profile: ConnectionProfile, pkcs11Module: String, screen: ScreenMetrics?) -> [String] {
         var args = ["/v:\(profile.computer)"]
         if let gateway = profile.gateway {
-            args.append("/gateway:g:\(gateway),type:http,usage-method:direct")
+            // auth:smartcard = smart card authentication to the RD Gateway (patched FreeRDP).
+            args.append("/gateway:g:\(gateway),type:http,usage-method:direct,auth:smartcard")
         }
         args += [
             // Log on with the card redirected into the session; the PKCS#11 module provides the

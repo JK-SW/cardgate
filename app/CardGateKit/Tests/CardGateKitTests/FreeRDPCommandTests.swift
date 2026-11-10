@@ -31,7 +31,7 @@ struct FreeRDPCommandTests {
         #expect(
             command.arguments == [
                 "/v:pc01.corp.example",
-                "/gateway:g:rdg.example.com,type:http,usage-method:direct",
+                "/gateway:g:rdg.example.com,type:http,usage-method:direct,auth:smartcard",
                 "/smartcard-logon",
                 "/kerberos:pkcs11-module:\(module)",
                 "/sec:rdp",
@@ -46,8 +46,7 @@ struct FreeRDPCommandTests {
             ])
         #expect(
             command.environment == [
-                "FREERDP_RDG_SMARTCARD": "1",
-                "XDG_CONFIG_HOME": "/Users/test/Library/Application Support/CardGate/FreeRDP",
+                "XDG_CONFIG_HOME": "/Users/test/Library/Application Support/CardGate/FreeRDP"
             ])
     }
 
@@ -83,7 +82,7 @@ struct FreeRDPCommandTests {
 
     @Test func keepsGatewayPort() throws {
         let args = try command(profile(gateway: "rdg.example.com:8443")).arguments
-        #expect(args.contains("/gateway:g:rdg.example.com:8443,type:http,usage-method:direct"))
+        #expect(args.contains("/gateway:g:rdg.example.com:8443,type:http,usage-method:direct,auth:smartcard"))
     }
 
     @Test func windowWithInitialSize() throws {

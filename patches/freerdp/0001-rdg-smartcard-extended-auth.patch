@@ -304,19 +304,21 @@
  	if (rdg->context->settings->GatewayHttpExtAuthBearer && rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_BEARER;
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
-@@ -2357,6 +2580,11 @@
+@@ -2357,6 +2580,13 @@
  	if (settings->GatewayAccessToken)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_PAA;
  
-+	/* RD Gateway smart card authentication (TLS client certificate inside the tunnel). */
-+	if (freerdp_settings_get_bool(settings, FreeRDP_SmartcardLogon) &&
-+	    getenv("FREERDP_RDG_SMARTCARD") && (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE))
++	/* RD Gateway smart card authentication (TLS client certificate inside the tunnel), selected
++	 * like in mstsc: gatewaycredentialssource:i:1 in .rdp files or /gateway:...,auth:smartcard */
++	if ((freerdp_settings_get_uint32(settings, FreeRDP_GatewayCredentialsSource) ==
++	     TSC_PROXY_CREDS_MODE_SMARTCARD) &&
++	    (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE))
 +		rdg->extAuth = HTTP_EXTENDED_AUTH_SC;
 +
  	rdg->tlsOut = freerdp_tls_new(rdg->context);
  
  	if (!rdg->tlsOut)
-@@ -2408,6 +2636,12 @@
+@@ -2408,6 +2638,12 @@
  
  				break;
  
@@ -329,7 +331,7 @@
  			default:
  				WLog_Print(rdg->log, WLOG_DEBUG,
  				           "RDG extended authentication method %d not supported", rdg->extAuth);
-@@ -2454,6 +2688,7 @@
+@@ -2454,6 +2690,7 @@
  	DeleteCriticalSection(&rdg->writeSection);
  
  	smartcardCertInfo_Free(rdg->smartcard);
@@ -895,3 +897,40 @@
 +BOOL rdg_sc_drain(rdgSc* sc, BYTE** out, size_t* outLen);
 +
 +#endif /* FREERDP_LIB_CORE_GATEWAY_RDG_SC_H */
+--- a/client/common/cmdline.c
++++ b/client/common/cmdline.c
+@@ -4573,6 +4573,22 @@
+ 				allowHttpOpts = FALSE;
+ 			}
+ 
++			const char* ga = option_starts_with("auth:", argval);
++			if (ga)
++			{
++				/* Credentials the gateway asks for (mstsc: gatewaycredentialssource) */
++				UINT32 source = TSC_PROXY_CREDS_MODE_USERPASS;
++				if (option_equals(ga, "smartcard"))
++					source = TSC_PROXY_CREDS_MODE_SMARTCARD;
++				else if (!option_equals(ga, "password"))
++					goto fail;
++				if (!freerdp_settings_set_uint32(settings, FreeRDP_GatewayCredentialsSource,
++				                                 source))
++					goto fail;
++				validOption = TRUE;
++				allowHttpOpts = FALSE;
++			}
++
+ 			const char* um = option_starts_with("usage-method:", argval);
+ 			if (um)
+ 			{
+--- a/client/common/cmdline.h
++++ b/client/common/cmdline.h
+@@ -195,7 +195,8 @@
+ 	  "g:<gateway>[:<port>],u:<user>,d:<domain>,p:<password>,usage-method:["
+ 	  "direct|detect],access-token:<"
+ 	  "token>,type:[rpc|http[,no-websockets][,extauth-sspi-ntlm]|auto[,no-websockets][,extauth-"
+-	  "sspi-ntlm]]|arm,url:<wss://url>,bearer:<oauth2-bearer-token>,timeout:<1-600000 ms>",
++	  "sspi-ntlm]]|arm,url:<wss://url>,bearer:<oauth2-bearer-token>,timeout:<1-600000 ms>,"
++	  "auth:[password|smartcard]",
+ 	  nullptr, nullptr, -1, "gw", "Gateway Hostname" },
+ #if defined(WITH_FREERDP_DEPRECATED_COMMANDLINE)
+ 	{ "g", COMMAND_LINE_VALUE_REQUIRED, "<gateway>[:<port>]", nullptr, nullptr, -1, nullptr,
