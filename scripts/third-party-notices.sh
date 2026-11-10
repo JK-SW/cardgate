@@ -24,5 +24,6 @@ section sdl3     "SDL" "https://www.libsdl.org" LICENSE.txt
 section sdl3_ttf "SDL_ttf" "https://github.com/libsdl-org/SDL_ttf" LICENSE.txt
 section freetype "FreeType" "https://freetype.org" LICENSE.TXT FTL.TXT
 section cjson    "cJSON" "https://github.com/DaveGamble/cJSON" LICENSE
+section sparkle  "Sparkle" "https://sparkle-project.org" LICENSE
 printf '%s\n' "================================================================================"
 printf '%s\n' "PKCS#11 header (pkcs11.h)" "This file is in the Public Domain."

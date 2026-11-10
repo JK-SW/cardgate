@@ -39,6 +39,13 @@ Připojení můžete mít i více – přepínáte je v horní liště okna.
 Klávesové zkratky klienta (celá obrazovka, odpojení…) se používají s klávesami
 **levý Control + levý Option + levý Shift** a písmenem (např. **Enter** = celá obrazovka).
 
+## Aktualizace
+
+Při druhém spuštění se CardGate zeptá, zda má nové verze hledat automaticky (jednou denně).
+Ručně: menu **CardGate → Zkontrolovat aktualizace…**. Nová verze se nainstaluje jedním kliknutím;
+aplikace přijme jen aktualizaci podepsanou klíčem autora. Kontrola jen stáhne seznam verzí
+z GitHubu a nic o vás neodesílá.
+
 ## Bezpečnost
 
 - PIN se nikde neukládá. Dialog pro PIN přijme jen PIN v délce, jakou karta povoluje, a upozorní,

@@ -22,6 +22,7 @@ enum Main {
 
 struct CardGateApp: App {
     @State private var model = AppModel()
+    @State private var updater = Updater()
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
 
     var body: some Scene {
@@ -37,6 +38,10 @@ struct CardGateApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 OpenWindowButton(title: "About CardGate", id: WindowID.about)
+                if updater.isAvailable {
+                    Button("Check for Updates…") { updater.checkForUpdates() }
+                        .disabled(!updater.canCheckForUpdates)
+                }
             }
             CommandGroup(replacing: .newItem) {
                 Button("New Connection…") { model.beginNewProfile() }

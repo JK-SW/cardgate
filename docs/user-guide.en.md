@@ -34,6 +34,13 @@ Gateway that requires smart card (or token) sign-in.
 
 Client hotkeys use **left Control + left Option + left Shift** plus a key (e.g. **Return** = full screen).
 
+## Updates
+
+On its second launch CardGate asks whether to look for new versions automatically (once a day).
+Manually: **CardGate → Check for Updates…**. A new version installs with one click; the app only
+accepts updates signed with the author's key. A check only downloads the list of versions from
+GitHub and sends nothing about you.
+
 ## Security
 
 - The PIN is never stored. The PIN dialog accepts only PINs of the length the card allows and warns

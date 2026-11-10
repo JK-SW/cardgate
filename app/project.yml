@@ -37,6 +37,10 @@ targets:
       - path: CardGate
     dependencies:
       - package: CardGateKit
+      # Update framework, prebuilt and checksum pinned in scripts/deps.lock (scripts/build-deps.sh sparkle).
+      - framework: ../build/prefix/sparkle/Sparkle.framework
+        embed: true
+        codeSign: true
     info:
       path: CardGate/Info.plist
       properties:
@@ -48,6 +52,11 @@ targets:
         LSApplicationCategoryType: public.app-category.productivity
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         NSHumanReadableCopyright: "© 2026 Ing. Jiří Kubínek. Licensed under the Apache License 2.0."
+        # Updates (Sparkle): feed published with each GitHub Release, archives signed with EdDSA.
+        SUFeedURL: https://github.com/JK-SW/cardgate/releases/latest/download/appcast.xml
+        SUPublicEDKey: ${CARDGATE_SPARKLE_PUBLIC_KEY}
+        SUScheduledCheckInterval: 86400
+        SUAllowsAutomaticUpdates: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.jk-sw.cardgate

@@ -36,6 +36,13 @@ ktorá vyžaduje prihlásenie čipovou kartou alebo tokenom.
 Klávesové skratky klienta sa používajú s klávesmi **ľavý Control + ľavý Option + ľavý Shift**
 a písmenom (napr. **Enter** = celá obrazovka).
 
+## Aktualizácie
+
+Pri druhom spustení sa CardGate opýta, či má nové verzie hľadať automaticky (raz denne).
+Ručne: menu **CardGate → Skontrolovať aktualizácie…**. Nová verzia sa nainštaluje jedným kliknutím;
+aplikácia prijme len aktualizáciu podpísanú kľúčom autora. Kontrola len stiahne zoznam verzií
+z GitHubu a nič o vás neodosiela.
+
 ## Bezpečnosť
 
 - PIN sa nikde neukladá. Dialóg na PIN prijme len PIN v dĺžke, akú karta povoľuje, a upozorní,

@@ -6,6 +6,9 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 ## [Unreleased]
 
 ### Přidáno
+- Aktualizace jedním kliknutím (Sparkle): aplikace se při druhém spuštění zeptá, zda hledat nové
+  verze automaticky; ručně v menu CardGate → Zkontrolovat aktualizace…. Aktualizace jsou podepsané
+  klíčem autora a jiné se nenainstalují.
 - Okno O aplikaci odkazuje na zdrojový kód a na možnost podpořit autora (Ko-fi).
 - Po delším používání (20 úspěšných připojení, nejdřív za týden) aplikace jednou nenápadně nabídne
   podporu autora; po zavření se už neukáže. Správci ji mohou vypnout (viz návod).

@@ -2,7 +2,7 @@
 # Builds FreeRDP (with our patches) and all its runtime dependencies from pinned sources
 # into $BUILD/prefix. Re-running only rebuilds steps whose inputs changed.
 #
-# Usage: scripts/build-deps.sh [step...]   steps: licenses openssl cjson freetype sdl3 sdl3_ttf freerdp
+# Usage: scripts/build-deps.sh [step...]   steps: licenses openssl cjson freetype sdl3 sdl3_ttf freerdp sparkle
 # Build tools needed: Xcode command line tools, cmake, ninja, pkg-config.
 source "$(dirname "$0")/common.sh"
 
@@ -102,12 +102,22 @@ for entry in json.load(open(sys.argv[1])):
 }
 
 # License texts of everything shipped in the app, from the verified source archives.
+build_sparkle() {
+  # Prebuilt by the Sparkle project (checksum pinned): the update framework embedded in the app and
+  # the tool that signs release archives for the update feed.
+  local s; s="$(unpack sparkle)"
+  log "Installing Sparkle"
+  rm -rf "$PREFIX/sparkle"; mkdir -p "$PREFIX/sparkle/bin"
+  ditto "$s/Sparkle.framework" "$PREFIX/sparkle/Sparkle.framework"
+  cp "$s/bin/sign_update" "$s/bin/generate_keys" "$PREFIX/sparkle/bin/"
+}
+
 build_licenses() {
   local dir="$PREFIX/share/licenses"
   rm -rf "$dir"; mkdir -p "$dir"
   local entry name files f archive top
   for entry in "openssl:LICENSE.txt" "cjson:LICENSE" "freetype:LICENSE.TXT docs/FTL.TXT" \
-               "sdl3:LICENSE.txt" "sdl3_ttf:LICENSE.txt" "freerdp:LICENSE"; do
+               "sdl3:LICENSE.txt" "sdl3_ttf:LICENSE.txt" "freerdp:LICENSE" "sparkle:LICENSE"; do
     name="${entry%%:*}"; files="${entry#*:}"
     archive="$(fetch "$name")"
     top="$(tar -tf "$archive" | head -1 | cut -d/ -f1)"
@@ -119,7 +129,7 @@ build_licenses() {
   log "License texts collected"
 }
 
-ALL=(licenses openssl cjson freetype sdl3 sdl3_ttf freerdp)
+ALL=(licenses openssl cjson freetype sdl3 sdl3_ttf freerdp sparkle)
 STEPS=("${@:-${ALL[@]}}")
 mkdir -p "$OBJ" "$PREFIX"
 rebuilt=0  # once a step is rebuilt, everything after it is rebuilt too
