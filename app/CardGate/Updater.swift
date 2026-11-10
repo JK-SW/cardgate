@@ -15,6 +15,16 @@ final class Updater {
     private let controller: SPUStandardUpdaterController?
     private var observation: NSKeyValueObservation?
     private(set) var canCheckForUpdates = false
+    private var automaticChecksObservation: NSKeyValueObservation?
+    /// The setting in CardGate → Settings (Sparkle also asks once, on the second launch).
+    var automaticallyChecksForUpdates = false {
+        didSet {
+            guard let updater = controller?.updater,
+                updater.automaticallyChecksForUpdates != automaticallyChecksForUpdates
+            else { return }
+            updater.automaticallyChecksForUpdates = automaticallyChecksForUpdates
+        }
+    }
 
     init() {
         let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? ""
@@ -29,6 +39,17 @@ final class Updater {
         observation = controller.updater.observe(\.canCheckForUpdates, options: [.new]) { [weak self] _, change in
             let canCheck = change.newValue ?? false
             Task { @MainActor in self?.canCheckForUpdates = canCheck }
+        }
+        automaticallyChecksForUpdates = controller.updater.automaticallyChecksForUpdates
+        automaticChecksObservation = controller.updater.observe(
+            \.automaticallyChecksForUpdates, options: [.new]
+        ) { [weak self] _, _ in
+            // Read the current value when the task runs, never a queued older one.
+            Task { @MainActor in
+                if let self, let updater = self.controller?.updater {
+                    self.automaticallyChecksForUpdates = updater.automaticallyChecksForUpdates
+                }
+            }
         }
     }
 

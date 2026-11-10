@@ -59,6 +59,10 @@ struct CardGateApp: App {
             }
         }
 
+        Settings {
+            SettingsView(updater: updater)
+        }
+
         Window("Keyboard Shortcuts", id: WindowID.shortcuts) {
             KeyboardShortcutsView()
         }
