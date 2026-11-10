@@ -1,0 +1,71 @@
+--- a/winpr/libwinpr/crt/unicode_apple.m
++++ b/winpr/libwinpr/crt/unicode_apple.m
+@@ -73,15 +73,16 @@
+ 		return -1;
+ 	}
+ 
+-	const WCHAR *utf16 = WINPR_PACKED_ALIGN_CAST(
+-	    const WCHAR *, [utf cStringUsingEncoding:NSUTF16LittleEndianStringEncoding]);
+-	const size_t utf16ByteLen = [utf lengthOfBytesUsingEncoding:NSUTF16LittleEndianStringEncoding];
+-	const size_t utf16CharLen = utf16ByteLen / sizeof(WCHAR);
+-	if (!utf16)
++	/* Converted as data, not as a C string: the input may contain embedded NUL characters
++	 * (multi-strings such as smart card reader lists) and all of it must be converted. */
++	NSData *data = [utf dataUsingEncoding:NSUTF16LittleEndianStringEncoding];
++	if (!data)
+ 	{
+-		WLog_WARN(TAG, "[utf cStringUsingEncoding:NSUTF16LittleEndianStringEncoding] failed");
++		WLog_WARN(TAG, "[utf dataUsingEncoding:NSUTF16LittleEndianStringEncoding] failed");
+ 		return -1;
+ 	}
++	const WCHAR *utf16 = WINPR_PACKED_ALIGN_CAST(const WCHAR *, [data bytes]);
++	const size_t utf16CharLen = [data length] / sizeof(WCHAR);
+ 
+ 	if (cchWideChar == 0)
+ 		return WINPR_ASSERTING_INT_CAST(int, utf16CharLen);
+@@ -92,9 +93,9 @@
+ 	}
+ 	else
+ 	{
+-		const size_t mlen = MIN((size_t)utf16CharLen, cchWideChar);
+-		const size_t len = _wcsnlen(utf16, mlen);
+-		memcpy(lpWideCharStr, utf16, len * sizeof(WCHAR));
++		const size_t len = utf16CharLen;
++		if (len > 0)
++			memcpy(lpWideCharStr, utf16, len * sizeof(WCHAR));
+ 		if ((len < (size_t)cchWideChar) &&
+ 		    ((len == 0) || ((len > 0) && (lpWideCharStr[len - 1] != '\0'))))
+ 			lpWideCharStr[len] = '\0';
+@@ -129,13 +130,15 @@
+ 		return -1;
+ 	}
+ 
+-	const char *utf8 = [utf cStringUsingEncoding:NSUTF8StringEncoding];
+-	const size_t utf8Len = [utf lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+-	if (!utf8)
++	/* Converted as data, not as a C string: keep embedded NUL characters (multi-strings). */
++	NSData *data = [utf dataUsingEncoding:NSUTF8StringEncoding];
++	if (!data)
+ 	{
+-		WLog_WARN(TAG, "[utf cStringUsingEncoding:NSUTF8StringEncoding] failed");
++		WLog_WARN(TAG, "[utf dataUsingEncoding:NSUTF8StringEncoding] failed");
+ 		return -1;
+ 	}
++	const char *utf8 = [data bytes];
++	const size_t utf8Len = [data length];
+ 
+ 	if (cbMultiByte == 0)
+ 		return WINPR_ASSERTING_INT_CAST(int, utf8Len);
+@@ -146,9 +149,9 @@
+ 	}
+ 	else
+ 	{
+-		const size_t mlen = MIN((size_t)cbMultiByte, utf8Len);
+-		const size_t len = strnlen(utf8, mlen);
+-		memcpy(lpMultiByteStr, utf8, len * sizeof(char));
++		const size_t len = utf8Len;
++		if (len > 0)
++			memcpy(lpMultiByteStr, utf8, len * sizeof(char));
+ 		if ((len < (size_t)cbMultiByte) && (len > 0) && (lpMultiByteStr[len - 1] != '\0'))
+ 			lpMultiByteStr[len] = '\0';
+ 		return WINPR_ASSERTING_INT_CAST(int, utf8Len);
