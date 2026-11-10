@@ -26,3 +26,30 @@ struct PKCS11ProbeTests {
         #expect(PKCS11Probe.probe(module: "/nonexistent/module.dylib") == .moduleNotLoadable)
     }
 }
+
+struct PINPolicyTests {
+    @Test func readsTokenInfo() {
+        let policy = PINPolicy(minLength: 4, maxLength: 8, flags: 0)
+        #expect(policy == PINPolicy(minLength: 4, maxLength: 8))
+        #expect(PINPolicy(minLength: 4, maxLength: 8, flags: 0x1_0000).countLow)
+        #expect(PINPolicy(minLength: 4, maxLength: 8, flags: 0x2_0000).finalTry)
+        #expect(PINPolicy(minLength: 4, maxLength: 8, flags: 0x4_0000).locked)
+    }
+
+    @Test(arguments: [(UInt(0), UInt(0)), (8, 4), (4, 1000)])
+    func implausibleLimitsUseFallback(_ limits: (UInt, UInt)) {
+        let policy = PINPolicy(minLength: limits.0, maxLength: limits.1, flags: 0)
+        #expect(policy.minLength == PINPolicy.fallbackLengths.lowerBound)
+        #expect(policy.maxLength == PINPolicy.fallbackLengths.upperBound)
+    }
+
+    @Test func acceptsOnlyPlausiblePINs() {
+        let policy = PINPolicy(minLength: 4, maxLength: 8)
+        #expect(!policy.accepts(""))
+        #expect(!policy.accepts("123"))
+        #expect(policy.accepts("1234"))
+        #expect(policy.accepts("12345678"))
+        #expect(!policy.accepts("123456789"))
+        #expect(!PINPolicy(minLength: 4, maxLength: 8, locked: true).accepts("1234"))
+    }
+}

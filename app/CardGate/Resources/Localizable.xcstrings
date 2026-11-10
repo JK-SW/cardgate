@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "A wrong PIN was entered before. Only a few attempts remain.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Už byl zadán chybný PIN. Zbývá jen několik pokusů."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Už bol zadaný chybný PIN. Zostáva len niekoľko pokusov."
+          }
+        }
+      }
+    },
     "About CardGate": {
       "localizations": {
         "cs": {
@@ -692,6 +708,22 @@
         }
       }
     },
+    "Last attempt! Another wrong PIN locks the card.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poslední pokus! Další chybný PIN kartu zablokuje."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posledný pokus! Ďalší chybný PIN kartu zablokuje."
+          }
+        }
+      }
+    },
     "Leave empty unless your IT department tells you otherwise.": {
       "localizations": {
         "cs": {
@@ -1140,6 +1172,22 @@
         }
       }
     },
+    "The PIN has %lld–%lld characters. Several wrong attempts lock the card.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN má %lld–%lld znaků. Několik chybných pokusů kartu zablokuje."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN má %lld–%lld znakov. Niekoľko chybných pokusov kartu zablokuje."
+          }
+        }
+      }
+    },
     "The PIN was not accepted. Be careful: after several wrong attempts the card gets locked.": {
       "localizations": {
         "cs": {
@@ -1184,6 +1232,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Karta je zablokovaná"
+          }
+        }
+      }
+    },
+    "The card is locked. Unlock it with the PUK or contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta je zablokovaná. Odblokujte ji kódem PUK nebo kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta je zablokovaná. Odblokujte ju kódom PUK alebo kontaktujte IT oddelenie."
           }
         }
       }

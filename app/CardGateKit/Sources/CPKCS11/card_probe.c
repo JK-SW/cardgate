@@ -10,7 +10,7 @@
 
 cg_card_probe_result cg_card_probe(const char* module_path)
 {
-	cg_card_probe_result result = { -1, 0, 0 };
+	cg_card_probe_result result = { -1, 0, 0, 0, 0, 0 };
 	void* module = dlopen(module_path, RTLD_NOW | RTLD_LOCAL);
 	if (!module)
 		return result;
@@ -51,7 +51,17 @@ cg_card_probe_result cg_card_probe(const char* module_path)
 			CK_OBJECT_HANDLE objects[MAX_OBJECTS];
 			CK_ULONG found = 0;
 			if (p11->C_FindObjects(session, objects, MAX_OBJECTS, &found) == CKR_OK)
+			{
+				CK_TOKEN_INFO info;
+				if (found > 0 && result.certificates == 0 &&
+				    p11->C_GetTokenInfo(slots[i], &info) == CKR_OK)
+				{
+					result.pin_min_length = info.ulMinPinLen;
+					result.pin_max_length = info.ulMaxPinLen;
+					result.token_flags = info.flags;
+				}
 				result.certificates += found;
+			}
 			(void)p11->C_FindObjectsFinal(session);
 		}
 		(void)p11->C_CloseSession(session);

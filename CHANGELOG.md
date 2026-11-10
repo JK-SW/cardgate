@@ -6,6 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
 
 ## [Unreleased]
 
+### Security
+- A PIN rejected by the card is never offered to it again by the same connection (reconnects or
+  protocol fallbacks) and is removed from memory.
+- The PIN dialog ignores typing in the first moment after it appears (keystrokes meant for another
+  app), sends only PINs of the length the card accepts, and shows warnings from the card: a wrong
+  PIN was entered before, last attempt, or card locked.
+
 ## [0.1.0] - 2026-11-09
 
 First version for testing. Apple silicon, macOS 15 or later; requires smart card software with

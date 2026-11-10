@@ -4,16 +4,22 @@ import SwiftUI
 
 /// Native PIN dialog shown when FreeRDP needs the PIN of the smart card.
 ///
-/// FreeRDP runs `CardGate --askpass '<prompt>'` (`FREERDP_ASKPASS`) and reads the PIN from
-/// standard output. The PIN is never stored, logged or passed on a command line.
+/// FreeRDP runs `CardGate --askpass --module <pkcs11> '<prompt>'` (`FREERDP_ASKPASS`) and reads
+/// the PIN from standard output. The PIN is never stored, logged or passed on a command line.
+///
+/// Every PIN the card rejects counts towards locking it, so the dialog guards against accidental
+/// input: keystrokes in the first moment after it appears (typing meant for another app) are
+/// discarded, only PINs of the length the card accepts can be sent, and the remaining attempts
+/// reported by the card are shown.
 @MainActor
 enum PINPrompt {
     static let argument = "--askpass"
+    static let moduleArgument = "--module"
 
-    static var command: AskPassCommand {
+    static func command(module: String) -> AskPassCommand {
         AskPassCommand(
             executable: Bundle.main.executableURL ?? URL(filePath: CommandLine.arguments[0]),
-            arguments: [argument])
+            arguments: [argument, moduleArgument, module])
     }
 
     /// Posted (as distributed notifications, without any data) so the app can show that the
@@ -26,10 +32,20 @@ enum PINPrompt {
             name, object: nil, userInfo: nil, deliverImmediately: true)
     }
 
-    static func run(prompt: String) -> Never {
+    /// - Parameter arguments: the arguments after `--askpass`.
+    static func run(arguments: [String]) -> Never {
+        var arguments = arguments
+        var module: String?
+        if arguments.first == moduleArgument, arguments.count >= 2 {
+            module = arguments[1]
+            arguments.removeFirst(2)
+        }
+        let prompt = arguments.joined(separator: " ")
+
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
 
+        let model = PINPromptModel(host: AskPassCommand.host(fromPrompt: prompt))
         var pin: String?
         let window = NSWindow(
             contentRect: .zero, styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
@@ -38,20 +54,53 @@ enum PINPrompt {
         window.isMovableByWindowBackground = true
         window.level = .floating
         window.contentViewController = NSHostingController(
-            rootView: PINPromptView(host: AskPassCommand.host(fromPrompt: prompt)) { result in
+            rootView: PINPromptView(model: model) { result in
                 pin = result
                 app.stopModal()
             })
         placeOnScreenWithPointer(window)
         app.activate()
         window.makeKeyAndOrderFront(nil)
+        model.start(module: module)
         post(shownNotification)
         app.runModal(for: window)
         post(closedNotification)
 
-        guard let pin, !pin.isEmpty else { exit(1) }
+        guard let pin, model.policy.accepts(pin) else { exit(1) }
         FileHandle.standardOutput.write(Data((pin + "\n").utf8))
         exit(0)
+    }
+}
+
+/// State of the PIN dialog.
+@MainActor
+@Observable
+final class PINPromptModel {
+    let host: String?
+    /// Limits and remaining attempts as reported by the card (read without a PIN, takes seconds).
+    private(set) var policy = PINPolicy.unknown
+    private(set) var policyKnown = false
+    /// Input is accepted only after this short delay, see `PINPrompt`.
+    private(set) var armed = false
+    static let armDelay: Duration = .milliseconds(700)
+
+    init(host: String?) {
+        self.host = host
+    }
+
+    func start(module: String?) {
+        Task {
+            try? await Task.sleep(for: Self.armDelay)
+            armed = true
+        }
+        guard let module else { return }
+        Task {
+            let policy = await Task.detached { PKCS11Probe.pinPolicy(module: module) }.value
+            if let policy {
+                self.policy = policy
+                policyKnown = true
+            }
+        }
     }
 }
 
@@ -73,7 +122,7 @@ private func placeOnScreenWithPointer(_ window: NSWindow) {
 }
 
 private struct PINPromptView: View {
-    let host: String?
+    let model: PINPromptModel
     /// Called with the PIN, or `nil` when cancelled.
     let finish: (String?) -> Void
 
@@ -82,15 +131,18 @@ private struct PINPromptView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "lock.rectangle.stack.fill")
-                .font(.system(size: 44))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.tint)
-                .accessibilityHidden(true)
+            Image(
+                systemName: model.policy.locked
+                    ? "lock.trianglebadge.exclamationmark.fill" : "lock.rectangle.stack.fill"
+            )
+            .font(.system(size: 44))
+            .symbolRenderingMode(.hierarchical)
+            .foregroundStyle(model.policy.locked ? AnyShapeStyle(.red) : AnyShapeStyle(.tint))
+            .accessibilityHidden(true)
             VStack(spacing: 6) {
                 Text("Enter the PIN of your smart card")
                     .font(.headline)
-                if let host {
+                if let host = model.host {
                     Text("Signing in to \(host).")
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -102,11 +154,17 @@ private struct PINPromptView: View {
                 .textFieldStyle(.roundedBorder)
                 .focused($focused)
                 .frame(width: 220)
+                .disabled(model.policy.locked)
                 .onSubmit(submit)
+                .onChange(of: pin) { _, _ in
+                    // Typing that arrives before the dialog is armed was meant for another app.
+                    if !model.armed { pin = "" }
+                }
 
-            Text("Several wrong attempts lock the card.")
+            attemptsInfo
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 12) {
                 Button(role: .cancel) {
@@ -120,7 +178,7 @@ private struct PINPromptView: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
-                .disabled(pin.isEmpty)
+                .disabled(!canSubmit)
             }
             .controlSize(.large)
         }
@@ -131,8 +189,33 @@ private struct PINPromptView: View {
         .onAppear { focused = true }
     }
 
+    @ViewBuilder private var attemptsInfo: some View {
+        let policy = model.policy
+        if policy.locked {
+            Text("The card is locked. Unlock it with the PUK or contact your IT department.")
+                .foregroundStyle(.red)
+        } else if policy.finalTry {
+            Text("Last attempt! Another wrong PIN locks the card.")
+                .foregroundStyle(.red)
+                .fontWeight(.semibold)
+        } else if policy.countLow {
+            Text("A wrong PIN was entered before. Only a few attempts remain.")
+                .foregroundStyle(.orange)
+        } else if model.policyKnown {
+            Text(
+                "The PIN has \(policy.minLength)–\(policy.maxLength) characters. Several wrong attempts lock the card."
+            )
+            .foregroundStyle(.secondary)
+        } else {
+            Text("Several wrong attempts lock the card.")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var canSubmit: Bool { model.armed && model.policy.accepts(pin) }
+
     private func submit() {
-        guard !pin.isEmpty else { return }
+        guard canSubmit else { return }
         finish(pin)
     }
 }

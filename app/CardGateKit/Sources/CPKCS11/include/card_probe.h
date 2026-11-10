@@ -9,6 +9,10 @@ typedef struct {
     unsigned long tokens;
     /// Certificate objects on all present tokens.
     unsigned long certificates;
+    /// PIN length limits and token flags (CKF_USER_PIN_*) of the first token with certificates.
+    unsigned long pin_min_length;
+    unsigned long pin_max_length;
+    unsigned long token_flags;
 } cg_card_probe_result;
 
 /// Loads the PKCS#11 module, counts present tokens and certificates (public objects, no PIN) and

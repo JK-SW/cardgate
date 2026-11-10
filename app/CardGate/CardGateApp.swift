@@ -9,7 +9,7 @@ enum Main {
     static func main() {
         let arguments = CommandLine.arguments.dropFirst()
         if arguments.first == PINPrompt.argument {
-            PINPrompt.run(prompt: arguments.dropFirst().joined(separator: " "))
+            PINPrompt.run(arguments: Array(arguments.dropFirst()))
         } else if arguments.first == CardMonitor.checkArgument, let module = arguments.dropFirst().first {
             // Separate short-lived process: the middleware is loaded fresh and never stays in the app.
             print(PKCS11Probe.probe(module: module).encoded)
