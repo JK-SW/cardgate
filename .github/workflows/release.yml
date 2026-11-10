@@ -55,6 +55,12 @@ jobs:
         run: |
           cd build/dist
           shasum -a 256 "CardGate-$VERSION.zip" > SHA256SUMS.txt
-          { cat ../../release-notes.md; printf '\n### SHA-256\n```\n'; cat SHA256SUMS.txt; printf '```\n'; } > notes.md
+          {
+            cat ../../release-notes.md
+            printf '\n### Instalace\n'
+            printf 'Stáhněte `CardGate-%s.zip`, poklepáním ho rozbalte a přetáhněte CardGate do složky Aplikace. ' "$VERSION"
+            printf 'Postup při prvním spuštění je v [návodu](https://github.com/JK-SW/cardgate/blob/main/docs/navod.cs.md).\n'
+            printf '\n### Kontrolní součet SHA-256\n```\n'; cat SHA256SUMS.txt; printf '```\n'
+          } > notes.md
           gh release create "v$VERSION" "CardGate-$VERSION.zip" SHA256SUMS.txt \
             --title "CardGate $VERSION" --notes-file notes.md --target "$GITHUB_SHA"
