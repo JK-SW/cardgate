@@ -37,7 +37,13 @@ CardGate je zdarma. Pokud vám pomáhá, můžete autora podpořit na
 
 Apache License 2.0, viz [LICENSE](LICENSE). Aplikace obsahuje upravený klient
 [FreeRDP](https://github.com/FreeRDP/FreeRDP) a další komponenty s vlastními licencemi
-(FreeRDP a OpenSSL – Apache 2.0, SDL a SDL_ttf – zlib, FreeType – FreeType License, cJSON – MIT);
-jejich texty jsou v aplikaci v okně **O aplikaci**.
+(FreeRDP a OpenSSL – Apache 2.0, SDL a SDL_ttf – zlib, FreeType – FreeType License, cJSON a Sparkle
+– MIT); jejich texty jsou v aplikaci v okně **O aplikaci**.
+
+## Vývoj s pomocí AI
+
+Při vývoji CardGate byla použita umělá inteligence (Claude od Anthropicu): pomáhala s návrhem,
+kódem, testy a dokumentací. Autor vývoj řídil, o změnách rozhodoval a aplikaci testoval se
+skutečnou kartou.
 
 Autor: Ing. Jiří Kubínek
