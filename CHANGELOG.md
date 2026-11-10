@@ -19,6 +19,10 @@ Jedna ikona v Docku pro aplikaci i vzdálenou plochu, nastavení aktualizací.
   na ikoně v Docku nabízí Odpojit.
 - Okno vzdálené plochy se jmenuje podle připojení („Kancelář – CardGate“).
 
+### Opraveno
+- S více připojeními se tlačítka v liště okna schovala do nabídky „»“; přepínač připojení teď
+  nahradí název okna a dlouhý název připojení se zkrátí.
+
 ## [0.3.0] - 2026-11-10
 
 První veřejná verze: aktualizace jedním kliknutím, oprava přihlášení kartou na Macu s více čtečkami,
