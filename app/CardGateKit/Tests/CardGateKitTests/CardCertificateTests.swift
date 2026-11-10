@@ -56,4 +56,18 @@ struct CardCertificateTests {
         #expect(!CardCertificate.isFingerprint("abc"))
         #expect(!CardCertificate.isFingerprint(String(repeating: "g", count: 40)))
     }
+
+    @Test func expiryWarningUsesNewestCertificate() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+        let soon = cert("a", to: 5)
+        let renewed = cert("b", to: 400)
+        #expect(CardCertificate.expiryWarning(for: [soon], at: now, calendar: calendar) == 5)
+        #expect(CardCertificate.expiryWarning(for: [soon, renewed], at: now, calendar: calendar) == nil)
+        #expect(CardCertificate.expiryWarning(for: [cert("c", to: 14)], at: now, calendar: calendar) == nil)
+        #expect(CardCertificate.expiryWarning(for: [cert("c", to: 13)], at: now, calendar: calendar) == 13)
+        #expect(CardCertificate.expiryWarning(for: [cert("c", to: 0.2)], at: now, calendar: calendar) == 0)
+        #expect(
+            CardCertificate.expiryWarning(for: [cert("d", logon: false, to: 3)], at: now, calendar: calendar) == nil)
+    }
 }

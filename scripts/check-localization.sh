@@ -24,8 +24,10 @@ for key, entry in catalog["strings"].items():
     if entry.get("shouldTranslate") is False:
         continue
     for lang in langs:
-        unit = entry.get("localizations", {}).get(lang, {}).get("stringUnit", {})
-        if unit.get("state") != "translated" or not unit.get("value"):
+        loc = entry.get("localizations", {}).get(lang, {})
+        units = [loc["stringUnit"]] if "stringUnit" in loc else [
+            v["stringUnit"] for v in loc.get("variations", {}).get("plural", {}).values() if "stringUnit" in v]
+        if not units or any(u.get("state") != "translated" or not u.get("value") for u in units):
             problems.append(f"missing {lang} translation: {key!r}")
 for p in problems: print("FAIL:", p)
 sys.exit(1 if problems else 0)

@@ -113,6 +113,22 @@
         }
       }
     },
+    "Ask your IT department to renew it in time.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Požádejte IT oddělení o včasnou obnovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Požiadajte IT oddelenie o včasnú obnovu."
+          }
+        }
+      }
+    },
     "Author: %@": {
       "localizations": {
         "cs": {
@@ -1840,6 +1856,104 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojenie k vzdialenej ploche sa ukončí."
+          }
+        }
+      }
+    },
+    "The sign-in certificate expires in %lld days.": {
+      "localizations": {
+        "cs": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Platnost přihlašovacího certifikátu končí za %lld dny."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Platnost přihlašovacího certifikátu končí za %lld dne."
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Platnost přihlašovacího certifikátu končí za %lld den."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Platnost přihlašovacího certifikátu končí za %lld dní."
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The sign-in certificate expires in %lld day."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The sign-in certificate expires in %lld days."
+                }
+              }
+            }
+          }
+        },
+        "sk": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Platnosť prihlasovacieho certifikátu končí o %lld dni."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Platnosť prihlasovacieho certifikátu končí o %lld dňa."
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Platnosť prihlasovacieho certifikátu končí o %lld deň."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Platnosť prihlasovacieho certifikátu končí o %lld dní."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "The sign-in certificate expires today.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platnost přihlašovacího certifikátu dnes končí."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platnosť prihlasovacieho certifikátu dnes končí."
           }
         }
       }

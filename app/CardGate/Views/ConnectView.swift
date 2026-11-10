@@ -142,6 +142,10 @@ struct ReadinessView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    if let days = CardCertificate.expiryWarning(for: model.cards.certificates, at: Date()) {
+                        ExpiryWarningView(days: days)
+                            .padding(.top, 6)
+                    }
                 }
             } else if CardCertificate.allLogonCertificatesExpired(model.cards.certificates, at: Date()) {
                 VStack(spacing: 4) {
@@ -167,6 +171,33 @@ struct ReadinessView: View {
         .font(.callout)
         .multilineTextAlignment(.center)
         .animation(.default, value: model.signInCertificate)
+    }
+}
+
+/// Notice that the newest sign-in certificate expires soon.
+private struct ExpiryWarningView: View {
+    let days: Int
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Label {
+                if days == 0 {
+                    Text("The sign-in certificate expires today.")
+                } else {
+                    Text("The sign-in certificate expires in \(days) days.")
+                }
+            } icon: {
+                Image(systemName: "calendar.badge.exclamationmark")
+            }
+            .foregroundStyle(.orange)
+            .fontWeight(.medium)
+            Text("Ask your IT department to renew it in time.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

@@ -23,6 +23,7 @@ and the project uses [Semantic Versioning](https://semver.org/). The current ver
   patch), the newest valid sign-in certificate is used automatically and a specific one can be
   chosen in the connection settings; the window shows its expiry date and warns when the sign-in
   certificate has expired.
+- Warning on the main window when the newest sign-in certificate expires in less than 14 days.
 - Keyboard Shortcuts window (Help menu) explaining the remote desktop hotkeys.
 - IPv6 addresses (in brackets) for computer and gateway.
 - Clear messages when the PIN was not entered in time (the dialog gives up after 2 minutes) or the
