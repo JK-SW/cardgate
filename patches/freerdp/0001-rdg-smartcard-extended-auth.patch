@@ -55,7 +55,7 @@
  	wLog* log;
  
  	/* The header of the next packet, as much of it as has arrived: a read that would block returns
-@@ -543,6 +547,175 @@
+@@ -543,6 +547,196 @@
  }
  
  WINPR_ATTR_NODISCARD
@@ -129,6 +129,19 @@
 +	rdg->sc = rdg_sc_new(module, rdg->smartcard->slotId, certId, der, derLen, pin,
 +	                     settings->GatewayHostname);
 +	free(der);
++	if (rdg->sc && rdg->tlsOut && rdg->tlsOut->ssl)
++	{
++		X509* gateway = SSL_get1_peer_certificate(rdg->tlsOut->ssl);
++		const BOOL pinned = gateway && rdg_sc_set_expected_peer(rdg->sc, gateway);
++		X509_free(gateway);
++		if (!pinned)
++		{
++			WLog_Print(rdg->log, WLOG_ERROR, "cannot get the RD Gateway certificate");
++			rdg_sc_free(rdg->sc);
++			rdg->sc = nullptr;
++			return FALSE;
++		}
++	}
 +	if (!rdg->sc && rdg_sc_pin_rejected())
 +	{
 +		/* Forget the rejected PIN so nothing can pass it on (e.g. as the logon password). */
@@ -156,7 +169,7 @@
 +	if (!rc)
 +		return FALSE;
 +
-+	if (done && (outLen == 0))
++	if (done)
 +	{
 +		/* mstscax (CAASCAuthClient::GetEncryptedCBToken): after the handshake the client sends,
 +		 * encrypted with the inner TLS session, the UTF-16 string
@@ -166,7 +179,13 @@
 +		if (!connId)
 +			return FALSE;
 +		char token[128] = WINPR_C_ARRAY_INIT;
-+		(void)_snprintf(token, sizeof(token), "%s:b48ab399-022e-47b7-9492-7765d9699199", connId);
++		const int tokenLen =
++		    _snprintf(token, sizeof(token), "%s:b48ab399-022e-47b7-9492-7765d9699199", connId);
++		if ((tokenLen < 0) || ((size_t)tokenLen >= sizeof(token)))
++		{
++			WLog_Print(rdg->log, WLOG_ERROR, "RDG-Connection-Id too long");
++			return FALSE;
++		}
 +		BYTE wtoken[256] = WINPR_C_ARRAY_INIT;
 +		const size_t tlen = strnlen(token, sizeof(token));
 +		for (size_t i = 0; i < tlen; i++)
@@ -215,6 +234,8 @@
 +	{
 +		/* gateway acknowledged the channel binding token - authentication finished */
 +		WLog_Print(rdg->log, WLOG_INFO, "RD Gateway smart card authentication done");
++		if (Stream_GetRemainingLength(s) >= blobLen)
++			Stream_Seek(s, blobLen);
 +		rdg_sc_free(rdg->sc);
 +		rdg->sc = nullptr;
 +		rdg->scCbSent = FALSE;
@@ -231,7 +252,7 @@
  static BOOL rdg_send_tunnel_request(rdpRdg* rdg)
  {
  	wStream* s = nullptr;
-@@ -879,6 +1052,18 @@
+@@ -879,6 +1073,18 @@
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_SSPI_NTLM)
  		return rdg_send_extauth_sspi(rdg);
  
@@ -250,7 +271,7 @@
  	return rdg_send_tunnel_request(rdg);
  }
  
-@@ -1232,7 +1417,10 @@
+@@ -1232,7 +1438,10 @@
  			break;
  
  		case PKT_TYPE_EXTENDED_AUTH_MSG:
@@ -262,7 +283,7 @@
  			break;
  
  		default:
-@@ -1474,6 +1662,20 @@
+@@ -1474,6 +1683,20 @@
  		return FALSE;
  
  	WINPR_ASSERT(rpcFallback);
@@ -283,7 +304,7 @@
  	if (rdg->context->settings->GatewayHttpExtAuthBearer && rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_BEARER;
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
-@@ -2357,6 +2559,11 @@
+@@ -2357,6 +2580,11 @@
  	if (settings->GatewayAccessToken)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_PAA;
  
@@ -295,7 +316,7 @@
  	rdg->tlsOut = freerdp_tls_new(rdg->context);
  
  	if (!rdg->tlsOut)
-@@ -2408,6 +2615,12 @@
+@@ -2408,6 +2636,12 @@
  
  				break;
  
@@ -308,7 +329,7 @@
  			default:
  				WLog_Print(rdg->log, WLOG_DEBUG,
  				           "RDG extended authentication method %d not supported", rdg->extAuth);
-@@ -2454,6 +2667,7 @@
+@@ -2454,6 +2688,7 @@
  	DeleteCriticalSection(&rdg->writeSection);
  
  	smartcardCertInfo_Free(rdg->smartcard);
@@ -318,7 +339,7 @@
  
 --- /dev/null
 +++ b/libfreerdp/core/gateway/rdg_sc.c
-@@ -0,0 +1,476 @@
+@@ -0,0 +1,507 @@
 +/**
 + * FreeRDP: A Remote Desktop Protocol Implementation
 + * RD Gateway smart card extended authentication (HTTP_EXTENDED_AUTH_SC)
@@ -372,6 +393,7 @@
 +	BIO* rbio;
 +	BIO* wbio;
 +	unsigned signatures;
++	X509* expectedPeer; /* certificate of the outer TLS connection to the gateway */
 +};
 +
 +/* Set once the card rejected the PIN (or reported it locked). The PIN counter of a smart card is
@@ -446,14 +468,12 @@
 +			prefix = di_sha512;
 +			prefixLen = sizeof(di_sha512);
 +			break;
-+		case NID_md5_sha1:
-+			break;
 +		default:
 +			WLog_ERR(TAG, "unsupported digest nid %d", type);
 +			return 0;
 +	}
 +
-+	if (!sc || (prefixLen + m_length > sizeof(buf)))
++	if (!sc || !prefix || (prefixLen + m_length > sizeof(buf)))
 +		return 0;
 +
 +	memcpy(buf, prefix, prefixLen);
@@ -587,6 +607,24 @@
 +	return ok;
 +}
 +
++/* The inner TLS server must present the certificate of the gateway that the outer, verified TLS
++ * connection ends at. It is checked before the client certificate is sent and signed. */
++static int sc_verify_peer(int preverify_ok, X509_STORE_CTX* store)
++{
++	WINPR_UNUSED(preverify_ok);
++	if (X509_STORE_CTX_get_error_depth(store) != 0)
++		return 1;
++	SSL* ssl = X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
++	rdgSc* sc = ssl ? (rdgSc*)SSL_get_app_data(ssl) : NULL;
++	if (!sc || !sc->expectedPeer)
++		return 1;
++	X509* peer = X509_STORE_CTX_get_current_cert(store);
++	if (peer && (X509_cmp(peer, sc->expectedPeer) == 0))
++		return 1;
++	WLog_ERR(TAG, "inner TLS certificate differs from the RD Gateway certificate, aborting");
++	return 0;
++}
++
 +static BOOL sc_openssl_setup(rdgSc* sc, const BYTE* certDer, size_t certLen, const char* sni)
 +{
 +	const BYTE* p = certDer;
@@ -637,8 +675,9 @@
 +	SSL_CTX_set_min_proto_version(sc->ctx, TLS1_2_VERSION);
 +	SSL_CTX_set_max_proto_version(sc->ctx, TLS1_2_VERSION);
 +	SSL_CTX_set1_sigalgs_list(sc->ctx, "RSA+SHA256:RSA+SHA384:RSA+SHA512:RSA+SHA1");
-+	/* The outer TLS connection already verified the gateway. */
-+	SSL_CTX_set_verify(sc->ctx, SSL_VERIFY_NONE, NULL);
++	/* The outer TLS connection verified the gateway; the inner one must use the same certificate
++	 * (sc_verify_peer), the CA chain is not checked again. */
++	SSL_CTX_set_verify(sc->ctx, SSL_VERIFY_PEER, sc_verify_peer);
 +	if (!SSL_CTX_use_certificate(sc->ctx, sc->cert) || !SSL_CTX_use_PrivateKey(sc->ctx, sc->pkey))
 +	{
 +		WLog_ERR(TAG, "cannot attach smart card certificate/key to TLS context");
@@ -651,6 +690,7 @@
 +	if (!sc->ssl || !sc->rbio || !sc->wbio)
 +		return FALSE;
 +	SSL_set_bio(sc->ssl, sc->rbio, sc->wbio); /* ssl owns the bios now */
++	SSL_set_app_data(sc->ssl, sc);
 +	if (sni)
 +		SSL_set_tlsext_host_name(sc->ssl, sni);
 +	SSL_set_connect_state(sc->ssl);
@@ -687,6 +727,7 @@
 +	SSL_CTX_free(sc->ctx);
 +	EVP_PKEY_free(sc->pkey);
 +	X509_free(sc->cert);
++	X509_free(sc->expectedPeer);
 +	RSA_meth_free(sc->meth);
 +	if (sc->p11)
 +	{
@@ -770,6 +811,17 @@
 +	return b64;
 +}
 +
++BOOL rdg_sc_set_expected_peer(rdgSc* sc, struct x509_st* certificate)
++{
++	if (!sc || !certificate)
++		return FALSE;
++	if (!X509_up_ref(certificate))
++		return FALSE;
++	X509_free(sc->expectedPeer);
++	sc->expectedPeer = certificate;
++	return TRUE;
++}
++
 +struct ssl_st* rdg_sc_ssl(rdgSc* sc)
 +{
 +	return sc ? sc->ssl : NULL;
@@ -797,7 +849,7 @@
 +}
 --- /dev/null
 +++ b/libfreerdp/core/gateway/rdg_sc.h
-@@ -0,0 +1,41 @@
+@@ -0,0 +1,45 @@
 +/**
 + * FreeRDP: A Remote Desktop Protocol Implementation
 + * RD Gateway smart card extended authentication (HTTP_EXTENDED_AUTH_SC)
@@ -833,6 +885,10 @@
 +/* RDG-User-Id header value for smart card auth, as mstsc sends it:
 + * base64(UTF-16LE("@@B" + CredMarshalCredential(CertCredential, SHA1(cert)))). Caller frees. */
 +char* rdg_sc_user_id_from_sha1(const BYTE sha1[20]);
++
++/* The certificate the gateway presented on the outer TLS connection; the inner handshake is
++ * aborted if the server presents a different one. */
++BOOL rdg_sc_set_expected_peer(rdgSc* sc, struct x509_st* certificate);
 +
 +/* Access to the inner TLS session (after the handshake) and draining its pending output. */
 +struct ssl_st* rdg_sc_ssl(rdgSc* sc);

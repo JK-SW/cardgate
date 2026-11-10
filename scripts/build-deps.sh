@@ -73,10 +73,32 @@ build_freerdp() {
     -DWITH_OPUS=OFF -DWITH_FAAD2=OFF -DWITH_FAAC=OFF -DWITH_SOXR=OFF -DWITH_LAME=OFF \
     -DWITH_WEBVIEW=OFF -DWITH_AAD=OFF -DWITH_MANPAGES=OFF -DBUILD_TESTING=OFF \
     -DWITH_WINPR_TOOLS=OFF -DWITH_CCACHE=OFF -DWITH_ABSOLUTE_PLUGIN_LOAD_PATHS=OFF \
-    -DUSE_VERSION_FROM_GIT_TAG=OFF \
+    -DUSE_VERSION_FROM_GIT_TAG=OFF -DWITH_VERBOSE_WINPR_ASSERT=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     >"$OBJ/freerdp-cmake.log" 2>&1 || { tail -30 "$OBJ/freerdp-cmake.log"; die "FreeRDP cmake failed"; }
   cmake --build "$OBJ/freerdp" >"$OBJ/freerdp-build.log" 2>&1 || { tail -30 "$OBJ/freerdp-build.log"; die "FreeRDP build failed"; }
   cmake --install "$OBJ/freerdp" >/dev/null
+  analyze_patched_sources "$s"
+}
+
+# Static analysis of the C sources CardGate adds to FreeRDP (fails the build on any finding).
+analyze_patched_sources() {
+  local s="$1" file cmd
+  for file in libfreerdp/core/gateway/rdg_sc.c; do
+    cmd="$(python3 -I -c '
+import json, shlex, sys
+for entry in json.load(open(sys.argv[1])):
+    if entry["file"].endswith(sys.argv[2]):
+        args = shlex.split(entry["command"]) if "command" in entry else entry["arguments"]
+        args = [a for a in args[1:] if a not in ("-c",)]
+        if "-o" in args:
+            i = args.index("-o"); del args[i:i + 2]
+        print(shlex.join(args)); break
+' "$OBJ/freerdp/compile_commands.json" "$file")"
+    [[ -n "$cmd" ]] || die "no compile command for $file"
+    log "Static analysis: $file"
+    (cd "$OBJ/freerdp" && eval "$CC --analyze -Xanalyzer -analyzer-output=text -Werror $cmd -o /dev/null") \
+      || die "static analyzer reported issues in $file"
+  done
 }
 
 # License texts of everything shipped in the app, from the verified source archives.
