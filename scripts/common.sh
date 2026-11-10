@@ -88,6 +88,12 @@ patches_hash() {
 }
 
 # Stamp files make each step re-runnable: a step is skipped when its stamp matches.
-stamp_key() { echo "$(dep_field "$1" version)-$(dep_field "$1" sha)-${2:-}"; }
+stamp_key() { # steps that are not a pinned dependency (e.g. licenses) are keyed by their recipe only
+  if grep -qE "^$1[[:space:]]" "$ROOT/scripts/deps.lock"; then
+    echo "$(dep_field "$1" version)-$(dep_field "$1" sha)-${2:-}"
+  else
+    echo "step-${2:-}"
+  fi
+}
 done_already() { [[ -f "$OBJ/.stamp-$1" && "$(cat "$OBJ/.stamp-$1")" == "$(stamp_key "$1" "${2:-}")" ]]; }
 mark_done() { mkdir -p "$OBJ"; stamp_key "$1" "${2:-}" >"$OBJ/.stamp-$1"; }
