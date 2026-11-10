@@ -1,5 +1,5 @@
---- a/libfreerdp/core/CMakeLists.txt	2026-11-02 11:35:33.000000000 +0100
-+++ b/libfreerdp/core/CMakeLists.txt/CMakeLists.txt	2026-11-09 23:10:45.890387382 +0100
+--- a/libfreerdp/core/CMakeLists.txt
++++ b/libfreerdp/core/CMakeLists.txt
 @@ -32,6 +32,8 @@
      ${${MODULE_PREFIX}_GATEWAY_DIR}/tsg.h
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rdg.c
@@ -9,8 +9,8 @@
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc.c
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc.h
      ${${MODULE_PREFIX}_GATEWAY_DIR}/rpc_bind.c
---- a/libfreerdp/core/gateway/http.c	2026-11-02 11:35:33.000000000 +0100
-+++ b/libfreerdp/core/gateway/http.c	2026-11-09 23:10:45.896618613 +0100
+--- a/libfreerdp/core/gateway/http.c
++++ b/libfreerdp/core/gateway/http.c
 @@ -312,6 +312,13 @@
  	                               guid2str(&RdgConnectionId, buffer, sizeof(buffer)));
  }
@@ -25,8 +25,8 @@
  BOOL http_context_set_rdg_correlation_id(HttpContext* context, const GUID* RdgCorrelationId)
  {
  	if (!context || !RdgCorrelationId)
---- a/libfreerdp/core/gateway/http.h	2026-11-02 11:35:33.000000000 +0100
-+++ b/libfreerdp/core/gateway/http.h	2026-11-09 23:10:45.903176052 +0100
+--- a/libfreerdp/core/gateway/http.h
++++ b/libfreerdp/core/gateway/http.h
 @@ -100,6 +100,7 @@
  
  WINPR_ATTR_NODISCARD
@@ -35,8 +35,8 @@
  
  WINPR_ATTR_NODISCARD
  FREERDP_LOCAL BOOL http_context_set_rdg_correlation_id(HttpContext* context,
---- a/libfreerdp/core/gateway/rdg.c	2026-11-02 11:35:33.000000000 +0100
-+++ b/libfreerdp/core/gateway/rdg.c	2026-11-09 23:10:45.908965531 +0100
+--- a/libfreerdp/core/gateway/rdg.c
++++ b/libfreerdp/core/gateway/rdg.c
 @@ -39,6 +39,8 @@
  #include <freerdp/utils/smartcardlogon.h>
  
@@ -55,7 +55,7 @@
  	wLog* log;
  
  	/* The header of the next packet, as much of it as has arrived: a read that would block returns
-@@ -543,6 +547,159 @@
+@@ -543,6 +547,175 @@
  }
  
  WINPR_ATTR_NODISCARD
@@ -90,6 +90,15 @@
 +	rdpContext* context = rdg->context;
 +	rdpSettings* settings = context->settings;
 +
++	if (rdg_sc_pin_rejected())
++	{
++		/* Never offer a rejected PIN to the card again (reconnect, protocol fallback, ...). */
++		WLog_Print(rdg->log, WLOG_ERROR, "WRONG PIN - the PIN was already rejected, not retrying.");
++		if (!freerdp_settings_set_string(settings, FreeRDP_GatewayPassword, nullptr))
++			WLog_Print(rdg->log, WLOG_WARN, "cannot clear the rejected PIN");
++		return FALSE;
++	}
++
 +	if (!rdg->smartcard && !smartcard_getCert(context, &rdg->smartcard, TRUE))
 +		return FALSE;
 +
@@ -120,6 +129,13 @@
 +	rdg->sc = rdg_sc_new(module, rdg->smartcard->slotId, certId, der, derLen, pin,
 +	                     settings->GatewayHostname);
 +	free(der);
++	if (!rdg->sc && rdg_sc_pin_rejected())
++	{
++		/* Forget the rejected PIN so nothing can pass it on (e.g. as the logon password). */
++		if (!freerdp_settings_set_string(settings, FreeRDP_GatewayPassword, nullptr) ||
++		    !freerdp_settings_set_string(settings, FreeRDP_Password, nullptr))
++			return FALSE;
++	}
 +	return rdg->sc != nullptr;
 +}
 +
@@ -215,7 +231,7 @@
  static BOOL rdg_send_tunnel_request(rdpRdg* rdg)
  {
  	wStream* s = nullptr;
-@@ -879,6 +1036,18 @@
+@@ -879,6 +1052,18 @@
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_SSPI_NTLM)
  		return rdg_send_extauth_sspi(rdg);
  
@@ -234,7 +250,7 @@
  	return rdg_send_tunnel_request(rdg);
  }
  
-@@ -1232,7 +1401,10 @@
+@@ -1232,7 +1417,10 @@
  			break;
  
  		case PKT_TYPE_EXTENDED_AUTH_MSG:
@@ -246,7 +262,7 @@
  			break;
  
  		default:
-@@ -1474,6 +1646,20 @@
+@@ -1474,6 +1662,20 @@
  		return FALSE;
  
  	WINPR_ASSERT(rpcFallback);
@@ -267,7 +283,7 @@
  	if (rdg->context->settings->GatewayHttpExtAuthBearer && rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_BEARER;
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
-@@ -2357,6 +2543,11 @@
+@@ -2357,6 +2559,11 @@
  	if (settings->GatewayAccessToken)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_PAA;
  
@@ -279,7 +295,7 @@
  	rdg->tlsOut = freerdp_tls_new(rdg->context);
  
  	if (!rdg->tlsOut)
-@@ -2408,6 +2599,12 @@
+@@ -2408,6 +2615,12 @@
  
  				break;
  
@@ -292,7 +308,7 @@
  			default:
  				WLog_Print(rdg->log, WLOG_DEBUG,
  				           "RDG extended authentication method %d not supported", rdg->extAuth);
-@@ -2454,6 +2651,7 @@
+@@ -2454,6 +2667,7 @@
  	DeleteCriticalSection(&rdg->writeSection);
  
  	smartcardCertInfo_Free(rdg->smartcard);
@@ -301,8 +317,8 @@
  	websocket_context_free(rdg->transferEncoding.websocket);
  
 --- /dev/null
-+++ b/libfreerdp/core/gateway/rdg_sc.c	2026-11-09 23:10:45.914897886 +0100
-@@ -0,0 +1,459 @@
++++ b/libfreerdp/core/gateway/rdg_sc.c
+@@ -0,0 +1,476 @@
 +/**
 + * FreeRDP: A Remote Desktop Protocol Implementation
 + * RD Gateway smart card extended authentication (HTTP_EXTENDED_AUTH_SC)
@@ -357,6 +373,16 @@
 +	BIO* wbio;
 +	unsigned signatures;
 +};
++
++/* Set once the card rejected the PIN (or reported it locked). The PIN counter of a smart card is
++ * small, so no further login is attempted by this process, whatever reconnects or fallbacks
++ * FreeRDP would do with the same stored PIN. */
++static BOOL g_pinRejected = FALSE;
++
++BOOL rdg_sc_pin_rejected(void)
++{
++	return g_pinRejected;
++}
 +
 +static const BYTE di_sha1[] = { 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e,
 +	                            0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14 };
@@ -512,14 +538,21 @@
 +	sc->sessionOpen = TRUE;
 +
 +	/* Exactly one login attempt - a wrong PIN must not be retried (card PIN counter). */
-+	rv = sc->p11->C_Login(sc->session, CKU_USER, (CK_UTF8CHAR_PTR)pin, (CK_ULONG)strlen(pin));
-+	if (rv == CKR_PIN_INCORRECT)
++	if (g_pinRejected)
 +	{
++		WLog_ERR(TAG, "WRONG PIN - the PIN was already rejected, not retrying.");
++		return FALSE;
++	}
++	rv = sc->p11->C_Login(sc->session, CKU_USER, (CK_UTF8CHAR_PTR)pin, (CK_ULONG)strlen(pin));
++	if ((rv == CKR_PIN_INCORRECT) || (rv == CKR_PIN_LEN_RANGE) || (rv == CKR_PIN_INVALID))
++	{
++		g_pinRejected = TRUE;
 +		WLog_ERR(TAG, "WRONG PIN - not retrying. Check remaining attempts before trying again!");
 +		return FALSE;
 +	}
-+	if (rv == CKR_PIN_LOCKED)
++	if ((rv == CKR_PIN_LOCKED) || (rv == CKR_PIN_EXPIRED))
 +	{
++		g_pinRejected = TRUE;
 +		WLog_ERR(TAG, "PIN is LOCKED");
 +		return FALSE;
 +	}
@@ -763,8 +796,8 @@
 +	return TRUE;
 +}
 --- /dev/null
-+++ b/libfreerdp/core/gateway/rdg_sc.h	2026-11-09 23:10:45.921084199 +0100
-@@ -0,0 +1,38 @@
++++ b/libfreerdp/core/gateway/rdg_sc.h
+@@ -0,0 +1,41 @@
 +/**
 + * FreeRDP: A Remote Desktop Protocol Implementation
 + * RD Gateway smart card extended authentication (HTTP_EXTENDED_AUTH_SC)
@@ -788,6 +821,9 @@
 +rdgSc* rdg_sc_new(const char* modulePath, UINT32 slotId, const char* certIdHex,
 +                  const BYTE* certDer, size_t certLen, const char* pin, const char* sni);
 +void rdg_sc_free(rdgSc* sc);
++
++/* TRUE once the card rejected the PIN in this process; no further login may be attempted. */
++BOOL rdg_sc_pin_rejected(void);
 +
 +/* Feeds the gateway's handshake data (in may be NULL for the first call), advances the inner
 + * TLS handshake. *out (malloc'ed, may be NULL) receives data to send to the gateway,
