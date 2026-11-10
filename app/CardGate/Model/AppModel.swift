@@ -161,14 +161,15 @@ final class AppModel {
         Task {
             defer { isPreparingConnection = false }
             // The card check (PKCS#11) may still run right after inserting the card or starting.
-            if await cards.currentState() == .noToken { return }
+            let card = await cards.currentState()
+            if card?.state == .noToken { return }
             guard let certificate = signInCertificate else { return }
             do {
                 try clientConfig.install(for: profile)
                 let command = try FreeRDPCommand(
                     executable: executable, profile: profile, pkcs11Module: module,
                     config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current,
-                    certificateSHA1: certificate.sha1)
+                    certificateSHA1: certificate.sha1, smartCardReader: card?.reader)
                 session.connect(command, gateway: profile.gateway)
             } catch {
                 logger.error("Cannot start client: \(error, privacy: .public)")

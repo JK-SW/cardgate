@@ -11,6 +11,9 @@ typedef struct {
     unsigned long pin_min_length;
     unsigned long pin_max_length;
     unsigned long token_flags;
+    /// Slot description of the first present token, trailing blanks removed. With common middleware
+    /// it is the PC/SC reader name (at most 64 bytes, possibly cut off).
+    char slot_description[65];
 } cg_card_probe_result;
 
 /// Loads the PKCS#11 module, reads which tokens are present and the token info of the first one,

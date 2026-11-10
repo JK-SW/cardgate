@@ -1,4 +1,5 @@
 import CPKCS11
+import Foundation
 
 /// What the PKCS#11 module of the middleware sees – the same view the FreeRDP client gets.
 ///
@@ -81,12 +82,49 @@ public struct PINPolicy: Equatable, Sendable {
     }
 }
 
+/// Card state and the reader holding the card, as found by `PKCS11Probe`.
+public struct PKCS11ProbeResult: Equatable, Sendable {
+    public var state: PKCS11CardState
+    /// Name of the smart card reader with the token, when exactly one token is present. Only this
+    /// reader is redirected to the remote computer, so an empty reader (e.g. in a keyboard) does
+    /// not confuse the Windows sign-in.
+    public var reader: String?
+
+    public init(state: PKCS11CardState, reader: String? = nil) {
+        self.state = state
+        self.reader = state == .ready ? reader.flatMap(Self.cleanReaderName) : nil
+    }
+
+    /// A reader name as reported in the PKCS#11 slot description (blank padded, maybe cut off).
+    static func cleanReaderName(_ name: String) -> String? {
+        let name = name.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, !name.contains(where: { $0.isNewline || $0.asciiValue.map { $0 < 0x20 } == true })
+        else { return nil }
+        return name
+    }
+
+    /// Text form used between the probe process and the app: the state, then the reader on line 2.
+    public var encoded: String {
+        state.encoded + "\n" + (reader ?? "")
+    }
+
+    public init?(encoded: String) {
+        let lines = encoded.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
+        guard let first = lines.first, let state = PKCS11CardState(encoded: String(first)) else { return nil }
+        self.init(state: state, reader: lines.count > 1 ? String(lines[1]) : nil)
+    }
+}
+
 public enum PKCS11Probe {
     /// Loads the module, looks at the tokens (no login, no PIN) and unloads it. Takes seconds with
     /// some middleware, so call it off the main thread – preferably in a separate process.
-    public static func probe(module: String) -> PKCS11CardState {
-        let result = cg_card_probe(module)
-        return PKCS11CardState(error: result.error, tokens: Int(result.tokens))
+    public static func probe(module: String) -> PKCS11ProbeResult {
+        var result = cg_card_probe(module)
+        let state = PKCS11CardState(error: result.error, tokens: Int(result.tokens))
+        let description = withUnsafeBytes(of: &result.slot_description) { bytes in
+            String(bytes: bytes.prefix { $0 != 0 }, encoding: .utf8)
+        }
+        return PKCS11ProbeResult(state: state, reader: result.tokens == 1 ? description : nil)
     }
 
     /// PIN policy of the inserted card, or `nil` if no card is available.

@@ -26,7 +26,9 @@ final class CardMonitor {
     /// What the PKCS#11 module (and therefore the RDP client) sees; `nil` until checked.
     private(set) var pkcs11State: PKCS11CardState?
     var isChecking: Bool { checkTask != nil }
-    private var checkTask: Task<PKCS11CardState, Never>?
+    /// Reader holding the token (from the last check), redirected to the remote computer.
+    private(set) var tokenReader: String?
+    private var checkTask: Task<PKCS11ProbeResult, Never>?
     /// PKCS#11 module to check with; set by the app.
     var module: String? {
         didSet { if oldValue != module { scheduleCheck() } }
@@ -75,6 +77,7 @@ final class CardMonitor {
         guard found != certificates else { return }
         certificates = found
         pkcs11State = nil
+        tokenReader = nil
         onChange?()
         scheduleCheck()
     }
@@ -83,6 +86,7 @@ final class CardMonitor {
     func scheduleCheck() {
         guard let module, !certificates.isEmpty else {
             pkcs11State = nil
+            tokenReader = nil
             return
         }
         guard checkTask == nil else {
@@ -92,10 +96,13 @@ final class CardMonitor {
         let task = Task { await Self.check(module: module) }
         checkTask = task
         Task { [weak self] in
-            let state = await task.value
+            let result = await task.value
             guard let self else { return }
-            self.logger.info("PKCS#11 check: \(state.encoded, privacy: .public)")
-            self.pkcs11State = state
+            let reader = result.reader ?? "-"
+            let state = result.state.encoded
+            self.logger.info("PKCS#11 check: \(state, privacy: .public), reader \(reader, privacy: .public)")
+            self.pkcs11State = result.state
+            self.tokenReader = result.reader
             self.checkTask = nil
             if self.checkPending {
                 self.checkPending = false
@@ -105,13 +112,13 @@ final class CardMonitor {
     }
 
     /// The result of the running check, or the last one; waits if a check is in progress.
-    func currentState() async -> PKCS11CardState? {
+    func currentState() async -> PKCS11ProbeResult? {
         if let checkTask { return await checkTask.value }
-        return pkcs11State
+        return pkcs11State.map { PKCS11ProbeResult(state: $0, reader: tokenReader) }
     }
 
-    nonisolated private static func check(module: String) async -> PKCS11CardState {
-        guard let executable = Bundle.main.executableURL else { return .moduleNotLoadable }
+    nonisolated private static func check(module: String) async -> PKCS11ProbeResult {
+        guard let executable = Bundle.main.executableURL else { return PKCS11ProbeResult(state: .moduleNotLoadable) }
         return await withCheckedContinuation { continuation in
             let process = Process()
             process.executableURL = executable
@@ -123,12 +130,13 @@ final class CardMonitor {
                 let output = pipe.fileHandleForReading.readDataToEndOfFile()
                 let text = (String(bytes: output, encoding: .utf8) ?? "").trimmingCharacters(
                     in: .whitespacesAndNewlines)
-                continuation.resume(returning: PKCS11CardState(encoded: text) ?? .failed(code: -2))
+                continuation.resume(
+                    returning: PKCS11ProbeResult(encoded: text) ?? PKCS11ProbeResult(state: .failed(code: -2)))
             }
             do {
                 try process.run()
             } catch {
-                continuation.resume(returning: .moduleNotLoadable)
+                continuation.resume(returning: PKCS11ProbeResult(state: .moduleNotLoadable))
             }
         }
     }

@@ -21,7 +21,20 @@ struct PKCS11ProbeTests {
     }
 
     @Test func missingModuleIsReported() {
-        #expect(PKCS11Probe.probe(module: "/nonexistent/module.dylib") == .moduleNotLoadable)
+        #expect(PKCS11Probe.probe(module: "/nonexistent/module.dylib") == PKCS11ProbeResult(state: .moduleNotLoadable))
+    }
+
+    @Test func carriesTheReaderOfTheToken() {
+        let result = PKCS11ProbeResult(state: .ready, reader: "Example USB Reader 0   ")
+        #expect(result.reader == "Example USB Reader 0")
+        #expect(PKCS11ProbeResult(encoded: result.encoded) == result)
+        #expect(PKCS11ProbeResult(encoded: "0 1") == PKCS11ProbeResult(state: .ready))
+        #expect(PKCS11ProbeResult(encoded: "0 1\n") == PKCS11ProbeResult(state: .ready))
+        #expect(PKCS11ProbeResult(encoded: "x\nReader") == nil)
+        // Only a ready token has a reader; blank or control characters are dropped.
+        #expect(PKCS11ProbeResult(state: .noToken, reader: "Reader").reader == nil)
+        #expect(PKCS11ProbeResult(state: .ready, reader: "   ").reader == nil)
+        #expect(PKCS11ProbeResult(state: .ready, reader: "A\u{7}B").reader == nil)
     }
 }
 

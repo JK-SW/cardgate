@@ -18,15 +18,23 @@ public struct FreeRDPCommand: Equatable, Sendable {
     ///     `nil` keeps FreeRDP's own dialog.
     ///   - screen: the display the window opens on; window sizes are given in its points.
     ///   - certificateSHA1: card certificate to sign in with (when the card holds several).
+    ///   - smartCardReader: the reader with the card; only it is redirected to the remote computer.
     public init(
         executable: URL, profile: ConnectionProfile, pkcs11Module: String, config: FreeRDPClientConfig,
-        askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil, certificateSHA1: String? = nil
+        askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil, certificateSHA1: String? = nil,
+        smartCardReader: String? = nil
     ) throws(BuildError) {
         guard pkcs11Module.hasPrefix("/"), !pkcs11Module.contains(","), !pkcs11Module.contains("\n") else {
             throw .invalidModulePath
         }
         self.executable = executable
         self.arguments = Self.arguments(profile: profile, pkcs11Module: pkcs11Module, screen: screen)
+        if let reader = smartCardReader, Self.isUsableReaderFilter(reader) {
+            // Without it every reader of the Mac is redirected; Windows sign-in then may look at an
+            // empty one (e.g. a reader built into the keyboard) and ask to insert the card.
+            let position = arguments.firstIndex(of: "/smartcard-logon") ?? arguments.endIndex
+            arguments.insert("/smartcard:\(reader)", at: position)
+        }
         self.environment = [
             // Smart card authentication to the RD Gateway (patched FreeRDP).
             "FREERDP_RDG_SMARTCARD": "1",
@@ -39,6 +47,11 @@ public struct FreeRDPCommand: Equatable, Sendable {
         if let certificateSHA1, CardCertificate.isFingerprint(certificateSHA1) {
             environment["FREERDP_SMARTCARD_CERT_SHA1"] = certificateSHA1.lowercased()
         }
+    }
+
+    /// FreeRDP redirects readers whose name contains this text; it splits its options at commas.
+    static func isUsableReaderFilter(_ reader: String) -> Bool {
+        !reader.isEmpty && !reader.contains(",") && !reader.contains(where: \.isNewline)
     }
 
     static func arguments(profile: ConnectionProfile, pkcs11Module: String, screen: ScreenMetrics?) -> [String] {
@@ -77,10 +90,20 @@ public struct FreeRDPCommand: Equatable, Sendable {
         // CardGate shows progress and errors itself; no FreeRDP connection dialog.
         args.append("-sdl-connection-dialog")
         args.append("/log-level:INFO")
-        // Display layout changes, for diagnosing window size issues.
-        args.append("/log-filters:com.freerdp.client.sdl.disp:DEBUG")
+        args.append("/log-filters:" + logFilters.joined(separator: ","))
         return args
     }
+
+    /// Extra log detail for support. Only operation names and result codes: the smart card data
+    /// channel (`com.freerdp.scard.pack`) is never raised, its dumps would contain the PIN sent to
+    /// the card by the remote computer.
+    static let logFilters = [
+        // Display layout changes, for diagnosing window size issues.
+        "com.freerdp.client.sdl.disp:DEBUG",
+        // Smart card redirection: what the remote computer asks the card and what fails.
+        "com.freerdp.utils.smartcard.ops:DEBUG",
+        "com.freerdp.utils.smartcard.call:TRACE",
+    ]
 }
 
 /// Program started by FreeRDP to ask for a secret: `<executable> <arguments…> '<prompt>'`.

@@ -41,13 +41,39 @@ struct FreeRDPCommandTests {
                 "/sound:sys:mac",
                 "-sdl-connection-dialog",
                 "/log-level:INFO",
-                "/log-filters:com.freerdp.client.sdl.disp:DEBUG",
+                "/log-filters:com.freerdp.client.sdl.disp:DEBUG,com.freerdp.utils.smartcard.ops:DEBUG,"
+                    + "com.freerdp.utils.smartcard.call:TRACE",
             ])
         #expect(
             command.environment == [
                 "FREERDP_RDG_SMARTCARD": "1",
                 "XDG_CONFIG_HOME": "/Users/test/Library/Application Support/CardGate/FreeRDP",
             ])
+    }
+
+    @Test func redirectsOnlyTheReaderWithTheCard() throws {
+        let command = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config,
+            smartCardReader: "Example USB Reader")
+        #expect(
+            command.arguments.filter { $0.hasPrefix("/smartcard") } == [
+                "/smartcard:Example USB Reader", "/smartcard-logon",
+            ])
+
+        for unusable in ["", "Reader, 2", "Reader\n2"] {
+            let all = try FreeRDPCommand(
+                executable: client, profile: profile(), pkcs11Module: module, config: config, smartCardReader: unusable)
+            #expect(all.arguments.filter { $0.hasPrefix("/smartcard") } == ["/smartcard-logon"])
+        }
+    }
+
+    /// The smart card data dumps contain the PIN the remote computer sends to the card.
+    @Test func neverLogsSmartCardData() throws {
+        let command = try FreeRDPCommand(executable: client, profile: profile(), pkcs11Module: module, config: config)
+        let filters = try #require(command.arguments.first { $0.hasPrefix("/log-filters:") })
+        #expect(!filters.contains("scard.pack"))
+        #expect(!filters.contains("*"))
+        #expect(command.arguments.contains("/log-level:INFO"))
     }
 
     @Test func omitsGatewayForDirectConnections() throws {

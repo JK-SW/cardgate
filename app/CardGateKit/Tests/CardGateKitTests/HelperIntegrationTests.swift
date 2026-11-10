@@ -31,7 +31,8 @@ struct HelperIntegrationTests {
         let command = try FreeRDPCommand(
             executable: directory.appending(path: "Helpers/sdl-freerdp"), profile: profile,
             pkcs11Module: "/nonexistent/module.dylib", config: config,
-            screen: ScreenMetrics(visibleSize: .init(width: 1440, height: 900), scale: 2))
+            screen: ScreenMetrics(visibleSize: .init(width: 1440, height: 900), scale: 2),
+            smartCardReader: "Example USB Reader 0")
 
         let process = Process()
         process.executableURL = command.executable

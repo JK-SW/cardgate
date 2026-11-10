@@ -2,6 +2,7 @@
 
 #include <dlfcn.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "pkcs11.h"
 
@@ -9,7 +10,7 @@
 
 cg_card_probe_result cg_card_probe(const char* module_path)
 {
-	cg_card_probe_result result = { -1, 0, 0, 0, 0 };
+	cg_card_probe_result result = { -1, 0, 0, 0, 0, { 0 } };
 	void* module = dlopen(module_path, RTLD_NOW | RTLD_LOCAL);
 	if (!module)
 		return result;
@@ -46,6 +47,16 @@ cg_card_probe_result cg_card_probe(const char* module_path)
 			result.pin_min_length = info.ulMinPinLen;
 			result.pin_max_length = info.ulMaxPinLen;
 			result.token_flags = info.flags;
+		}
+		CK_SLOT_INFO slot;
+		if (p11->C_GetSlotInfo(slots[0], &slot) == CKR_OK)
+		{
+			size_t length = sizeof(slot.slotDescription);
+			memcpy(result.slot_description, slot.slotDescription, length);
+			while (length > 0 && (result.slot_description[length - 1] == ' ' ||
+			                      result.slot_description[length - 1] == '\0'))
+				length--;
+			result.slot_description[length] = '\0';
 		}
 	}
 
