@@ -43,6 +43,12 @@ final class CardMonitor {
         private let demoCardHolder: String? = nil
     #endif
 
+    /// A card was just inserted and its software is still reading it (`CardReadingState`).
+    private(set) var reading = CardReadingState()
+    var isReadingCard: Bool { reading.isReading }
+    private var readers: CardReaderWatcher?
+    private var readingGiveUp: Task<Void, Never>?
+
     private let watcher = TKTokenWatcher()
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "card")
     private var observers: [any NSObjectProtocol] = []
@@ -58,6 +64,8 @@ final class CardMonitor {
             pkcs11State = .ready
             return
         }
+        readers = CardReaderWatcher()
+        readers?.onChange = { [weak self] present in self?.cardInReader(present) }
         // CryptoTokenKit calls its handlers on an XPC queue: they must not be main actor isolated
         // (Swift would trap), so they are explicitly @Sendable and hop to the main actor.
         watcher.setInsertionHandler { @Sendable [weak self] tokenID in
@@ -88,12 +96,26 @@ final class CardMonitor {
         refresh()
     }
 
+    /// A reader reports a card seconds before its certificates are available: say so meanwhile.
+    private func cardInReader(_ present: Bool) {
+        logger.info("Card in reader: \(present)")
+        readingGiveUp?.cancel()
+        guard reading.cardInReader(present, hasCertificates: !certificates.isEmpty) else { return }
+        readingGiveUp = Task { [weak self] in
+            try? await Task.sleep(for: CardReadingState.givesUpAfter)
+            guard !Task.isCancelled else { return }
+            self?.reading.gaveUp()
+        }
+    }
+
     /// Re-reads the certificates of all inserted cards.
     func refresh() {
         guard demoCardHolder == nil else { return }
         let found = Self.readCertificates()
         guard found != certificates else { return }
         certificates = found
+        reading.certificatesChanged(found: !found.isEmpty)
+        if !found.isEmpty { readingGiveUp?.cancel() }
         pkcs11State = nil
         tokenReader = nil
         onChange?()

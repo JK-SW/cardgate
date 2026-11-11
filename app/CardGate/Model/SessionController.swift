@@ -72,7 +72,7 @@ final class SessionController {
             return
         }
         preflight = Task { [weak self] in
-            let result = await Self.check(url)
+            let result = await GatewayCheckResult.probe(url)
             guard let self, !Task.isCancelled else { return }
             self.preflight = nil
             self.logger.info("Gateway check \(url, privacy: .public): \(String(describing: result), privacy: .public)")
@@ -84,19 +84,6 @@ final class SessionController {
             case .trusted, .unknown:
                 self.launch(command)
             }
-        }
-    }
-
-    nonisolated private static func check(_ url: URL) async -> GatewayCheckResult {
-        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
-        request.httpMethod = "HEAD"
-        let session = URLSession(configuration: .ephemeral)
-        defer { session.finishTasksAndInvalidate() }
-        do {
-            _ = try await session.data(for: request)
-            return GatewayCheckResult(error: nil)
-        } catch {
-            return GatewayCheckResult(error: error)
         }
     }
 
@@ -163,6 +150,7 @@ final class SessionController {
             self.preflight = nil
             phase = .ended(.closedByUser)
         }
+        if process != nil { parser.stopRequested() }
         process?.terminate()
     }
 

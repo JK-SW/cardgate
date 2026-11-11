@@ -28,6 +28,7 @@ struct ConnectView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     }
+                    GatewayStatusView()
                 }
                 ReadinessView()
                 SessionStatusView(phase: model.session.phase)
@@ -115,6 +116,28 @@ struct ConnectView: View {
     }
 }
 
+/// A problem with the gateway found while idle (nothing is shown while it is fine).
+private struct GatewayStatusView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        // Not while connecting, nor next to a failure that already says the gateway is unreachable;
+        // after an interrupted connection it shows whether the network is back.
+        if !model.session.isRunning, model.session.phase != .ended(.failed(.gatewayUnreachable)) {
+            if model.gatewayStatus == .unreachable {
+                Label(
+                    "The gateway cannot be reached. Check your internet connection and the gateway address.",
+                    systemImage: "wifi.exclamationmark"
+                )
+                .font(.callout)
+                .foregroundStyle(.orange)
+                .multilineTextAlignment(.center)
+                .padding(.top, 4)
+            }
+        }
+    }
+}
+
 /// Whether the smart card software is installed and a card with a sign-in certificate is inserted.
 struct ReadinessView: View {
     @Environment(AppModel.self) private var model
@@ -172,6 +195,13 @@ struct ReadinessView: View {
                     Text("Contact your IT department to renew it.")
                         .foregroundStyle(.secondary)
                 }
+            } else if model.cards.isReadingCard {
+                Label {
+                    Text("Reading the card…")
+                } icon: {
+                    ProgressView().controlSize(.small)
+                }
+                .foregroundStyle(.secondary)
             } else if model.cards.certificates.isEmpty {
                 Label("Insert your card or token.", systemImage: "creditcard")
                     .foregroundStyle(.secondary)
@@ -277,6 +307,11 @@ private struct FailureView: View {
         case .multipleCertificates: "The card has several sign-in certificates"
         case .pinTimedOut: "The PIN was not entered in time"
         case .computerUnreachable: "The computer cannot be reached"
+        case .securityRefused: "The computer requires a different connection security"
+        case .connectionLost: "The connection was interrupted"
+        case .sessionTakenOver: "Another connection took over the session"
+        case .idleTimeout: "Disconnected after a period of inactivity"
+        case .disconnectedByServer: "The computer ended the connection"
         case .other: "The connection failed"
         }
     }
@@ -306,7 +341,26 @@ private struct FailureView: View {
         case .pinTimedOut:
             "The gateway does not wait long for the PIN. Click Connect and enter the PIN right away."
         case .computerUnreachable:
-            "The computer may be turned off or the address is wrong. Contact your IT department if it persists."
+            """
+            The gateway could not reach it. Check the computer's name in the connection settings for a typo \
+            and whether the computer is turned on. Contact your IT department if it persists.
+            """
+        case .securityRefused:
+            """
+            The computer does not accept the connection security CardGate uses (it requires TLS or NLA). \
+            Contact your IT department.
+            """
+        case .connectionLost:
+            "Check your internet connection and connect again."
+        case .sessionTakenOver:
+            "Someone signed in to the computer, or you connected to it from another device."
+        case .idleTimeout:
+            "The computer ends idle connections. Connect again to continue."
+        case .disconnectedByServer:
+            """
+            An administrator or the computer itself disconnected you (for example before a restart). \
+            Try again later or contact your IT department.
+            """
         case .other(let code):
             "Details are in the connection log (\(code))."
         }
