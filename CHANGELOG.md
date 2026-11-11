@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-11
+
+Srozumitelnější hlášky při konci a selhání připojení, kontrola dostupnosti brány, spolehlivější
+zadávání PINu.
+
 ### Přidáno
 - Přerušené spojení (výpadek sítě, brána) se hlásí jako „Spojení bylo přerušeno“; dřív se okno
   vzdálené plochy jen zavřelo. Vlastní hlášky má i převzetí relace jiným připojením, odpojení
