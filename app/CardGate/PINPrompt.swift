@@ -56,7 +56,9 @@ enum PINPrompt {
             module = arguments[1]
             arguments.removeFirst(2)
         }
-        let prompt = arguments.joined(separator: " ")
+        // FreeRDP passes the prompt as one quoted word; options after it (e.g. -AppleLanguages for
+        // screenshots) are for AppKit, not part of the prompt.
+        let prompt = arguments.prefix { !$0.hasPrefix("-") }.joined(separator: " ")
 
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)

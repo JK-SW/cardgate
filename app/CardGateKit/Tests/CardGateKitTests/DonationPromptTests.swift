@@ -44,4 +44,13 @@ struct DonationPromptTests {
         #expect(ProjectLinks.sourceCode.host() == "github.com")
         #expect(ProjectLinks.donation.scheme == "https")
     }
+
+    @Test(arguments: [
+        ("cs", "navod.cs.md"), ("sk", "navod.sk.md"), ("en", "user-guide.en.md"), ("de", "user-guide.en.md"),
+        (nil, "user-guide.en.md"),
+    ])
+    func userGuideMatchesTheAppLanguage(language: String?, file: String) {
+        let url = ProjectLinks.userGuide(language: language)
+        #expect(url.absoluteString == "https://github.com/JK-SW/cardgate/blob/main/docs/\(file)")
+    }
 }

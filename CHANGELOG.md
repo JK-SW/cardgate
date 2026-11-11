@@ -5,12 +5,17 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Nabídka Nápověda → Návod k CardGate otevře návod na GitHubu v jazyce aplikace.
+- Návody (cs, sk, en) obsahují snímky obrazovky.
+
 ### Opraveno
 - Po změně modulu PKCS#11 v nastavení připojení nebo po přepnutí na jiné připojení se stav karty
   hned přepočítá; dřív mohl do další aktivace aplikace ukazovat „Karta připravena“ podle
   předchozího modulu.
 - Okno Klávesové zkratky už nemá zkratku ⌘⇧/, kterou macOS používá pro hledání v nabídce
   Nápověda (nikdy nefungovala); okno je dál v nabídce Nápověda.
+- Okno Nastavení zobrazovalo zbytečný posuvník.
 
 ### Změněno
 - Automatické testy uživatelského rozhraní (bez karty a PINu) běží s každou změnou.

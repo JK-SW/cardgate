@@ -2,6 +2,7 @@
 
 CardGate connects your Mac to the remote desktop of your work computer through a Remote Desktop
 Gateway that requires smart card (or token) sign-in.
+You can also open this guide from the app: **Help → CardGate User Guide**.
 
 ## Requirements
 
@@ -26,6 +27,9 @@ Gateway that requires smart card (or token) sign-in.
 3. Optionally choose the display mode, initial window size, clipboard, sound and scroll direction.
    Click **Save**.
 
+<img src="images/en/welcome.png" width="360" alt="CardGate welcome screen">
+<img src="images/en/connection-settings.png" width="390" alt="Connection settings">
+
 ## Connecting
 
 1. Insert your card or token.
@@ -36,6 +40,9 @@ Gateway that requires smart card (or token) sign-in.
    bar switches full screen. Right-click the Dock icon for **Disconnect**.
 5. When you disconnect or close the remote desktop, the CardGate window comes back.
 
+<img src="images/en/main-window.png" width="400" alt="Main window with a ready card">
+<img src="images/en/pin.png" width="290" alt="PIN dialog">
+
 Client hotkeys use **left Control + left Option + left Shift** plus a key (e.g. **Return** = full screen).
 
 ## Updates
@@ -45,6 +52,8 @@ Change it in **CardGate → Settings…** (⌘,).
 Manually: **CardGate → Check for Updates…**. A new version installs with one click; the app only
 accepts updates signed with the author's key. A check only downloads the list of versions from
 GitHub and sends nothing about you.
+
+<img src="images/en/settings.png" width="420" alt="App settings">
 
 ## Security
 
