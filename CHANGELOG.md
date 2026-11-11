@@ -5,6 +5,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-11
+
+Návod přímo z aplikace a se snímky obrazovky, drobné opravy.
+
 ### Přidáno
 - Nabídka Nápověda → Návod k CardGate otevře návod na GitHubu v jazyce aplikace.
 - Návody (cs, sk, en) obsahují snímky obrazovky.
