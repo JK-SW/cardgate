@@ -20,6 +20,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollDisabled(true)
         .frame(width: 420)
         .fixedSize(horizontal: false, vertical: true)
     }

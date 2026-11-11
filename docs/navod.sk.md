@@ -2,6 +2,7 @@
 
 CardGate pripojí váš Mac k vzdialenej ploche pracovného počítača cez bránu (RD Gateway),
 ktorá vyžaduje prihlásenie čipovou kartou alebo tokenom.
+Tento návod otvoríte aj z aplikácie: **Pomocník → Návod na CardGate**.
 
 ## Čo budete potrebovať
 
@@ -27,6 +28,9 @@ ktorá vyžaduje prihlásenie čipovou kartou alebo tokenom.
 3. Voliteľne zvoľte zobrazenie, počiatočnú veľkosť okna, schránku, zvuk a smer posúvania myšou.
    Kliknite na **Uložiť**.
 
+<img src="images/sk/welcome.png" width="360" alt="Uvítacia obrazovka CardGate">
+<img src="images/sk/connection-settings.png" width="390" alt="Nastavenie pripojenia">
+
 ## Pripojenie
 
 1. Vložte kartu alebo token.
@@ -36,6 +40,9 @@ ktorá vyžaduje prihlásenie čipovou kartou alebo tokenom.
    CardGate: kliknutím na ňu (alebo cez ⌘Tab) sa vrátite k vzdialenej ploche. Zelené tlačidlo
    v záhlaví okna prepína celú obrazovku. Pravým tlačidlom na ikone v Docku zvolíte **Odpojiť**.
 5. Po odpojení alebo zatvorení vzdialenej plochy sa okno CardGate znova zobrazí.
+
+<img src="images/sk/main-window.png" width="400" alt="Hlavné okno s pripravenou kartou">
+<img src="images/sk/pin.png" width="290" alt="Okno na zadanie PINu">
 
 Klávesové skratky klienta sa používajú s klávesmi **ľavý Control + ľavý Option + ľavý Shift**
 a písmenom (napr. **Enter** = celá obrazovka).
@@ -47,6 +54,8 @@ Voľbu zmeníte v **CardGate → Nastavenia…** (⌘,).
 Ručne: menu **CardGate → Skontrolovať aktualizácie…**. Nová verzia sa nainštaluje jedným kliknutím;
 aplikácia prijme len aktualizáciu podpísanú kľúčom autora. Kontrola len stiahne zoznam verzií
 z GitHubu a nič o vás neodosiela.
+
+<img src="images/sk/settings.png" width="420" alt="Nastavenia aplikácie">
 
 ## Bezpečnosť
 

@@ -7,6 +7,12 @@ import SwiftUI
 @MainActor
 enum Main {
     static func main() {
+        #if DEBUG
+            // Screenshots of the user guides are taken in light mode (scripts/screenshots.sh).
+            if ProcessInfo.processInfo.environment["CARDGATE_APPEARANCE"] == "light" {
+                NSApplication.shared.appearance = NSAppearance(named: .aqua)
+            }
+        #endif
         let arguments = CommandLine.arguments.dropFirst()
         if arguments.first == PINPrompt.argument {
             PINPrompt.run(arguments: Array(arguments.dropFirst()))
@@ -50,6 +56,9 @@ struct CardGateApp: App {
                     .keyboardShortcut("o")
             }
             CommandGroup(replacing: .help) {
+                Link(
+                    "CardGate User Guide",
+                    destination: ProjectLinks.userGuide(language: Bundle.main.preferredLocalizations.first))
                 // No shortcut: ⌘? (⌘⇧/) belongs to the system's Help menu search.
                 OpenWindowButton(title: "Keyboard Shortcuts", id: WindowID.shortcuts)
             }

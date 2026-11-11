@@ -111,7 +111,11 @@ final class CardGateUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Check for updates automatically"].exists)
         app.typeKey("w", modifierFlags: .command)
 
-        choose(app, menu: "Help", item: "Keyboard Shortcuts")
+        // The guide opens in the browser; only its presence is checked.
+        let help = app.menuBars.menuBarItems["Help"]
+        help.click()
+        XCTAssertTrue(help.menuItems["CardGate User Guide"].exists)
+        help.menuItems["Keyboard Shortcuts"].click()
         XCTAssertTrue(app.windows["Keyboard Shortcuts"].waitForExistence(timeout: 5))
         app.typeKey("w", modifierFlags: .command)
 

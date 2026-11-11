@@ -244,6 +244,22 @@
     "CardGate": {
       "shouldTranslate": false
     },
+    "CardGate User Guide": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Návod k CardGate"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Návod na CardGate"
+          }
+        }
+      }
+    },
     "CardGate cannot choose between them yet. Use a card with one sign-in certificate or contact your IT department.": {
       "localizations": {
         "cs": {

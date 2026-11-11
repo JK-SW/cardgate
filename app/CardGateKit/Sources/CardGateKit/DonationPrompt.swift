@@ -5,6 +5,15 @@ public enum ProjectLinks {
     public static let sourceCode = link("https://github.com/JK-SW/cardgate")
     public static let donation = link("https://ko-fi.com/jirikubinek")
 
+    /// The user guide on GitHub in the language the app is shown in (English otherwise).
+    public static func userGuide(language: String?) -> URL {
+        switch language?.prefix(2) {
+        case "cs": link("https://github.com/JK-SW/cardgate/blob/main/docs/navod.cs.md")
+        case "sk": link("https://github.com/JK-SW/cardgate/blob/main/docs/navod.sk.md")
+        default: link("https://github.com/JK-SW/cardgate/blob/main/docs/user-guide.en.md")
+        }
+    }
+
     private static func link(_ address: StaticString) -> URL {
         guard let url = URL(string: "\(address)") else { preconditionFailure("invalid URL \(address)") }
         return url

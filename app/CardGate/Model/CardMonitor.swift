@@ -35,12 +35,29 @@ final class CardMonitor {
     }
     nonisolated static let checkArgument = "--check-card"
     private var checkPending = false
+    #if DEBUG
+        /// Debug builds only, for screenshots of the documentation: `CARDGATE_DEMO_CARD=<holder>`
+        /// shows a ready card of that holder instead of the real ones (never in a release).
+        private let demoCardHolder = ProcessInfo.processInfo.environment["CARDGATE_DEMO_CARD"]
+    #else
+        private let demoCardHolder: String? = nil
+    #endif
 
     private let watcher = TKTokenWatcher()
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "card")
     private var observers: [any NSObjectProtocol] = []
 
     init() {
+        if let demoCardHolder {
+            certificates = [
+                CardCertificate(
+                    tokenID: "demo", holderName: demoCardHolder, sha1: String(repeating: "0", count: 40),
+                    extendedKeyUsages: [CardCertificate.smartCardLogonOID],
+                    notBefore: Date(), notAfter: Date().addingTimeInterval(365 * 24 * 3600))
+            ]
+            pkcs11State = .ready
+            return
+        }
         // CryptoTokenKit calls its handlers on an XPC queue: they must not be main actor isolated
         // (Swift would trap), so they are explicitly @Sendable and hop to the main actor.
         watcher.setInsertionHandler { @Sendable [weak self] tokenID in
@@ -73,6 +90,7 @@ final class CardMonitor {
 
     /// Re-reads the certificates of all inserted cards.
     func refresh() {
+        guard demoCardHolder == nil else { return }
         let found = Self.readCertificates()
         guard found != certificates else { return }
         certificates = found
@@ -84,6 +102,7 @@ final class CardMonitor {
 
     /// Checks the card through the PKCS#11 module in a separate process (takes about 2–3 s).
     func scheduleCheck() {
+        guard demoCardHolder == nil else { return }
         guard let module, !certificates.isEmpty else {
             pkcs11State = nil
             tokenReader = nil
