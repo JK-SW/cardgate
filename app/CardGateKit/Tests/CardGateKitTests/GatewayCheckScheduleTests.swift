@@ -2,8 +2,12 @@ import CardGateKit
 import Testing
 
 struct GatewayCheckScheduleTests {
-    let gateway = try! HostAddress(parsing: "rdg.example.com")  // swiftlint:disable:this force_try
+    let gateway: HostAddress
     let start = ContinuousClock.now
+
+    init() throws {
+        gateway = try HostAddress(parsing: "rdg.example.com")
+    }
 
     @Test func checksANewGatewayAtOnce() {
         var schedule = GatewayCheckSchedule()
