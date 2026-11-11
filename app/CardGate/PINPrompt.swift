@@ -8,9 +8,9 @@ import SwiftUI
 /// the PIN from standard output. The PIN is never stored, logged or passed on a command line.
 ///
 /// Every PIN the card rejects counts towards locking it, so the dialog guards against accidental
-/// input: keystrokes in the first moment after it appears (typing meant for another app) are
-/// discarded, only PINs of the length the card accepts can be sent, and the remaining attempts
-/// reported by the card are shown.
+/// input (`PINEntryGuard`: typing and Enter meant for another app right when it appears), only
+/// PINs of the length the card accepts can be sent, and the remaining attempts reported by the
+/// card are shown.
 @MainActor
 enum PINPrompt {
     static let argument = "--askpass"
@@ -43,9 +43,17 @@ enum PINPrompt {
     /// Closes the dialog when the RDP client that asked for the PIN goes away (disconnect, crash).
     private static func exitWithParent() -> any DispatchSourceProcess {
         let source = DispatchSource.makeProcessSource(identifier: getppid(), eventMask: .exit, queue: .main)
-        source.setEventHandler { exit(1) }
+        source.setEventHandler { quit(1) }
         source.resume()
         return source
+    }
+
+    /// Ends the dialog process at once. `exit` would run the cleanup handlers of the loaded
+    /// libraries while the card's PIN limits may still be read on another thread; the PKCS#11
+    /// module then crashes, and the RDP client takes the crash for a cancelled dialog. The PIN is
+    /// already written (`FileHandle.write` is unbuffered), so nothing needs flushing.
+    private static func quit(_ code: Int32) -> Never {
+        _exit(code)
     }
 
     /// - Parameter arguments: the arguments after `--askpass`.
@@ -94,15 +102,15 @@ enum PINPrompt {
 
         guard !timedOut else {
             post(.timedOut)
-            exit(1)
+            quit(1)
         }
         guard let pin, model.policy.accepts(pin) else {
             post(.cancelled)
-            exit(1)
+            quit(1)
         }
         post(.submitted)
         FileHandle.standardOutput.write(Data((pin + "\n").utf8))
-        exit(0)
+        quit(0)
     }
 }
 
@@ -114,17 +122,24 @@ final class PINPromptModel {
     /// Limits and remaining attempts as reported by the card (read without a PIN, takes seconds).
     private(set) var policy = PINPolicy.unknown
     private(set) var policyKnown = false
-    /// Input is accepted only after this short delay, see `PINPrompt`.
+    /// When the dialog appeared (see `PINEntryGuard`).
+    private(set) var entryGuard = PINEntryGuard()
+    /// `entryGuard` accepts Enter (redraws the Sign In button when it does).
     private(set) var armed = false
-    static let armDelay: Duration = .milliseconds(700)
 
     init(host: String?) {
         self.host = host
     }
 
+    /// A keystroke typed now is kept (see `PINEntryGuard`).
+    func acceptsTyping() -> Bool {
+        entryGuard.acceptsTyping()
+    }
+
     func start(module: String?) {
+        entryGuard = PINEntryGuard()
         Task {
-            try? await Task.sleep(for: Self.armDelay)
+            try? await Task.sleep(for: PINEntryGuard.blockSubmitFor)
             armed = true
         }
         guard let module else { return }
@@ -190,9 +205,9 @@ private struct PINPromptView: View {
                 .frame(width: 220)
                 .disabled(model.policy.locked)
                 .onSubmit(submit)
-                .onChange(of: pin) { _, _ in
-                    // Typing that arrives before the dialog is armed was meant for another app.
-                    if !model.armed { pin = "" }
+                .onChange(of: pin) { _, new in
+                    // Typing faster than anyone can react to the new dialog was meant for another app.
+                    if !new.isEmpty, !model.acceptsTyping() { pin = "" }
                 }
 
             attemptsInfo
@@ -246,7 +261,7 @@ private struct PINPromptView: View {
         }
     }
 
-    private var canSubmit: Bool { model.armed && model.policy.accepts(pin) }
+    private var canSubmit: Bool { model.armed && model.entryGuard.acceptsSubmit() && model.policy.accepts(pin) }
 
     private func submit() {
         guard canSubmit else { return }

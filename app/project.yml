@@ -61,6 +61,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.jk-sw.cardgate
         PRODUCT_NAME: CardGate
+        CODE_SIGN_ENTITLEMENTS: CardGate/CardGate.entitlements
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
         ENABLE_USER_SCRIPT_SANDBOXING: NO

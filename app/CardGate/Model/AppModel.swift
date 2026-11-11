@@ -1,6 +1,7 @@
 import AppKit
 import CardGateKit
 import Foundation
+import Network
 import OSLog
 import Observation
 import Security
@@ -15,6 +16,7 @@ final class AppModel {
             guard oldValue != selectedID else { return }
             persist()
             refreshMiddleware()  // each connection may name its own PKCS#11 module
+            checkGateway(force: true)
         }
     }
 
@@ -30,6 +32,14 @@ final class AppModel {
     /// The one-time offer to support the author is shown (after a disconnect, see `DonationPrompt`).
     private(set) var showsDonationOffer = false
     private var sessionReachedDesktop = false
+    /// The last check of the selected connection's gateway while idle (`nil`: none or not done).
+    private(set) var gatewayStatus: GatewayReachability?
+    private var gatewayCheck: Task<Void, Never>?
+    private var gatewaySchedule = GatewayCheckSchedule()
+    private let networkMonitor = NWPathMonitor()
+    /// Status and interfaces of the network as last reported, to react only to real changes.
+    private var networkSignature: String?
+    private var networkSettling: Task<Void, Never>?
     /// The remote desktop was shown, and the session ended (with or without reaching it).
     var onDesktopShown: (() -> Void)?
     var onClientEnded: (() -> Void)?
@@ -51,6 +61,8 @@ final class AppModel {
         }
         session.onConnected = { [weak self] in
             self?.sessionReachedDesktop = true
+            self?.gatewayCheck?.cancel()  // a result from before the connection is outdated
+            self?.gatewayStatus = .reachable  // the connection just proved it
             self?.donation.recordSuccessfulConnection()
             self?.onDesktopShown?()
         }
@@ -60,6 +72,63 @@ final class AppModel {
             onClientEnded?()
             // Only after a normal disconnect from a working session, never after an error.
             if sessionReachedDesktop, end == .closedByUser, donation.isDue() { showsDonationOffer = true }
+            // After an error the gateway may be the reason; a normal end needs no check.
+            if end != .closedByUser { checkGateway(force: true) }
+        }
+        // Network changes (Wi-Fi off, cable plugged in, VPN, another Wi-Fi network – its router
+        // differs) may change whether the gateway is reachable.
+        networkMonitor.pathUpdateHandler = { [weak self] path in
+            let interfaces = path.availableInterfaces.map(\.name).sorted().joined(separator: ",")
+            let routers = path.gateways.map { "\($0)" }.sorted().joined(separator: ",")
+            let signature = "\(path.status) \(interfaces) \(routers)"
+            Task { @MainActor in self?.networkChanged(signature) }
+        }
+        networkMonitor.start(queue: .main)
+    }
+
+    /// Re-checks the gateway when the network really changed (a network came or went, another
+    /// interface), once it settles – a flapping Wi-Fi or VPN must not start a check on every report.
+    /// The first report at launch only records the state: the start already checks.
+    private func networkChanged(_ signature: String) {
+        defer { networkSignature = signature }
+        guard let previous = networkSignature, previous != signature else { return }
+        networkSettling?.cancel()
+        networkSettling = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            self?.checkGateway(force: true)
+        }
+    }
+
+    /// Checks in the background whether the selected connection's gateway port can be reached
+    /// (`GatewayReachability`, scheduled by `GatewayCheckSchedule`), so a problem with the internet,
+    /// the address or a firewall shows before Connect. Never while connected.
+    func checkGateway(force: Bool = false) {
+        #if DEBUG
+            // Screenshots and UI tests use example addresses that never answer.
+            let environment = ProcessInfo.processInfo.environment
+            if environment["CARDGATE_DEMO_CARD"] != nil || environment["CARDGATE_NO_GATEWAY_CHECK"] != nil { return }
+        #endif
+        guard !session.isRunning else { return }
+        let gateway = selectedProfile?.gateway
+        let decision = gatewaySchedule.decide(gateway: gateway, force: force)
+        if decision.resetStatus {
+            gatewayCheck?.cancel()
+            gatewayStatus = nil
+        }
+        guard decision.check, let gateway else { return }
+        gatewayCheck?.cancel()
+        gatewayCheck = Task { [weak self] in
+            let result = await GatewayReachability.probe(gateway)
+            guard !Task.isCancelled, let self, self.selectedProfile?.gateway == gateway, !self.session.isRunning
+            else { return }
+            let text = String(describing: result)
+            self.logger.info("Gateway port \(gateway, privacy: .public): \(text, privacy: .public)")
+            self.gatewayStatus = result
+            // A failed attempt that said the gateway is unreachable is outdated once it is back.
+            if result == .reachable, self.session.phase == .ended(.failed(.gatewayUnreachable)) {
+                self.session.clearFinished()
+            }
         }
     }
 
@@ -135,10 +204,16 @@ final class AppModel {
         } else {
             profiles.append(profile)
         }
+        let selectionChanges = selectedID != profile.id
         selectedID = profile.id
         editing = nil
         persist()
-        refreshMiddleware()  // the module setting may have changed
+        if !selectionChanges {
+            // The same connection was edited: its module or gateway may have changed. (A newly
+            // selected one is handled by `selectedID`.)
+            refreshMiddleware()
+            checkGateway(force: true)
+        }
     }
 
     func delete(_ profile: ConnectionProfile) {

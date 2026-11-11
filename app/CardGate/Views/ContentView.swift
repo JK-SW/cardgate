@@ -25,6 +25,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.refreshMiddleware()
+            model.checkGateway()
         }
     }
 }

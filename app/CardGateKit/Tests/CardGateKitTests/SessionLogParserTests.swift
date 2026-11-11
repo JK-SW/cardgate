@@ -40,7 +40,8 @@ struct SessionLogParserTests {
         #expect(parser.consume(Log.gatewayDone) == .connectingComputer)
         #expect(parser.consume(Log.gdiInit) == .connected)
         #expect(parser.consume(Log.gdiInit) == nil)  // no change
-        #expect(parser.consume(Log.networkDisconnect) == .ended(.closedByUser))
+        #expect(parser.consume(Log.cancelled) == .ended(.closedByUser))  // window closed
+        #expect(parser.consume(Log.networkDisconnect) == nil)
         #expect(parser.processExited(status: 0) == .ended(.closedByUser))
     }
 
@@ -49,6 +50,43 @@ struct SessionLogParserTests {
         parser.consume(Log.gdiInit)
         parser.consume(Log.cancelled)
         #expect(parser.phase == .ended(.closedByUser))
+    }
+
+    /// Real case: network turned off while working.
+    @Test func lostConnectionIsReported() {
+        var parser = SessionLogParser()
+        parser.consume(Log.gdiInit)
+        parser.consume(Log.transportFailed)
+        #expect(parser.consume(Log.networkDisconnect) == .ended(.failed(.connectionLost)))
+        #expect(parser.processExited(status: 0) == .ended(.failed(.connectionLost)))
+    }
+
+    /// Real case: Start → Sign out (and tsdiscon) in Windows; the client exits without more.
+    @Test func signingOutInWindowsIsNotAnError() {
+        var parser = SessionLogParser()
+        parser.consume(Log.gdiInit)
+        parser.consume(
+            Log.line(
+                "INFO", "com.freerdp.core",
+                "[rdp_print_errinfo]: ERRINFO_LOGOFF_BY_USER (0x0000000C):The disconnection was initiated by the user"))
+        parser.consume(
+            Log.line("ERROR", "com.freerdp.core", "[rdp_set_error_info]: ERRINFO_LOGOFF_BY_USER [0x0001000C]"))
+        #expect(parser.processExited(status: 0) == .ended(.closedByUser))
+    }
+
+    @Test(arguments: [
+        ("ERRINFO_DISCONNECTED_BY_OTHER_CONNECTION", SessionEnd.failed(.sessionTakenOver)),
+        ("ERRINFO_IDLE_TIMEOUT", .failed(.idleTimeout)),
+        ("ERRINFO_RPC_INITIATED_DISCONNECT", .failed(.disconnectedByServer)),
+        ("ERRINFO_RPC_INITIATED_DISCONNECT_BY_USER", .closedByUser),
+        ("ERRINFO_LOGON_TIMEOUT", .failed(.disconnectedByServer)),
+        ("ERRINFO_SERVER_INSUFFICIENT_PRIVILEGES", .failed(.other("ERRINFO_SERVER_INSUFFICIENT_PRIVILEGES"))),
+    ])
+    func windowsSaysWhyTheSessionEnded(code: String, end: SessionEnd) {
+        var parser = SessionLogParser()
+        parser.consume(Log.gdiInit)
+        parser.consume(Log.line("INFO", "com.freerdp.core", "[rdp_print_errinfo]: \(code) (0x00000005):text"))
+        #expect(parser.consume(Log.networkDisconnect) == .ended(end))
     }
 
     @Test func cancelledPINDialogEndsWithoutError() {
@@ -105,6 +143,19 @@ struct SessionLogParserTests {
         #expect(parser.processExited(status: 13) == .ended(.failed(.computerUnreachable)))
     }
 
+    /// Real case: a computer name that does not exist behind the gateway.
+    @Test func computerUnknownToTheGateway() {
+        var parser = SessionLogParser()
+        parser.consume(Log.cardReady)
+        parser.consume(Log.gatewayDone)
+        parser.consume(Log.line("ERROR", "com.freerdp.core.nego", "[nego_connect]: Failed to connect"))
+        parser.consume(
+            Log.line(
+                "ERROR", "com.freerdp.core",
+                "[rdp_client_connect]: ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED [0x0002000C]"))
+        #expect(parser.processExited(status: 1) == .ended(.failed(.computerUnreachable)))
+    }
+
     @Test func unknownErrorKeepsItsName() {
         var parser = SessionLogParser()
         parser.consume(Log.line("ERROR", "com.freerdp.core", "[x]: ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED [0x2]"))
@@ -125,8 +176,9 @@ struct SessionLogParserTests {
     @Test func endedIsTerminal() {
         var parser = SessionLogParser()
         parser.consume(Log.gdiInit)
-        parser.consume(Log.networkDisconnect)
+        parser.consume(Log.cancelled)
         #expect(parser.consume(Log.cardReady) == nil)
+        #expect(parser.consume(Log.networkDisconnect) == nil)
         #expect(parser.processExited(status: 1) == .ended(.closedByUser))
     }
 
@@ -134,5 +186,75 @@ struct SessionLogParserTests {
         var parser = SessionLogParser()
         parser.consume(Log.line("WARN", "x", "no suitable smartcard certificates were found"))
         #expect(parser.processExited(status: 0) == .ended(.closedByUser))
+    }
+
+    /// Windows refuses the account after the logon screen appeared: the client just exits.
+    @Test func unknownInfoCodeIsAnErrorUnlessTheUserClosed() {
+        var refused = SessionLogParser()
+        refused.consume(Log.gdiInit)
+        refused.consume(
+            Log.line("ERROR", "com.freerdp.core", "[rdp_set_error_info]: ERRINFO_DECRYPT_FAILED2 [0x00011193]"))
+        #expect(refused.processExited(status: 0) == .ended(.failed(.other("ERRINFO_DECRYPT_FAILED2"))))
+
+        var closed = SessionLogParser()
+        closed.consume(Log.gdiInit)
+        closed.consume(
+            Log.line("ERROR", "com.freerdp.core", "[rdp_set_error_info]: ERRINFO_DECRYPT_FAILED2 [0x00011193]"))
+        #expect(closed.consume(Log.cancelled) == .ended(.closedByUser))
+    }
+
+    /// The computer answers but requires TLS or NLA: it was reached, the name is right.
+    @Test func computerRefusingTheSecurityIsNotUnreachable() {
+        var parser = SessionLogParser()
+        parser.consume(Log.cardReady)
+        parser.consume(Log.gatewayDone)
+        parser.consume(
+            Log.line(
+                "ERROR", "com.freerdp.core.nego",
+                "[nego_process_negotiation_failure]: Error: SSL_REQUIRED_BY_SERVER [0x00000001]"))
+        parser.consume(
+            Log.line(
+                "ERROR", "com.freerdp.core",
+                "[rdp_client_connect]: ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED [0x0002000C]"))
+        #expect(parser.processExited(status: 1) == .ended(.failed(.securityRefused)))
+    }
+
+    /// An error reported before Disconnect is still shown (a wrong PIN used an attempt).
+    @Test func errorBeforeStopIsKept() {
+        var parser = SessionLogParser()
+        parser.consume(Log.cardReady)
+        parser.consume(Log.wrongPIN)
+        parser.stopRequested()
+        #expect(parser.processExited(status: 15) == .ended(.failed(.wrongPIN)))
+    }
+
+    /// An error logged while connecting that did not stop the session is not shown after Disconnect.
+    @Test func errorBeforeTheDesktopIsOutdatedOnceConnected() {
+        var parser = SessionLogParser()
+        parser.consume(Log.cardReady)
+        parser.consume(Log.wrongPIN)
+        parser.consume(Log.gdiInit)
+        parser.stopRequested()
+        #expect(parser.processExited(status: 15) == .ended(.closedByUser))
+
+        var exited = SessionLogParser()
+        exited.consume(Log.cardReady)
+        exited.consume(Log.wrongPIN)
+        exited.consume(Log.gdiInit)
+        #expect(exited.processExited(status: 0) == .ended(.closedByUser))
+    }
+
+    /// Disconnect in the Dock or quitting CardGate ends the client: never an error, however it exits.
+    @Test func stopByTheAppIsNeverAnError() {
+        var parser = SessionLogParser()
+        parser.consume(Log.gdiInit)
+        parser.stopRequested()
+        parser.consume(Log.transportFailed)
+        #expect(parser.consume(Log.networkDisconnect) == .ended(.closedByUser))
+
+        var starting = SessionLogParser()
+        starting.consume(Log.cardReady)
+        starting.stopRequested()
+        #expect(starting.processExited(status: 15) == .ended(.closedByUser))
     }
 }

@@ -113,6 +113,38 @@
         }
       }
     },
+    "An administrator or the computer itself disconnected you (for example before a restart). Try again later or contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojil vás správce nebo sám počítač (např. před restartem). Zkuste to později nebo kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojil vás správca alebo samotný počítač (napr. pred reštartom). Skúste to neskôr alebo kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "Another connection took over the session": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relaci převzalo jiné připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reláciu prevzalo iné pripojenie"
+          }
+        }
+      }
+    },
     "Ask your IT department to renew it in time.": {
       "localizations": {
         "cs": {
@@ -336,6 +368,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Automaticky kontrolovať aktualizácie"
+          }
+        }
+      }
+    },
+    "Check your internet connection and connect again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte připojení k internetu a připojte se znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte pripojenie k internetu a pripojte sa znova."
           }
         }
       }
@@ -704,6 +752,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpojiť"
+          }
+        }
+      }
+    },
+    "Disconnected after a period of inactivity": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojeno kvůli nečinnosti"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojené pre nečinnosť"
           }
         }
       }
@@ -1300,6 +1364,22 @@
         }
       }
     },
+    "Reading the card…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Načítám kartu…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Načítavam kartu…"
+          }
+        }
+      }
+    },
     "Remote desktop through an RD Gateway with smart card sign-in.": {
       "localizations": {
         "cs": {
@@ -1540,6 +1620,22 @@
         }
       }
     },
+    "Someone signed in to the computer, or you connected to it from another device.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "K počítači se přihlásil někdo jiný, nebo jste se k němu připojili z jiného zařízení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "K počítaču sa prihlásil niekto iný alebo ste sa k nemu pripojili z iného zariadenia."
+          }
+        }
+      }
+    },
     "Source Code": {
       "localizations": {
         "cs": {
@@ -1748,18 +1844,66 @@
         }
       }
     },
-    "The computer may be turned off or the address is wrong. Contact your IT department if it persists.": {
+    "The computer does not accept the connection security CardGate uses (it requires TLS or NLA). Contact your IT department.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač je možná vypnutý nebo je adresa chybná. Pokud potíže trvají, kontaktujte IT oddělení."
+            "value": "Počítač nepřijímá zabezpečení připojení, které CardGate používá (vyžaduje TLS nebo NLA). Kontaktujte IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač je možno vypnutý alebo je adresa chybná. Ak problémy pretrvávajú, kontaktujte IT oddelenie."
+            "value": "Počítač neprijíma zabezpečenie pripojenia, ktoré CardGate používa (vyžaduje TLS alebo NLA). Kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "The computer ended the connection": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač ukončil připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač ukončil pripojenie"
+          }
+        }
+      }
+    },
+    "The computer ends idle connections. Connect again to continue.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač ukončuje nečinná připojení. Pro pokračování se připojte znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač ukončuje nečinné pripojenia. Ak chcete pokračovať, pripojte sa znova."
+          }
+        }
+      }
+    },
+    "The computer requires a different connection security": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vyžaduje jiné zabezpečení připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vyžaduje iné zabezpečenie pripojenia"
           }
         }
       }
@@ -1776,6 +1920,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojenie zlyhalo"
+          }
+        }
+      }
+    },
+    "The connection was interrupted": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spojení bylo přerušeno"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spojenie bolo prerušené"
           }
         }
       }
@@ -1840,6 +2000,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bránu nie je možné kontaktovať"
+          }
+        }
+      }
+    },
+    "The gateway cannot be reached. Check your internet connection and the gateway address.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána je nedostupná. Zkontrolujte připojení k internetu a adresu brány."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána je nedostupná. Skontrolujte pripojenie k internetu a adresu brány."
+          }
+        }
+      }
+    },
+    "The gateway could not reach it. Check the computer's name in the connection settings for a typo and whether the computer is turned on. Contact your IT department if it persists.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána se k němu nedokázala připojit. Zkontrolujte v nastavení připojení, zda v názvu počítače není překlep a zda je počítač zapnutý. Pokud potíže trvají, kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána sa k nemu nedokázala pripojiť. Skontrolujte v nastavení pripojenia, či v názve počítača nie je preklep a či je počítač zapnutý. Ak problémy pretrvávajú, kontaktujte IT oddelenie."
           }
         }
       }

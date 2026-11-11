@@ -5,6 +5,32 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Přerušené spojení (výpadek sítě, brána) se hlásí jako „Spojení bylo přerušeno“; dřív se okno
+  vzdálené plochy jen zavřelo. Vlastní hlášky má i převzetí relace jiným připojením, odpojení
+  kvůli nečinnosti a odpojení správcem nebo počítačem; neznámý důvod od Windows se zobrazí jako
+  chyba s kódem. Zavření okna, Odpojit a odhlášení ve Windows dál končí bez hlášky.
+- Aplikace zkouší, zda je port brány dostupný (při spuštění, změně sítě, přepnutí připojení,
+  po neúspěšném připojení a při návratu do aplikace nejvýš jednou za 5 minut), a ještě před
+  připojením upozorní na chybějící internet, chybnou adresu nebo firewall. Jde jen o otevření
+  a zavření spojení, bránu to nezatěžuje.
+
+### Změněno
+- Okno pro PIN zahodí jen znaky napsané v prvních 0,3 s po zobrazení (psaní určené jiné aplikaci)
+  a to, co na ně plynule navazuje, dřív 0,7 s – při rychlém psaní se tak ztrácely první číslice
+  a mohl odejít neúplný (a tedy chybný) PIN. Enter je dál v prvním okamžiku ignorován.
+- Hned po vložení karty do čtečky se zobrazí „Načítám kartu…“; dřív se několik sekund, než
+  software ke kartě načetl certifikáty, nedělo nic.
+
+### Opraveno
+- Rychle napsaný a hned potvrzený PIN občas ukončil připojování, jako by bylo zrušeno: okno se
+  zavíralo ve chvíli, kdy software karty ještě četl počet pokusů, a jeho ovladač spadl. Okno se teď
+  ukončí bez čekání na něj.
+- Počítač, který vyžaduje jiné zabezpečení připojení (TLS nebo NLA), se hlásí srozumitelně
+  a nezaměňuje se s nedostupným počítačem.
+- Neexistující nebo nedostupný počítač za bránou (překlep v názvu, vypnutý počítač) se hlásí jako
+  „Počítač není dostupný“ s radou zkontrolovat název, místo obecného „Připojení se nezdařilo“.
+
 ## [0.4.1] - 2026-11-11
 
 Návod přímo z aplikace a se snímky obrazovky, drobné opravy.
