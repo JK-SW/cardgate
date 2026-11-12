@@ -77,11 +77,25 @@ public struct DisplaySettings: Codable, Equatable, Sendable {
     public var mode: Mode
     /// Initial window size in points; `nil` lets the client choose (fits the screen).
     public var windowSize: WindowSize?
+    /// Size of text and apps on the remote desktop in percent; `nil` follows the display
+    /// (200 % on a Retina display, otherwise 100 %).
+    public var scale: Int?
 
-    public init(mode: Mode = .window, windowSize: WindowSize? = nil) {
+    public init(mode: Mode = .window, windowSize: WindowSize? = nil, scale: Int? = nil) {
         self.mode = mode
         self.windowSize = windowSize
+        self.scale = scale
     }
+
+    /// The chosen scale if RDP accepts it; `nil` (follow the display) otherwise.
+    public var validScale: Int? {
+        scale.flatMap { Self.scaleRange.contains($0) ? $0 : nil }
+    }
+
+    /// Range of the desktop scale factor in RDP ([MS-RDPBCGR] 2.2.1.3.2).
+    public static let scaleRange = 100...500
+    /// Scales offered in the settings: the steps Windows itself offers.
+    public static let scalePresets = [100, 125, 150, 175, 200, 225, 250, 300]
 }
 
 public struct WindowSize: Codable, Equatable, Hashable, Sendable, CustomStringConvertible {

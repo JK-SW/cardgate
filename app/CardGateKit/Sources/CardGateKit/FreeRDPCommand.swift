@@ -80,9 +80,16 @@ public struct FreeRDPCommand: Equatable, Sendable {
             "/cert:deny",
         ]
 
+        // The remote desktop follows the size and scale of the window or display while connected.
+        // Without this the remote desktop stays at 100 %: the scale of a single display is only
+        // sent this way, not when connecting.
+        args.append("/dynamic-resolution")
+        if let scale = profile.display.validScale {
+            // Also sent when connecting, so the sign-in screen has the scale too.
+            args.append("/scale-desktop:\(scale)")
+        }
         switch profile.display.mode {
         case .window:
-            args.append("/dynamic-resolution")
             // FreeRDP takes the window size in pixels; the user chose it in points (what they see).
             let points = profile.display.windowSize ?? screen?.defaultWindowSize
             if let points, let size = screen?.pixels(for: points) ?? Optional(points), size.isValid {

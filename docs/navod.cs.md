@@ -25,8 +25,9 @@ Tento návod otevřete i z aplikace: **Nápověda → Návod k CardGate**.
 1. Spusťte CardGate a klikněte na **Nastavit připojení**
    (nebo **Importovat soubor .rdp…**, pokud vám ho IT oddělení poslalo).
 2. Vyplňte **Počítač** (např. `pc01.example.com`) a **Bránu**.
-3. Volitelně zvolte zobrazení (okno / celá obrazovka), počáteční velikost okna, schránku,
-   zvuk a směr posouvání myší. Klikněte na **Uložit**.
+3. Volitelně zvolte zobrazení (okno / celá obrazovka), počáteční velikost okna, měřítko
+   (velikost textu a aplikací ve Windows; **Automaticky** = 200 % na displeji Retina, jinak 100 %),
+   schránku, zvuk a směr posouvání myší. Klikněte na **Uložit**.
 
 Připojení můžete mít i více – přepínáte je v horní liště okna.
 

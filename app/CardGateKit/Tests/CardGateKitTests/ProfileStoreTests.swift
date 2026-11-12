@@ -51,5 +51,6 @@ struct ProfileCompatibilityTests {
         #expect(profile.gateway == nil)
         #expect(!profile.redirection.audio)
         #expect(profile.input == InputSettings())
+        #expect(profile.display.scale == nil)
     }
 }
