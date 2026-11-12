@@ -1,0 +1,79 @@
+--- a/client/SDL/SDL3/sdl_monitor.cpp
++++ b/client/SDL/SDL3/sdl_monitor.cpp
+@@ -228,8 +228,27 @@
+ 	if (!monitors.empty() && std::none_of(monitors.cbegin(), monitors.cend(),
+ 	                                      [](const rdpMonitor& m) { return m.is_primary; }))
+ 		monitors.at(0).is_primary = true;
+-	return freerdp_settings_set_monitor_def_array_sorted(settings, monitors.data(),
+-	                                                     monitors.size());
++	/* Values given on the command line apply to every monitor, as in the display channel. */
++	const auto mask = freerdp_settings_get_uint64(settings, FreeRDP_MonitorOverrideFlags);
++	for (auto& monitor : monitors)
++	{
++		if ((mask & FREERDP_MONITOR_OVERRIDE_ORIENTATION) != 0)
++			monitor.attributes.orientation =
++			    freerdp_settings_get_uint16(settings, FreeRDP_DesktopOrientation);
++		if ((mask & FREERDP_MONITOR_OVERRIDE_DESKTOP_SCALE) != 0)
++			monitor.attributes.desktopScaleFactor =
++			    freerdp_settings_get_uint32(settings, FreeRDP_DesktopScaleFactor);
++		if ((mask & FREERDP_MONITOR_OVERRIDE_DEVICE_SCALE) != 0)
++			monitor.attributes.deviceScaleFactor =
++			    freerdp_settings_get_uint32(settings, FreeRDP_DeviceScaleFactor);
++	}
++	if (!freerdp_settings_set_monitor_def_array_sorted(settings, monitors.data(), monitors.size()))
++		return FALSE;
++	/* Send the monitor attributes (scale, orientation) when connecting (TS_UD_CS_MONITOR_EX);
++	 * without them the server starts every monitor at 100 %. They only go along with the monitor
++	 * list (TS_UD_CS_MONITOR), which is sent for more than one monitor; a single one gets its
++	 * scale from the core data (sdl_apply_connect_scale). */
++	return freerdp_settings_set_bool(settings, FreeRDP_HasMonitorAttributes, monitors.size() > 1);
+ }
+ 
+ [[nodiscard]] static BOOL sdl_detect_single_window(SdlContext* sdl, UINT32* pMaxWidth,
+@@ -267,6 +286,37 @@
+ 	return sdl_apply_mon_max_size(sdl, pMaxWidth, pMaxHeight);
+ }
+ 
++/* The scale sent when connecting (TS_UD_CS_CORE): the one of the display the session opens on
++ * (the primary of the monitors sent, see sdl_apply_display_properties), so even the sign-in
++ * screen has it. It is left at the default for a
++ * scale given on the command line, which sets it, and the display channel takes over once
++ * connected (the override flag is not set, so a window moved to another display follows it). */
++[[nodiscard]] static BOOL sdl_apply_connect_scale(SdlContext* sdl)
++{
++	rdpSettings* settings = sdl->context()->settings;
++	WINPR_ASSERT(settings);
++
++	const auto mask = freerdp_settings_get_uint64(settings, FreeRDP_MonitorOverrideFlags);
++	if ((mask & FREERDP_MONITOR_OVERRIDE_DESKTOP_SCALE) != 0)
++		return TRUE;
++	UINT32 scale = 0;
++	const auto count = freerdp_settings_get_uint32(settings, FreeRDP_MonitorCount);
++	for (UINT32 x = 0; x < count; x++)
++	{
++		auto monitor = static_cast<const rdpMonitor*>(
++		    freerdp_settings_get_pointer_array(settings, FreeRDP_MonitorDefArray, x));
++		if (monitor && monitor->is_primary)
++			scale = monitor->attributes.desktopScaleFactor;
++	}
++	/* A window: no monitors are sent, use the display it opens on. */
++	if ((count == 0) && !sdl->monitorIds().empty())
++		scale = sdl->getDisplay(sdl->monitorIds().front()).attributes.desktopScaleFactor;
++	if ((scale < 100) || (scale > 500))
++		return TRUE;
++	WLog_INFO(TAG, "desktop scale when connecting: %" PRIu32, scale);
++	return freerdp_settings_set_uint32(settings, FreeRDP_DesktopScaleFactor, scale);
++}
++
+ BOOL sdl_detect_monitors(SdlContext* sdl, UINT32* pMaxWidth, UINT32* pMaxHeight)
+ {
+ 	WINPR_ASSERT(sdl);
+@@ -339,5 +389,7 @@
+ 	if (!freerdp_settings_set_uint32(settings, FreeRDP_NumMonitorIds, size))
+ 		return FALSE;
+ 
+-	return sdl_detect_single_window(sdl, pMaxWidth, pMaxHeight);
++	if (!sdl_detect_single_window(sdl, pMaxWidth, pMaxHeight))
++		return FALSE;
++	return sdl_apply_connect_scale(sdl);
+ }

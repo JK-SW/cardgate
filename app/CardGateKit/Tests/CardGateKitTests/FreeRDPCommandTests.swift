@@ -43,7 +43,8 @@ struct FreeRDPCommandTests {
                 "/sound:sys:mac",
                 "-sdl-connection-dialog",
                 "/log-level:INFO",
-                "/log-filters:com.freerdp.client.sdl.disp:DEBUG,com.freerdp.utils.smartcard.ops:DEBUG,"
+                "/log-filters:com.freerdp.client.sdl.disp:DEBUG,com.freerdp.channels.disp.client:DEBUG,"
+                    + "com.freerdp.utils.smartcard.ops:DEBUG,"
                     + "com.freerdp.utils.smartcard.call:TRACE",
             ])
         #expect(
@@ -137,15 +138,15 @@ struct FreeRDPCommandTests {
     @Test func fullScreenModes() throws {
         let full = try command(profile(display: .init(mode: .fullScreen))).arguments
         #expect(full.contains("/f"))
-        #expect(!full.contains("/multimon"))
+        #expect(!full.contains { $0.hasPrefix("/multimon") })
 
         let all = try command(profile(display: .init(mode: .allDisplays))).arguments
         #expect(all.contains("/f"))
-        #expect(all.contains("/multimon"))
+        #expect(all.contains("/multimon:force"), "RDP security: the server never announces multi monitor support")
     }
 
-    /// The scale of the display reaches the remote desktop only over the display channel: without
-    /// it a full screen connection would stay at 100 % on a Retina display.
+    /// The remote desktop follows the scale of the display while connected (another display, full
+    /// screen toggled) in every mode, not only in a window.
     @Test(arguments: DisplaySettings.Mode.allCases)
     func followsTheDisplayInEveryMode(_ mode: DisplaySettings.Mode) throws {
         let args = try command(profile(display: .init(mode: mode))).arguments
