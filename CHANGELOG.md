@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-12
+
+Měřítko vzdálené plochy v nastavení, správné rozložení a měřítko na více monitorech, návrat
+minimalizovaného okna a předvyplněné jméno ve tvaru UPN při přihlášení heslem.
+
 ### Přidáno
 - Měřítko vzdálené plochy v nastavení připojení (velikost textu a aplikací ve Windows): automaticky
   podle displeje, nebo pevně 100–300 %. Měřítko platí už na přihlašovací obrazovce Windows.
