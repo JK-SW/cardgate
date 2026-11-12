@@ -24,7 +24,7 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 
 1. Start CardGate and click **Set Up Connection** (or **Import .rdp File…**).
 2. Enter the **Computer** (e.g. `pc01.example.com`) and the **Gateway**.
-3. Optionally choose the display mode, initial window size, clipboard, sound and scroll direction.
+3. Optionally choose the display mode, initial window size, scale (size of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound and scroll direction.
    Click **Save**.
 
 <img src="images/en/welcome.png" width="360" alt="CardGate welcome screen">

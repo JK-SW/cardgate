@@ -25,7 +25,7 @@ Tento návod otvoríte aj z aplikácie: **Pomocník → Návod na CardGate**.
 1. Spustite CardGate a kliknite na **Nastaviť pripojenie**
    (alebo **Importovať súbor .rdp…**, ak vám ho IT oddelenie poslalo).
 2. Vyplňte **Počítač** (napr. `pc01.example.com`) a **Bránu**.
-3. Voliteľne zvoľte zobrazenie, počiatočnú veľkosť okna, schránku, zvuk a smer posúvania myšou.
+3. Voliteľne zvoľte zobrazenie, počiatočnú veľkosť okna, mierku (veľkosť textu a aplikácií vo Windows; **Automaticky** = 200 % na displeji Retina, inak 100 %), schránku, zvuk a smer posúvania myšou.
    Kliknite na **Uložiť**.
 
 <img src="images/sk/welcome.png" width="360" alt="Uvítacia obrazovka CardGate">

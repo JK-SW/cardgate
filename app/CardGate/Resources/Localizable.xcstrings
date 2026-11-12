@@ -1460,6 +1460,22 @@
         }
       }
     },
+    "Scale": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Měřítko"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mierka"
+          }
+        }
+      }
+    },
     "Scroll in the same direction as on this Mac": {
       "localizations": {
         "cs": {
@@ -1600,6 +1616,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prihlasujem k bráne…"
+          }
+        }
+      }
+    },
+    "Size of text and apps on the remote desktop.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velikost textu a aplikací na vzdálené ploše."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veľkosť textu a aplikácií na vzdialenej ploche."
           }
         }
       }

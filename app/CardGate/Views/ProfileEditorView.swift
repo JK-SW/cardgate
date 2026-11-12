@@ -44,6 +44,14 @@ struct ProfileEditorView: View {
                         }
                         .accessibilityIdentifier("profile.windowSize")
                     }
+                    Picker("Scale", selection: $editor.scale) {
+                        Text("Automatic").tag(Int?.none)
+                        ForEach(scales, id: \.self) { scale in
+                            Text(Self.percent(scale)).tag(Optional(scale))
+                        }
+                    }
+                    .help("Size of text and apps on the remote desktop.")
+                    .accessibilityIdentifier("profile.scale")
                 }
 
                 Section("Sharing") {
@@ -137,6 +145,20 @@ struct ProfileEditorView: View {
         var sizes = WindowSize.presets.filter { screen?.fits($0) ?? true }
         if let current = editor.windowSize, !sizes.contains(current) { sizes.insert(current, at: 0) }
         return sizes
+    }
+
+    /// Presets plus the current scale if it is a custom one (e.g. imported from an .rdp file).
+    private var scales: [Int] {
+        var scales = DisplaySettings.scalePresets
+        if let current = editor.scale, !scales.contains(current) {
+            scales.append(current)
+            scales.sort()
+        }
+        return scales
+    }
+
+    private static func percent(_ scale: Int) -> String {
+        (Double(scale) / 100).formatted(.percent)
     }
 
     @ViewBuilder

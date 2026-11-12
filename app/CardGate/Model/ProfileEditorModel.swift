@@ -15,6 +15,8 @@ final class ProfileEditorModel: Identifiable {
     var displayMode: DisplaySettings.Mode
     /// `nil` = automatic size.
     var windowSize: WindowSize?
+    /// `nil` = follows the display.
+    var scale: Int?
     var clipboard: Bool
     var audio: Bool
     var scrollLikeThisMac: Bool
@@ -30,6 +32,7 @@ final class ProfileEditorModel: Identifiable {
         gateway = profile?.gateway?.description ?? ""
         displayMode = profile?.display.mode ?? .window
         windowSize = profile?.display.windowSize
+        scale = profile?.display.validScale  // an invalid stored value means Automatic
         clipboard = profile?.redirection.clipboard ?? true
         audio = profile?.redirection.audio ?? true
         scrollLikeThisMac = profile?.input.scrollLikeThisMac ?? true
@@ -71,7 +74,8 @@ final class ProfileEditorModel: Identifiable {
             gateway: gatewayText.isEmpty ? nil : try? HostAddress(parsing: gatewayText),
             pkcs11Module: module.isEmpty ? nil : module,
             certificateSHA1: certificateSHA1,
-            display: .init(mode: displayMode, windowSize: displayMode == .window ? windowSize : nil),
+            display: .init(
+                mode: displayMode, windowSize: displayMode == .window ? windowSize : nil, scale: scale),
             redirection: .init(clipboard: clipboard, audio: audio),
             input: .init(scrollLikeThisMac: scrollLikeThisMac))
     }

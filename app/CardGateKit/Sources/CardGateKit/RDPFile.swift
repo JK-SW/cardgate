@@ -55,6 +55,8 @@ public struct RDPFile: Equatable, Sendable {
             let size = WindowSize(width: width, height: height)
             if size.isValid { display.windowSize = size }
         }
+        // `desktopscalefactor` is not imported: files made for Windows PCs often fix 100 %, which
+        // makes everything tiny on a Retina display.
 
         var redirection = RedirectionSettings()
         if let clipboard = self["redirectclipboard"] { redirection.clipboard = clipboard != "0" }

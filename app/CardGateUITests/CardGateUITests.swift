@@ -157,6 +157,24 @@ final class CardGateUITests: XCTestCase {
         XCTAssertTrue(app.popUpButtons["profile.windowSize"].waitForExistence(timeout: 5))
     }
 
+    /// The scale is offered in every display mode and saved.
+    func testScaleIsSaved() {
+        let app = launch()
+        openNewConnection(app)
+        let scale = app.popUpButtons["profile.scale"]
+        XCTAssertEqual(scale.value as? String, "Automatic")
+        app.popUpButtons["profile.displayMode"].click()
+        app.menuItems["Full screen"].click()
+        scale.click()
+        // The percent format depends on the region ("150%" or "150 %").
+        app.menuItems.matching(NSPredicate(format: "title BEGINSWITH '150'")).firstMatch.click()
+        addConnection(app, name: "Office", computer: "pc01.example.com")
+
+        app.buttons["toolbar.edit"].click()
+        XCTAssertTrue(scale.waitForExistence(timeout: 5))
+        XCTAssertTrue((scale.value as? String)?.hasPrefix("150") == true)
+    }
+
     func testRejectsAnInvalidGatewayAndModule() {
         let app = launch()
         openNewConnection(app)

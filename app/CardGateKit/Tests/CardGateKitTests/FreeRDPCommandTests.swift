@@ -138,11 +138,36 @@ struct FreeRDPCommandTests {
         let full = try command(profile(display: .init(mode: .fullScreen))).arguments
         #expect(full.contains("/f"))
         #expect(!full.contains("/multimon"))
-        #expect(!full.contains("/dynamic-resolution"))
 
         let all = try command(profile(display: .init(mode: .allDisplays))).arguments
         #expect(all.contains("/f"))
         #expect(all.contains("/multimon"))
+    }
+
+    /// The scale of the display reaches the remote desktop only over the display channel: without
+    /// it a full screen connection would stay at 100 % on a Retina display.
+    @Test(arguments: DisplaySettings.Mode.allCases)
+    func followsTheDisplayInEveryMode(_ mode: DisplaySettings.Mode) throws {
+        let args = try command(profile(display: .init(mode: mode))).arguments
+        #expect(args.contains("/dynamic-resolution"))
+        #expect(!args.contains { $0.hasPrefix("/scale-desktop") })
+    }
+
+    @Test func chosenScale() throws {
+        let args = try command(profile(display: .init(mode: .fullScreen, scale: 150))).arguments
+        #expect(args.contains("/scale-desktop:150"))
+    }
+
+    @Test(arguments: [0, 99, 501])
+    func ignoresInvalidScale(_ scale: Int) throws {
+        #expect(DisplaySettings(scale: scale).validScale == nil)
+        let args = try command(profile(display: .init(scale: scale))).arguments
+        #expect(!args.contains { $0.hasPrefix("/scale-desktop") })
+    }
+
+    @Test(arguments: [100, 150, 500])
+    func acceptsScalesOfRDP(_ scale: Int) {
+        #expect(DisplaySettings(scale: scale).validScale == scale)
     }
 
     @Test func redirectionOff() throws {

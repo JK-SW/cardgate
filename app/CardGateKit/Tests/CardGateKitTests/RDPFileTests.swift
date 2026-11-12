@@ -58,6 +58,12 @@ struct RDPFileTests {
         #expect(windowed.display.mode == .window)
     }
 
+    /// A scale meant for a Windows PC would make everything tiny on a Retina display.
+    @Test func ignoresScale() throws {
+        let file = try RDPFile(data: Data("full address:s:pc\ndesktopscalefactor:i:100".utf8))
+        #expect(try file.makeProfile(name: "x").display.scale == nil)
+    }
+
     @Test func gatewayDisabledByUsageMethod() throws {
         let text = "full address:s:pc01.corp.example\ngatewayhostname:s:rdg.example.com\ngatewayusagemethod:i:0"
         let profile = try RDPFile(data: Data(text.utf8)).makeProfile(name: "x")

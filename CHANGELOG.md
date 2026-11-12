@@ -5,6 +5,15 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Měřítko vzdálené plochy v nastavení připojení (velikost textu a aplikací ve Windows): automaticky
+  podle displeje, nebo pevně 100–300 %. Pevné měřítko platí už na přihlašovací obrazovce Windows.
+
+### Opraveno
+- Připojení nastavené rovnou na celou obrazovku mělo na displeji Retina vše drobné (měřítko 100 %).
+  Teď dostane stejné měřítko jako okno, a po přepnutí z celé obrazovky do okna se plocha přizpůsobí oknu.
+- Připojení na všech monitorech se přizpůsobí, když se během něj monitor připojí, odpojí nebo přesune.
+
 ## [0.4.2] - 2026-11-11
 
 Srozumitelnější hlášky při konci a selhání připojení, kontrola dostupnosti brány, spolehlivější
