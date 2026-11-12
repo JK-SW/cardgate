@@ -16,6 +16,8 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 - Celá obrazovka na všech monitorech: Windows dostane každý monitor zvlášť. Dřív dostal jeden obdélník
   přes všechny, takže u monitorů různé velikosti (např. jeden na výšku) byla část plochy mimo obraz.
 - Minimalizované okno připojení vrátí kliknutí na ikonu CardGate v Docku nebo přepnutí přes ⌘Tab.
+- Po přepnutí z karty na jméno a heslo na přihlašovací obrazovce Windows je předvyplněné jméno
+  ve tvaru UPN (jmeno@domena.example.com) z certifikátu na kartě, ne neplatné domena.example.com\jmeno.
 
 ## [0.4.2] - 2026-11-11
 

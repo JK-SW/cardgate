@@ -83,7 +83,9 @@ build_freerdp() {
 # Static analysis of the C sources CardGate adds to FreeRDP (fails the build on any finding).
 analyze_patched_sources() {
   local s="$1" file cmd
-  for file in libfreerdp/core/gateway/rdg_sc.c; do
+  for file in libfreerdp/core/gateway/rdg_sc.c libfreerdp/core/smartcardlogon.c \
+    client/SDL/SDL3/sdl_monitor.cpp client/SDL/SDL3/sdl_context.cpp client/SDL/SDL3/sdl_freerdp.cpp \
+    client/SDL/SDL3/sdl_utils.cpp; do
     cmd="$(python3 -I -c '
 import json, shlex, sys
 for entry in json.load(open(sys.argv[1])):

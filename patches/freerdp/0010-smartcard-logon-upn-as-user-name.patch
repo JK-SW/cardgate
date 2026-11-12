@@ -1,0 +1,36 @@
+--- a/libfreerdp/core/smartcardlogon.c
++++ b/libfreerdp/core/smartcardlogon.c
+@@ -1049,6 +1049,33 @@
+ 
+ 	free((void*)cert_list);
+ 
++	/* The UPN of the certificate (user@suffix) is split into user and domain below. The suffix
++	 * need not be a Windows domain name, and the sign-in screen of the remote computer would
++	 * then offer suffix\user for a password. Unless user or domain were given, use the whole UPN
++	 * as the user name and no domain: Windows accepts it for a smart card and a password, and
++	 * the certificate filter above matches it on a later call. Not for an e-mail address taken
++	 * when the certificate has no UPN. */
++	const char* givenUser = freerdp_settings_get_string(settings, username_setting);
++	const char* givenDomain = freerdp_settings_get_string(settings, domain_setting);
++	if ((!givenUser || !*givenUser) && (!givenDomain || !*givenDomain))
++	{
++		char* upn = freerdp_certificate_get_upn((*cert)->certificate);
++		if (upn && strchr(upn, '@'))
++		{
++			const BOOL rc = freerdp_settings_set_string(settings, username_setting, upn) &&
++			                freerdp_settings_set_string(settings, domain_setting, nullptr);
++			free(upn);
++			if (!rc)
++			{
++				smartcardCertInfo_Free(*cert);
++				return FALSE;
++			}
++			WLog_INFO(TAG, "smart card logon: the user name is the UPN of the certificate");
++			return TRUE;
++		}
++		free(upn);
++	}
++
+ 	if (!set_settings_from_smartcard(settings, username_setting, (*cert)->userHint) ||
+ 	    !set_settings_from_smartcard(settings, domain_setting, (*cert)->domainHint))
+ 	{

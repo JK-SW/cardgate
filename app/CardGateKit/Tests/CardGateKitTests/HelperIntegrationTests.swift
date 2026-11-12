@@ -20,6 +20,7 @@ struct HelperIntegrationTests {
         arguments: [
             "NSApplicationDidBecomeActiveNotification",  // 0008: restores a minimized window
             "desktop scale when connecting",  // 0009: the display's scale at the sign-in screen
+            "the user name is the UPN of the certificate",  // 0010: the sign-in screen offers the UPN
         ])
     func clientContainsPatch(_ text: String) throws {
         #expect(try Self.clientContains(text), "the client lacks the patch with '\(text)'")
