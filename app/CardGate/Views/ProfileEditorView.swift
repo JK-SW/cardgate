@@ -147,7 +147,7 @@ struct ProfileEditorView: View {
         return sizes
     }
 
-    /// Presets plus the current scale if it is a custom one (e.g. imported from an .rdp file).
+    /// Presets plus the current scale if it is another valid one (from a profile edited by hand).
     private var scales: [Int] {
         var scales = DisplaySettings.scalePresets
         if let current = editor.scale, !scales.contains(current) {
