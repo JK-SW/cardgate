@@ -80,12 +80,12 @@ public struct FreeRDPCommand: Equatable, Sendable {
             "/cert:deny",
         ]
 
-        // The remote desktop follows the size and scale of the window or display while connected.
-        // Without this the remote desktop stays at 100 %: the scale of a single display is only
-        // sent this way, not when connecting.
+        // The remote desktop follows the size and scale of the window or display while connected
+        // (moved to another display, full screen toggled, displays added or removed). When
+        // connecting the client sends the scale of the display it opens on (patch 0009).
         args.append("/dynamic-resolution")
         if let scale = profile.display.validScale {
-            // Also sent when connecting, so the sign-in screen has the scale too.
+            // Replaces the display's scale, when connecting and while connected.
             args.append("/scale-desktop:\(scale)")
         }
         switch profile.display.mode {
@@ -98,7 +98,10 @@ public struct FreeRDPCommand: Equatable, Sendable {
         case .fullScreen:
             args.append("/f")
         case .allDisplays:
-            args += ["/f", "/multimon"]
+            // RDP security negotiates nothing, so the server never announces that it takes the
+            // displays when connecting; without force FreeRDP sends one rectangle around all of
+            // them and parts of the remote desktop lie off screen.
+            args += ["/f", "/multimon:force"]
         }
 
         args.append(profile.redirection.clipboard ? "+clipboard" : "-clipboard")
@@ -118,6 +121,9 @@ public struct FreeRDPCommand: Equatable, Sendable {
     static let logFilters = [
         // Display layout changes, for diagnosing window size issues.
         "com.freerdp.client.sdl.disp:DEBUG",
+        // The layout and scale of each monitor sent to the remote computer while connected (the
+        // scale sent when connecting is logged by the client itself, at INFO).
+        "com.freerdp.channels.disp.client:DEBUG",
         // Smart card redirection: what the remote computer asks the card and what fails.
         "com.freerdp.utils.smartcard.ops:DEBUG",
         "com.freerdp.utils.smartcard.call:TRACE",

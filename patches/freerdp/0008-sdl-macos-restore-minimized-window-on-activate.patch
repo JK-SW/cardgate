@@ -1,0 +1,123 @@
+--- a/client/SDL/SDL3/CMakeLists.txt
++++ b/client/SDL/SDL3/CMakeLists.txt
+@@ -156,6 +156,12 @@
+   list(APPEND LIBS ${X11_LIBRARIES})
+ endif()
+ 
++if(APPLE)
++  # Restores minimized windows when the app is activated (sdl_freerdp.cpp).
++  find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
++  list(APPEND LIBS ${COREFOUNDATION_FRAMEWORK})
++endif()
++
+ target_link_libraries(${MODULE_NAME} PRIVATE ${LIBS})
+ 
+ if(EMSCRIPTEN)
+--- a/client/SDL/SDL3/sdl_context.cpp
++++ b/client/SDL/SDL3/sdl_context.cpp
+@@ -1062,6 +1062,17 @@
+ 	return true;
+ }
+ 
++void SdlContext::restoreMinimizedWindows()
++{
++	for (auto& w : _windows)
++	{
++		auto window = w.second.window();
++		if (!window || ((SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED) == 0))
++			continue;
++		std::ignore = SDL_RestoreWindow(window);
++	}
++}
++
+ int SdlContext::exitCode() const
+ {
+ 	return _exitCode;
+--- a/client/SDL/SDL3/sdl_context.hpp
++++ b/client/SDL/SDL3/sdl_context.hpp
+@@ -115,6 +115,7 @@
+ 	[[nodiscard]] bool drawToWindows(const std::vector<SDL_Rect>& rects = {});
+ 	[[nodiscard]] bool drawToWindow(SdlWindow& window, const std::vector<SDL_Rect>& rects = {});
+ 	[[nodiscard]] bool minimizeAllWindows();
++	void restoreMinimizedWindows();
+ 	[[nodiscard]] int exitCode() const;
+ 	[[nodiscard]] SDL_PixelFormat pixelFormat() const;
+ 
+--- a/client/SDL/SDL3/sdl_freerdp.cpp
++++ b/client/SDL/SDL3/sdl_freerdp.cpp
+@@ -63,6 +63,10 @@
+ #include <SDL3/SDL_oldnames.h>
+ #include <SDL3/SDL_video.h>
+ 
++#if defined(__APPLE__)
++#include <CoreFoundation/CoreFoundation.h>
++#endif
++
+ #include <sdl_config.hpp>
+ 
+ #include "dialogs/sdl_connection_dialog_hider.hpp"
+@@ -273,6 +277,9 @@
+ 						if (!sdl->minimizeAllWindows())
+ 							throw ErrorMsg{ -1, windowEvent.type, "sdl->minimizeAllWindows" };
+ 						break;
++					case SDL_EVENT_USER_WINDOW_RESTORE:
++						sdl->restoreMinimizedWindows();
++						break;
+ 					case SDL_EVENT_USER_POINTER_NULL:
+ 						if (!sdl->setCursor(SdlContext::CURSOR_NULL))
+ 							throw ErrorMsg{ -1, windowEvent.type, "sdl->setCursor" };
+@@ -708,6 +715,16 @@
+ 	/* macOS has no num lock state, SDL_KMOD_NUM always starts off and we would turn num lock
+ 	 * off on the server with every sync. Start with it on, the server LEDs take over from there. */
+ 	SDL_SetModState(SDL_GetModState() | SDL_KMOD_NUM);
++
++	/* SDL restores only a minimized fullscreen window when the app is activated (Dock, app
++	 * switcher, another app activating it). Restore a minimized window too, it is otherwise only
++	 * reachable from its Dock thumbnail. The local center also delivers AppKit's notifications. */
++	CFNotificationCenterAddObserver(
++	    CFNotificationCenterGetLocalCenter(), sdl,
++	    [](CFNotificationCenterRef, void*, CFNotificationName, const void*, CFDictionaryRef)
++	    { std::ignore = sdl_push_user_event(SDL_EVENT_USER_WINDOW_RESTORE); },
++	    CFSTR("NSApplicationDidBecomeActiveNotification"), nullptr,
++	    CFNotificationSuspensionBehaviorDeliverImmediately);
+ #endif
+ 
+ 	/* Redirect SDL log messages to wLog */
+@@ -723,6 +740,9 @@
+ 	ScopeGuard guard(
+ 	    [&]()
+ 	    {
++#if defined(__APPLE__)
++		    CFNotificationCenterRemoveEveryObserver(CFNotificationCenterGetLocalCenter(), sdl);
++#endif
+ 		    sdl->cleanup();
+ 		    freerdp_del_signal_cleanup_handler(sdl->context(), sdl_term_handler);
+ 		    sdl_dialogs_uninit();
+--- a/client/SDL/SDL3/sdl_utils.cpp
++++ b/client/SDL/SDL3/sdl_utils.cpp
+@@ -155,6 +155,7 @@
+ 			event->code = va_arg(ap, int); /* RAIL_WMSZ_* move/resize type */
+ 			break;
+ 		case SDL_EVENT_USER_WINDOW_MINIMIZE:
++		case SDL_EVENT_USER_WINDOW_RESTORE:
+ 		case SDL_EVENT_USER_QUIT:
+ 		case SDL_EVENT_USER_POINTER_NULL:
+ 		case SDL_EVENT_USER_POINTER_DEFAULT:
+@@ -408,6 +409,7 @@
+ 			EV_CASE_STR(SDL_EVENT_USER_WINDOW_RESIZEABLE);
+ 			EV_CASE_STR(SDL_EVENT_USER_WINDOW_FULLSCREEN);
+ 			EV_CASE_STR(SDL_EVENT_USER_WINDOW_MINIMIZE);
++			EV_CASE_STR(SDL_EVENT_USER_WINDOW_RESTORE);
+ 			EV_CASE_STR(SDL_EVENT_USER_POINTER_NULL);
+ 			EV_CASE_STR(SDL_EVENT_USER_POINTER_DEFAULT);
+ 			EV_CASE_STR(SDL_EVENT_USER_POINTER_POSITION);
+--- a/client/SDL/SDL3/sdl_utils.hpp
++++ b/client/SDL/SDL3/sdl_utils.hpp
+@@ -41,6 +41,7 @@
+ 	SDL_EVENT_USER_WINDOW_RESIZEABLE,
+ 	SDL_EVENT_USER_WINDOW_FULLSCREEN,
+ 	SDL_EVENT_USER_WINDOW_MINIMIZE,
++	SDL_EVENT_USER_WINDOW_RESTORE,
+ 	SDL_EVENT_USER_POINTER_NULL,
+ 	SDL_EVENT_USER_POINTER_DEFAULT,
+ 	SDL_EVENT_USER_POINTER_POSITION,

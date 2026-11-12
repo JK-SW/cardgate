@@ -7,12 +7,15 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ### Přidáno
 - Měřítko vzdálené plochy v nastavení připojení (velikost textu a aplikací ve Windows): automaticky
-  podle displeje, nebo pevně 100–300 %. Pevné měřítko platí už na přihlašovací obrazovce Windows.
+  podle displeje, nebo pevně 100–300 %. Měřítko platí už na přihlašovací obrazovce Windows.
 
 ### Opraveno
 - Připojení nastavené rovnou na celou obrazovku mělo na displeji Retina vše drobné (měřítko 100 %).
   Teď dostane stejné měřítko jako okno, a po přepnutí z celé obrazovky do okna se plocha přizpůsobí oknu.
 - Připojení na všech monitorech se přizpůsobí, když se během něj monitor připojí, odpojí nebo přesune.
+- Celá obrazovka na všech monitorech: Windows dostane každý monitor zvlášť. Dřív dostal jeden obdélník
+  přes všechny, takže u monitorů různé velikosti (např. jeden na výšku) byla část plochy mimo obraz.
+- Minimalizované okno připojení vrátí kliknutí na ikonu CardGate v Docku nebo přepnutí přes ⌘Tab.
 
 ## [0.4.2] - 2026-11-11
 
