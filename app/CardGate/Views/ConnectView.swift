@@ -30,6 +30,9 @@ struct ConnectView: View {
                     }
                     GatewayStatusView()
                 }
+                if profile.gateway == nil {
+                    MissingGatewayView(profile: profile)
+                }
                 ReadinessView()
                 SessionStatusView(phase: model.session.phase, stopping: model.session.isStopping)
                 connectButton
@@ -45,14 +48,14 @@ struct ConnectView: View {
         .toolbar {
             if model.profiles.count > 1 {
                 ToolbarItem(placement: .navigation) {
-                    Picker("Connection", selection: $model.selectedID) {
+                    Picker("Connection", selection: Binding(get: { model.selectedID }, set: { model.select($0) })) {
                         ForEach(model.profiles) { profile in
                             Text(profile.name).tag(Optional(profile.id))
                         }
                     }
                     // A long name is shortened; otherwise the buttons would move to an overflow menu.
                     .frame(maxWidth: 220)
-                    .disabled(model.session.isRunning)
+                    .disabled(model.isBusy)
                 }
                 // Keeps the buttons on the right, where the title's space used to put them.
                 if #available(macOS 26, *) {
@@ -67,11 +70,14 @@ struct ConnectView: View {
                 }
                 .help("Edit Connection")
                 .accessibilityIdentifier("toolbar.edit")
-                .disabled(model.session.isRunning)
+                .disabled(model.isBusy)
 
                 Menu {
+                    // A new or imported connection would become the selected one while another runs.
                     Button("New Connection…") { model.beginNewProfile() }
+                        .disabled(model.isBusy)
                     Button("Import .rdp File…") { model.isImportingRDP = true }
+                        .disabled(model.isBusy)
                     Divider()
                     Button("Keyboard Shortcuts") { openWindow(id: WindowID.shortcuts) }
                     Button("Connection Log") { openWindow(id: WindowID.log) }
@@ -117,6 +123,31 @@ struct ConnectView: View {
             .disabled(!model.isReadyToConnect)
             .accessibilityIdentifier("connect")
         }
+    }
+}
+
+/// A connection saved by an older version without a gateway: CardGate connects only through one.
+private struct MissingGatewayView: View {
+    @Environment(AppModel.self) private var model
+    let profile: ConnectionProfile
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Label("The connection has no gateway", systemImage: "exclamationmark.shield.fill")
+                .foregroundStyle(.orange)
+                .font(.headline)
+            Text("CardGate connects only through an RD Gateway, which protects the connection and your PIN.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Edit Connection") { model.beginEditing(profile) }
+                .disabled(model.isBusy)
+                .accessibilityIdentifier("missingGateway.edit")
+        }
+        .frame(maxWidth: 420)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("missingGateway")
     }
 }
 
@@ -349,8 +380,8 @@ private struct FailureView: View {
             """
         case .multipleCertificates:
             """
-            CardGate cannot choose between them yet. Use a card with one sign-in certificate or contact \
-            your IT department.
+            Choose the certificate to sign in with: Edit Connection, section Card. If you do not know which \
+            one, contact your IT department.
             """
         case .pinTimedOut:
             "The gateway does not wait long for the PIN. Click Connect and enter the PIN right away."

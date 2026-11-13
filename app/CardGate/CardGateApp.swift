@@ -57,10 +57,13 @@ struct CardGateApp: App {
                 }
             }
             CommandGroup(replacing: .newItem) {
+                // A new or imported connection would become the selected one while another runs.
                 Button("New Connection…") { model.beginNewProfile() }
                     .keyboardShortcut("n")
+                    .disabled(model.isBusy)
                 Button("Import .rdp File…") { model.isImportingRDP = true }
                     .keyboardShortcut("o")
+                    .disabled(model.isBusy)
             }
             CommandGroup(replacing: .help) {
                 Link(

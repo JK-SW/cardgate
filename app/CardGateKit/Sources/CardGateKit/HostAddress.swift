@@ -5,7 +5,9 @@ import Foundation
 /// Values end up inside FreeRDP command line options (some of them comma separated sub-options),
 /// so only plain ASCII DNS names, IPv4 and bracketed IPv6 addresses are accepted: no spaces, commas
 /// or other characters that could change the meaning of an option. Internationalized domain names
-/// have to be entered in their ASCII (punycode, `xn--…`) form.
+/// have to be entered in their ASCII (punycode, `xn--…`) form. Underscores (common in Windows
+/// computer names) are accepted, and the dot of a fully qualified name (`pc01.example.com.`) is
+/// dropped.
 public struct HostAddress: Equatable, Hashable, Sendable, CustomStringConvertible {
     public let host: String
     public let port: UInt16?
@@ -19,8 +21,9 @@ public struct HostAddress: Equatable, Hashable, Sendable, CustomStringConvertibl
     }
 
     public init(host: String, port: UInt16? = nil) throws(ParseError) {
-        let host = host.trimmingCharacters(in: .whitespaces)
+        var host = host.trimmingCharacters(in: .whitespaces)
         guard !host.isEmpty else { throw .empty }
+        if host.count > 1, host.hasSuffix("."), !host.hasSuffix("..") { host.removeLast() }
         if let port, port == 0 { throw .invalidPort }
         if Self.isValidHost(host) {
             isIPv6 = false
@@ -80,7 +83,7 @@ public struct HostAddress: Equatable, Hashable, Sendable, CustomStringConvertibl
                 label.first != "-", label.last != "-"
             else { return false }
             return label.unicodeScalars.allSatisfy { scalar in
-                scalar.isASCII && (CharacterSet.alphanumerics.contains(scalar) || scalar == "-")
+                scalar.isASCII && (CharacterSet.alphanumerics.contains(scalar) || scalar == "-" || scalar == "_")
             }
         }
     }

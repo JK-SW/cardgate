@@ -11,14 +11,7 @@ import Security
 @Observable
 final class AppModel {
     private(set) var profiles: [ConnectionProfile] = []
-    var selectedID: UUID? {
-        didSet {
-            guard oldValue != selectedID else { return }
-            persist()
-            refreshMiddleware()  // each connection may name its own PKCS#11 module
-            checkGateway(force: true)
-        }
-    }
+    private(set) var selectedID: UUID?
 
     /// Profile shown in the editor sheet; `nil` when the sheet is closed.
     var editing: ProfileEditorModel?
@@ -46,6 +39,8 @@ final class AppModel {
     private(set) var middleware: PKCS11ModuleLocator.Middleware?
 
     private let store: ProfileStore?
+    /// The connections must not be saved over (`ProfileStore.Loaded.canSave`).
+    @ObservationIgnored private var profilesReadOnly = false
     private let clientConfig: FreeRDPClientConfig?
     private let locator = PKCS11ModuleLocator()
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "app")
@@ -55,6 +50,7 @@ final class AppModel {
         clientConfig = try? FreeRDPClientConfig.standard()
         load()
         refreshMiddleware()
+        checkGateway(force: true)  // also when launched in the background (no activation)
         cards.onChange = { [weak self] in
             // A new card makes an old "no certificate" error irrelevant.
             self?.session.clearFinished()
@@ -144,8 +140,14 @@ final class AppModel {
     /// Everything needed to connect is in place.
     /// Connect is possible while the card check still runs; connecting then waits for its result.
     var isReadyToConnect: Bool {
-        middleware != nil && !moduleUntrusted && signInCertificate != nil && !session.isRunning
-            && !cardNeedsReinsert && !isPreparingConnection
+        middleware != nil && !moduleUntrusted && signInCertificate != nil && !isBusy
+            && !cardNeedsReinsert && selectedProfile?.gateway != nil
+    }
+
+    /// A connection is starting (Connect waits for the card check) or running: the selected
+    /// connection must not change (picker, Edit, New, Import).
+    var isBusy: Bool {
+        session.isRunning || isPreparingConnection
     }
 
     /// The certificate the selected connection signs in with.
@@ -170,22 +172,39 @@ final class AppModel {
 
     // MARK: - Profiles
 
+    /// Reads the connections (see `ProfileStore.load` for damaged files) and says what went wrong.
     private func load() {
         guard let store else { return }
-        do {
-            let loaded = try store.load()
-            profiles = loaded.profiles
-            selectedID = loaded.selectedID ?? profiles.first?.id
-        } catch {
-            logger.error("Cannot load profiles: \(error.localizedDescription, privacy: .public)")
-            alert = .profilesUnreadable
-        }
+        let loaded = store.load()
+        profiles = loaded.profiles
+        selectedID = loaded.selectedID
+        profilesReadOnly = !loaded.canSave
+        guard let problem = loaded.problem else { return }
+        logger.error("Loading profiles: \(String(describing: problem), privacy: .public)")
+        alert = AppAlert(problem)
+    }
+
+    /// The user picked another connection.
+    func select(_ id: UUID?) {
+        guard id != selectedID else { return }
+        selectedID = id
+        selectionChanged()
+    }
+
+    /// Each connection may name its own PKCS#11 module and gateway.
+    private func selectionChanged() {
+        persist()
+        refreshMiddleware()
+        checkGateway(force: true)
     }
 
     private func persist() {
-        guard let store else { return }
+        guard let store, !profilesReadOnly else { return }
         do {
             try store.save(profiles: profiles, selectedID: selectedID)
+        } catch ProfileStore.StoreError.newerVersion {
+            profilesReadOnly = true
+            alert = .profilesFromNewerVersion
         } catch {
             logger.error("Cannot save profiles: \(error.localizedDescription, privacy: .public)")
             alert = .profilesNotSaved
@@ -206,23 +225,21 @@ final class AppModel {
         } else {
             profiles.append(profile)
         }
-        let selectionChanges = selectedID != profile.id
         selectedID = profile.id
         editing = nil
-        persist()
-        if !selectionChanges {
-            // The same connection was edited: its module or gateway may have changed. (A newly
-            // selected one is handled by `selectedID`.)
-            refreshMiddleware()
-            checkGateway(force: true)
-        }
+        // A new connection, or the module or gateway of this one may have changed.
+        selectionChanged()
     }
 
     func delete(_ profile: ConnectionProfile) {
         profiles.removeAll { $0.id == profile.id }
-        if selectedID == profile.id { selectedID = profiles.first?.id }
         editing = nil
-        persist()
+        if selectedID == profile.id {
+            selectedID = profiles.first?.id
+            selectionChanged()
+        } else {
+            persist()
+        }
     }
 
     /// Opens the editor pre-filled from an `.rdp` file; the user confirms with Save.
@@ -255,6 +272,11 @@ final class AppModel {
     func connect() {
         guard let profile = selectedProfile, !isPreparingConnection else { return }
         refreshMiddleware()
+        guard profile.gateway != nil else {
+            // Saved by an older version, which allowed connecting without a gateway.
+            alert = .gatewayMissing  // Connect is disabled without a gateway; a safety net
+            return
+        }
         guard let module = middleware?.modulePath else {
             alert = .noMiddleware
             return
@@ -274,27 +296,23 @@ final class AppModel {
             guard let certificate = signInCertificate else { return }
             do {
                 try clientConfig.install(for: profile)
+            } catch {
+                logger.error("Cannot write the client settings: \(error, privacy: .public)")
+                alert = .clientSettingsNotSaved
+                return
+            }
+            do throws(FreeRDPCommand.BuildError) {
                 let command = try FreeRDPCommand(
                     executable: executable, profile: profile, pkcs11Module: module,
                     config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current,
                     certificateSHA1: certificate.sha1, smartCardReader: card?.reader)
                 session.connect(command, gateway: profile.gateway)
             } catch {
-                logger.error("Cannot start client: \(error, privacy: .public)")
-                alert = .clientMissing
+                logger.error("Cannot build the client command: \(String(describing: error), privacy: .public)")
+                alert = AppAlert(error)
             }
         }
     }
-}
-
-enum AppAlert: Identifiable {
-    case profilesUnreadable
-    case profilesNotSaved
-    case rdpUnreadable
-    case noMiddleware
-    case clientMissing
-
-    var id: Self { self }
 }
 
 extension ScreenMetrics {
