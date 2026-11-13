@@ -308,18 +308,50 @@
         }
       }
     },
-    "CardGate cannot choose between them yet. Use a card with one sign-in certificate or contact your IT department.": {
+    "CardGate cannot save the settings for the connection. Check the free disk space.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "CardGate zatím neumí vybrat, který použít. Použijte kartu s jedním přihlašovacím certifikátem nebo kontaktujte IT oddělení."
+            "value": "CardGate nemůže uložit nastavení připojení. Zkontrolujte volné místo na disku."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "CardGate zatiaľ nevie vybrať, ktorý použiť. Použite kartu s jedným prihlasovacím certifikátom alebo kontaktujte IT oddelenie."
+            "value": "CardGate nemôže uložiť nastavenie pripojenia. Skontrolujte voľné miesto na disku."
+          }
+        }
+      }
+    },
+    "CardGate connects only through an RD Gateway, which protects the connection and your PIN.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate se připojuje jen přes bránu (RD Gateway), která chrání spojení i váš PIN."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate sa pripája len cez bránu (RD Gateway), ktorá chráni spojenie aj váš PIN."
+          }
+        }
+      }
+    },
+    "CardGate connects only through an RD Gateway, which protects the connection and your PIN. Add the gateway address in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate se připojuje jen přes bránu (RD Gateway), která chrání spojení i váš PIN. Doplňte adresu brány v nastavení připojení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate sa pripája len cez bránu (RD Gateway), ktorá chráni spojenie aj váš PIN. Doplňte adresu brány v nastavení pripojenia."
           }
         }
       }
@@ -356,6 +388,22 @@
         }
       }
     },
+    "Changes you make now will not be saved. Update CardGate to keep your connections up to date.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Změny, které teď uděláte, se neuloží. Aktualizujte CardGate, aby se vaše připojení dala upravovat."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zmeny, ktoré teraz urobíte, sa neuložia. Aktualizujte CardGate, aby sa vaše pripojenia dali upravovať."
+          }
+        }
+      }
+    },
     "Check for Updates…": {
       "localizations": {
         "cs": {
@@ -384,6 +432,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Automaticky kontrolovať aktualizácie"
+          }
+        }
+      }
+    },
+    "Check the imported connection": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte importované připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte importované pripojenie"
           }
         }
       }
@@ -448,6 +512,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Certifikát vyberajte len vtedy, keď má karta niekoľko platných prihlasovacích certifikátov."
+          }
+        }
+      }
+    },
+    "Choose the certificate to sign in with: Edit Connection, section Card. If you do not know which one, contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyberte certifikát pro přihlášení: Upravit připojení, část Karta. Pokud nevíte který, obraťte se na IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyberte certifikát na prihlásenie: Upraviť pripojenie, časť Karta. Ak neviete ktorý, obráťte sa na IT oddelenie."
           }
         }
       }
@@ -528,6 +608,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojiť"
+          }
+        }
+      }
+    },
+    "Connect only to addresses you got from your IT department. While connected, the remote computer can use your smart card.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojujte se jen k adresám, které máte od svého IT oddělení. Vzdálený počítač může po dobu připojení používat vaši čipovou kartu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripájajte sa len k adresám, ktoré máte od svojho IT oddelenia. Vzdialený počítač môže počas pripojenia používať vašu čipovú kartu."
           }
         }
       }
@@ -640,6 +736,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojenia sa nepodarilo uložiť"
+          }
+        }
+      }
+    },
+    "Connections that could not be read are not shown (%lld). The file as it was is kept as %@.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení, která nejde načíst, se nezobrazují (počet: %lld). Původní soubor je uložený jako %@."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenia, ktoré sa nedajú načítať, sa nezobrazujú (počet: %lld). Pôvodný súbor je uložený ako %@."
+          }
+        }
+      }
+    },
+    "Connections were saved by a newer CardGate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení uložila novější verze CardGate"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenia uložila novšia verzia CardGate"
           }
         }
       }
@@ -900,6 +1028,22 @@
         }
       }
     },
+    "Enter the address of the RD Gateway.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadejte adresu brány (RD Gateway)."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zadajte adresu brány (RD Gateway)."
+          }
+        }
+      }
+    },
     "Enter the address of your work computer.": {
       "localizations": {
         "cs": {
@@ -916,18 +1060,18 @@
         }
       }
     },
-    "Enter the full path of the module, starting with /.": {
+    "Enter the full path of the module, starting with /, without commas.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zadejte úplnou cestu k modulu začínající znakem /."
+            "value": "Zadejte úplnou cestu k modulu začínající /, bez čárek."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zadajte úplnú cestu k modulu začínajúcu znakom /."
+            "value": "Zadajte úplnú cestu k modulu začínajúcu /, bez čiarok."
           }
         }
       }
@@ -1300,22 +1444,6 @@
         }
       }
     },
-    "Optional": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nepovinné"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nepovinné"
-          }
-        }
-      }
-    },
     "PIN": {
       "localizations": {
         "cs": {
@@ -1684,6 +1812,22 @@
         }
       }
     },
+    "Some saved connections cannot be read": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Některá uložená připojení nejde načíst"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niektoré uložené pripojenia sa nedajú načítať"
+          }
+        }
+      }
+    },
     "Someone signed in to the computer, or you connected to it from another device.": {
       "localizations": {
         "cs": {
@@ -1988,6 +2132,22 @@
         }
       }
     },
+    "The connection has no gateway": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení nemá zadanou bránu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie nemá zadanú bránu"
+          }
+        }
+      }
+    },
     "The connection was interrupted": {
       "localizations": {
         "cs": {
@@ -2036,18 +2196,34 @@
         }
       }
     },
-    "The file with your connections is damaged. You can set up the connection again.": {
+    "The file with your connections cannot be read or backed up. To keep it intact, changes will not be saved. Restart CardGate; if this keeps happening, contact your IT department.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Soubor s vašimi připojeními je poškozený. Připojení můžete nastavit znovu."
+            "value": "Soubor s připojeními nejde přečíst ani zálohovat. Aby zůstal nedotčený, změny se neuloží. Spusťte CardGate znovu; pokud se to opakuje, obraťte se na IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Súbor s vašimi pripojeniami je poškodený. Pripojenie môžete nastaviť znova."
+            "value": "Súbor s pripojeniami sa nedá prečítať ani zálohovať. Aby zostal nedotknutý, zmeny sa neuložia. Spustite CardGate znova; ak sa to opakuje, obráťte sa na IT oddelenie."
+          }
+        }
+      }
+    },
+    "The file with your connections is damaged. It was kept as %@. Set up the connection again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soubor s připojeními je poškozený. Zůstal uložený jako %@. Nastavte připojení znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Súbor s pripojeniami je poškodený. Zostal uložený ako %@. Nastavte pripojenie znova."
           }
         }
       }
@@ -2192,6 +2368,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu sa zobrazí záznam posledného pripojenia."
+          }
+        }
+      }
+    },
+    "The path of the smart card software contains a comma or a line break. Move the module to another folder or contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cesta k softwaru pro čipovou kartu obsahuje čárku nebo zalomení řádku. Přesuňte modul do jiné složky nebo se obraťte na IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cesta k softvéru pre čipovú kartu obsahuje čiarku alebo zalomenie riadku. Presuňte modul do iného priečinka alebo sa obráťte na IT oddelenie."
           }
         }
       }
@@ -2552,6 +2744,22 @@
     },
     "pc01.example.com": {
       "shouldTranslate": false
+    },
+    "rdg.example.com": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rdg.example.com"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rdg.example.com"
+          }
+        }
+      }
     },
     "via %@": {
       "localizations": {

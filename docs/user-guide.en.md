@@ -73,6 +73,7 @@ GitHub and sends nothing about you.
 | No smart card software found | Install the software for your card (e.g. ProID+). |
 | Wrong PIN | Enter the correct PIN – repeated mistakes lock the card. |
 | The gateway cannot be reached | Check your internet connection and the gateway address. |
+| The connection has no gateway | CardGate connects only through an RD Gateway. Click **Edit Connection** and add the gateway address. |
 
 Details are in **Window → Connection Log**; **Copy Log** lets you send it to your IT department.
 The log never contains the PIN.

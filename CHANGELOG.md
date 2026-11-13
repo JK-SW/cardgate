@@ -9,6 +9,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 - Během navazování připojení je místo tlačítka Odpojit tlačítko **Zrušit**. Pokus ukončí hned, i když
   se čeká na kartu, bránu nebo zadání PINu (okno PINu se zavře), a během ukončování ukazuje „Ruším…“.
   Odpojit je až u připojené plochy.
+- Brána (RD Gateway) je u připojení povinná: chrání spojení i PIN. U připojení bez brány uloženého starší
+  verzí hlavní okno upozorní a nabídne Upravit připojení (Připojit není dostupné); import souboru `.rdp` bez brány otevře nastavení k doplnění.
+- Nové připojení a import `.rdp` nejsou dostupné, dokud běží připojení.
+- Adresa počítače a brány smí obsahovat podtržítko a končit tečkou (`pc_01.example.com.`).
 
 ### Opraveno
 - Klient vzdálené plochy, který nereaguje, se po Zrušit nebo Odpojit po několika sekundách ukončí
@@ -19,6 +23,12 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 - Neúspěšná kontrola certifikátu brány a chyba při spuštění klienta se zpracují stejně jako ostatní
   konce připojení (okno CardGate se vrátí do popředí, po chybě se znovu ověří dostupnost brány).
 - Plný disk při zápisu záznamu připojení už aplikaci neshodí.
+- Poškozený soubor s připojeními se už při dalším uložení nepřepíše: nečitelný soubor se odloží
+  jako záloha, jedno poškozené připojení nezablokuje ostatní a soubor z novější verze CardGate zůstane
+  beze změny. Soubor se navíc už nezapisuje při každém spuštění.
+- Chyba při ukládání nastavení klienta nebo nepoužitelná cesta k modulu karty se hlásí vlastní
+  srozumitelnou hláškou, ne „Aplikace je neúplná“. Hláška u karty s více certifikáty radí vybrat
+  certifikát v nastavení připojení.
 - Druhá spuštěná kopie CardGate jen přepne na tu, která už běží.
 
 ### Zabezpečení
@@ -26,6 +36,8 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
   (`WLOG_*`), úložiště certifikátů OpenSSL (`SSL_CERT_*`) ani načítání knihoven (`DYLD_*`) ho už
   neovlivní.
 - Okno PINu a aplikace reagují jen na zprávy svého vlastního klienta, ne jiné kopie nebo jiného procesu.
+- Nastavení připojení otevřené importem souboru `.rdp` varuje, ať se připojujete jen k adresám od svého
+  IT oddělení (vzdálený počítač může během připojení používat vaši kartu).
 
 ## [0.5.0] - 2026-11-12
 

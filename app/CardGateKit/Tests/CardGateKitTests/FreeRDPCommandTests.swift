@@ -85,9 +85,10 @@ struct FreeRDPCommandTests {
         #expect(command.arguments.contains("/log-level:INFO"))
     }
 
-    @Test func omitsGatewayForDirectConnections() throws {
-        let args = try command(profile(gateway: nil)).arguments
-        #expect(!args.contains { $0.hasPrefix("/gateway") })
+    /// Without a gateway nothing but RDP's own encryption would protect the PIN and the session.
+    @Test func refusesDirectConnections() throws {
+        let direct = try profile(gateway: nil)
+        #expect(throws: FreeRDPCommand.BuildError.gatewayRequired) { try command(direct) }
     }
 
     @Test func keepsGatewayPort() throws {
@@ -242,7 +243,9 @@ struct AskPassCommandTests {
             arguments: ["--askpass"])
         let command = try FreeRDPCommand(
             executable: URL(filePath: "/x/sdl-freerdp"),
-            profile: ConnectionProfile(name: "x", computer: HostAddress(parsing: "pc.example.com")),
+            profile: ConnectionProfile(
+                name: "x", computer: HostAddress(parsing: "pc.example.com"),
+                gateway: HostAddress(parsing: "rdg.example.com")),
             pkcs11Module: "/m.dylib", config: FreeRDPClientConfig(directory: URL(filePath: "/tmp/c")),
             askPass: askPass)
         #expect(command.environment["FREERDP_ASKPASS"] == askPass.shellCommand)

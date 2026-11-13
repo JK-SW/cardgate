@@ -43,7 +43,8 @@ extension CardGateUITests {
 
     /// Fills the connection sheet and saves it.
     func addConnection(
-        _ app: XCUIApplication, name: String, computer: String, gateway: String? = nil, module: String? = nil
+        _ app: XCUIApplication, name: String, computer: String, gateway: String? = "rdg.example.com",
+        module: String? = nil
     ) {
         let nameField = app.textFields["profile.name"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 5))

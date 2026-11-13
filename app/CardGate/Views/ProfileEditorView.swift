@@ -10,6 +10,22 @@ struct ProfileEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
+                if editor.isImported {
+                    Section {
+                        Label(
+                            """
+                            Connect only to addresses you got from your IT department. While connected, the \
+                            remote computer can use your smart card.
+                            """,
+                            systemImage: "exclamationmark.shield.fill"
+                        )
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("profile.importWarning")
+                    } header: {
+                        Text("Check the imported connection")
+                    }
+                }
                 Section {
                     TextField("Name", text: $editor.name)
                         .accessibilityIdentifier("profile.name")
@@ -17,10 +33,10 @@ struct ProfileEditorView: View {
                         .textContentType(.URL)
                         .accessibilityIdentifier("profile.computer")
                     validation(editor.computerError, empty: "Enter the address of your work computer.")
-                    TextField("Gateway", text: $editor.gateway, prompt: Text("Optional"))
+                    TextField("Gateway", text: $editor.gateway, prompt: Text("rdg.example.com"))
                         .textContentType(.URL)
                         .accessibilityIdentifier("profile.gateway")
-                    validation(editor.gatewayError, empty: nil)
+                    validation(editor.gatewayError, empty: "Enter the address of the RD Gateway.")
                 } header: {
                     Text("Connection")
                 } footer: {
@@ -88,7 +104,7 @@ struct ProfileEditorView: View {
                     TextField("PKCS#11 module", text: $editor.pkcs11Module, prompt: Text("Automatic"))
                         .accessibilityIdentifier("profile.module")
                     if !editor.moduleIsValid {
-                        Text("Enter the full path of the module, starting with /.")
+                        Text("Enter the full path of the module, starting with /, without commas.")
                             .foregroundStyle(.red)
                             .font(.callout)
                     }
@@ -118,7 +134,7 @@ struct ProfileEditorView: View {
             .padding()
         }
         .frame(width: 480)
-        .frame(minHeight: 560)
+        .frame(minHeight: 600)
         .confirmationDialog("Delete this connection?", isPresented: $confirmDelete) {
             Button("Delete", role: .destructive) {
                 if let profile = model.profiles.first(where: { $0.id == editor.id }) { model.delete(profile) }
@@ -162,12 +178,12 @@ struct ProfileEditorView: View {
     }
 
     @ViewBuilder
-    private func validation(_ error: HostAddress.ParseError?, empty: LocalizedStringKey?) -> some View {
+    private func validation(_ error: HostAddress.ParseError?, empty: LocalizedStringKey) -> some View {
         switch error {
         case nil:
             EmptyView()
         case .empty:
-            if let empty { Text(empty).foregroundStyle(.secondary).font(.callout) }
+            Text(empty).foregroundStyle(.secondary).font(.callout)
         case .invalidHost:
             Text("Enter a name like pc01.example.com, without spaces or other characters.")
                 .foregroundStyle(.red).font(.callout)

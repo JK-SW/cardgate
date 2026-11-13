@@ -20,10 +20,23 @@ struct HostAddressTests {
 
     @Test(arguments: [
         "host,with,comma", "two words", "host;rm", "-leading.example", "trailing-.example",
-        "double..dot", "ünicode.example", "host/path", "a:b:c", "user@host",
+        "double..dot", "ünicode.example", "host/path", "a:b:c", "user@host", ".", "pc01.example..",
+        ".pc01.example",
     ])
     func rejectsUnsafeOrInvalidHosts(_ text: String) {
         #expect(throws: (any Error).self) { try HostAddress(parsing: text) }
+    }
+
+    /// Windows computer names often contain an underscore.
+    @Test func acceptsUnderscore() throws {
+        #expect(try HostAddress(parsing: "pc_01.corp.example").host == "pc_01.corp.example")
+        #expect(try HostAddress(parsing: "PC_01:3390").description == "pc_01:3390")
+    }
+
+    /// A fully qualified name may end with a dot; it is dropped.
+    @Test func dropsTheDotOfAFullyQualifiedName() throws {
+        #expect(try HostAddress(parsing: "pc01.corp.example.").description == "pc01.corp.example")
+        #expect(try HostAddress(parsing: "rdg.example.com.:443").description == "rdg.example.com:443")
     }
 
     @Test(arguments: [

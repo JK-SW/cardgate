@@ -78,6 +78,7 @@ z GitHubu a nic o vás neodesílá.
 | Software pro čipovou kartu nebyl nalezen | Nainstalujte software ke kartě (např. ProID+). |
 | Chybný PIN | Zadejte správný PIN – opakované chyby kartu zablokují. |
 | Bránu nelze kontaktovat | Zkontrolujte připojení k internetu a adresu brány. |
+| Připojení nemá zadanou bránu | CardGate se připojuje jen přes bránu. Klikněte na **Upravit připojení** a doplňte adresu brány. |
 
 Podrobnosti najdete v menu **Okno → Záznam připojení**; tlačítkem **Kopírovat záznam** ho můžete
 poslat IT oddělení. Záznam neobsahuje PIN.

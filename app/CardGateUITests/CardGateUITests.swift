@@ -180,18 +180,19 @@ final class CardGateUITests: XCTestCase {
         openNewConnection(app)
         app.textFields["profile.computer"].click()
         app.textFields["profile.computer"].typeText("pc01.example.com")
-        XCTAssertTrue(app.buttons["Save"].isEnabled)
+        XCTAssertFalse(app.buttons["Save"].isEnabled, "the gateway is required")
+        XCTAssertTrue(app.staticTexts["Enter the address of the RD Gateway."].exists)
 
         app.textFields["profile.gateway"].click()
         app.textFields["profile.gateway"].typeText("not a gateway")
         XCTAssertFalse(app.buttons["Save"].isEnabled)
         app.textFields["profile.gateway"].typeKey("a", modifierFlags: .command)
-        app.textFields["profile.gateway"].typeKey(.delete, modifierFlags: [])
-        XCTAssertTrue(app.buttons["Save"].isEnabled, "the gateway is optional")
+        app.textFields["profile.gateway"].typeText("rdg.example.com")
+        XCTAssertTrue(app.buttons["Save"].isEnabled)
 
         typeModule(app, "relative/module.dylib")
-        XCTAssertTrue(
-            app.staticTexts["Enter the full path of the module, starting with /."].waitForExistence(timeout: 5))
+        let hint = app.staticTexts["Enter the full path of the module, starting with /, without commas."]
+        XCTAssertTrue(hint.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Save"].isEnabled)
     }
 
@@ -204,6 +205,8 @@ final class CardGateUITests: XCTestCase {
         XCTAssertEqual(audio.value as? Int, 1)
         clipboard.click()
         audio.click()
+        XCTAssertEqual(clipboard.value as? Int, 0)
+        XCTAssertEqual(audio.value as? Int, 0)
         addConnection(app, name: "Office", computer: "pc01.example.com")
 
         app.buttons["toolbar.edit"].click()
@@ -276,6 +279,43 @@ final class CardGateUITests: XCTestCase {
         XCTAssertEqual(app.popUpButtons["profile.displayMode"].value as? String, "Full screen")
         app.buttons["Save"].click()
         XCTAssertTrue(app.staticTexts["Branch Office"].waitForExistence(timeout: 5))
+    }
+
+    /// A file from anywhere (an e-mail attachment) can name any gateway: the editor warns, and a
+    /// file without a gateway cannot be saved until one is added.
+    func testImportWarnsAndRequiresAGateway() throws {
+        let file = try writeFile("Direct.rdp", "full address:s:pc04.example.com\n")
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["Welcome to CardGate"].waitForExistence(timeout: 10))
+        importFile(app, file)
+        XCTAssertTrue(app.textFields["profile.computer"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["profile.importWarning"].firstMatch.exists)
+        XCTAssertFalse(app.buttons["Save"].isEnabled)
+        app.textFields["profile.gateway"].click()
+        app.textFields["profile.gateway"].typeText("rdg.example.com")
+        XCTAssertTrue(app.buttons["Save"].isEnabled)
+    }
+
+    /// Older versions saved connections without a gateway; the main window says so and offers to
+    /// add one instead of connecting.
+    func testConnectionWithoutGatewayAsksForOne() throws {
+        _ = try writeFile(
+            "profiles.json",
+            #"{"version":1,"profiles":[{"id":"6F1C2A52-8B39-4B79-9A43-2B7D4D0B5E10","name":"Old","#
+                + #""computer":"pc01.example.com","display":{"mode":"window"},"#
+                + #""redirection":{"clipboard":true,"audio":true}}]}"#)
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["The connection has no gateway"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["connect"].isEnabled)
+        app.buttons["missingGateway.edit"].click()
+        let gateway = app.textFields["profile.gateway"]
+        XCTAssertTrue(gateway.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Save"].isEnabled)
+        gateway.click()
+        gateway.typeText("rdg.example.com")
+        app.buttons["Save"].click()
+        XCTAssertTrue(app.staticTexts["via rdg.example.com"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["The connection has no gateway"].exists)
     }
 
     func testReportsAnUnreadableRDPFile() throws {

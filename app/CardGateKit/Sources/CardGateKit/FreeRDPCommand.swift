@@ -29,6 +29,9 @@ public struct FreeRDPCommand: Equatable, Sendable {
     public enum BuildError: Error, Equatable, Sendable {
         /// The PKCS#11 module path cannot be passed safely as a FreeRDP sub-option.
         case invalidModulePath
+        /// CardGate connects only through an RD Gateway: without it the PIN and the session would
+        /// travel to the computer protected by nothing but RDP's own encryption.
+        case gatewayRequired
     }
 
     /// - Parameters:
@@ -42,9 +45,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
         askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil, certificateSHA1: String? = nil,
         smartCardReader: String? = nil
     ) throws(BuildError) {
-        guard pkcs11Module.hasPrefix("/"), !pkcs11Module.contains(","), !pkcs11Module.contains("\n") else {
-            throw .invalidModulePath
-        }
+        guard profile.gateway != nil else { throw .gatewayRequired }
+        guard Self.isUsableModulePath(pkcs11Module) else { throw .invalidModulePath }
         self.executable = executable
         self.arguments = Self.arguments(profile: profile, pkcs11Module: pkcs11Module, screen: screen)
         if let reader = smartCardReader, Self.isUsableReaderFilter(reader) {
@@ -83,6 +85,11 @@ public struct FreeRDPCommand: Equatable, Sendable {
         inherited
             .filter { Self.inheritedVariables.contains($0.key) || $0.key.hasPrefix("LC_") }
             .merging(environment) { _, own in own }
+    }
+
+    /// A PKCS#11 module path FreeRDP can take as a sub-option (it splits them at commas).
+    public static func isUsableModulePath(_ path: String) -> Bool {
+        path.hasPrefix("/") && !path.contains(",") && !path.contains(where: \.isNewline)
     }
 
     /// FreeRDP redirects readers whose name contains this text; it splits its options at commas.
