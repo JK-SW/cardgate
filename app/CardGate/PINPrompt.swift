@@ -53,7 +53,7 @@ enum PINPrompt {
         let center = DistributedNotificationCenter.default()
         let observer = session.map { session in
             center.addObserver(forName: PINDialogMessages.close, object: session, queue: .main) { _ in
-                MainActor.assumeIsolated { quit(1) }
+                MainActor.assumeIsolated { cancelByApp() }
             }
         }
         // The client may have ended (Cancel) before the watch started; nobody would get a PIN.
@@ -62,6 +62,12 @@ enum PINPrompt {
             source.cancel()
             if let observer { center.removeObserver(observer) }
         }
+    }
+
+    /// The app cancelled the connection. (Not `Never`: older compilers cannot infer
+    /// `assumeIsolated`'s result type from a `Never` closure.)
+    private static func cancelByApp() {
+        quit(1)
     }
 
     /// Ends the dialog process at once. `exit` would run the cleanup handlers of the loaded
