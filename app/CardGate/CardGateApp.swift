@@ -19,6 +19,9 @@ enum Main {
             PINPrompt.run(arguments: Array(arguments.dropFirst()))
         } else if arguments.first == CardMonitor.checkArgument, let module = arguments.dropFirst().first {
             // Separate short-lived process: the middleware is loaded fresh and never stays in the app.
+            // Its own process group: if the card driver hangs, CardGate stops it together with any
+            // process the driver started (`CardMonitor.check`).
+            setpgid(0, 0)
             print(PKCS11Probe.probe(module: module).encoded)
             exit(0)
         } else {

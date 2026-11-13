@@ -43,6 +43,7 @@ final class AppModel {
     @ObservationIgnored private var profilesReadOnly = false
     private let clientConfig: FreeRDPClientConfig?
     private let locator = PKCS11ModuleLocator()
+    @ObservationIgnored private var moduleChecker = ModuleTrustChecker()
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "app")
 
     init() {
@@ -54,6 +55,8 @@ final class AppModel {
         cards.onChange = { [weak self] in
             // A new card makes an old "no certificate" error irrelevant.
             self?.session.clearFinished()
+            // The card check that follows loads the module: check it first (cached while unchanged).
+            self?.refreshMiddleware()
         }
         session.onConnected = { [weak self] in
             self?.sessionReachedDesktop = true
@@ -121,7 +124,7 @@ final class AppModel {
             guard !Task.isCancelled, let self, self.selectedProfile?.gateway == gateway, !self.session.isRunning
             else { return }
             let text = String(describing: result)
-            self.logger.info("Gateway port \(gateway, privacy: .public): \(text, privacy: .public)")
+            self.logger.info("Gateway port \(gateway, privacy: .private(mask: .hash)): \(text, privacy: .public)")
             self.gatewayStatus = result
             // A failed attempt that said the gateway is unreachable is outdated once it is back.
             if result == .reachable, self.session.phase == .ended(.failed(.gatewayUnreachable)) {
@@ -140,7 +143,7 @@ final class AppModel {
     /// Everything needed to connect is in place.
     /// Connect is possible while the card check still runs; connecting then waits for its result.
     var isReadyToConnect: Bool {
-        middleware != nil && !moduleUntrusted && signInCertificate != nil && !isBusy
+        middleware != nil && signInCertificate != nil && !isBusy
             && !cardNeedsReinsert && selectedProfile?.gateway != nil
     }
 
@@ -158,8 +161,7 @@ final class AppModel {
     /// Connect was clicked and waits for the card check to finish.
     private(set) var isPreparingConnection = false
 
-    /// The configured PKCS#11 module is not validly code signed and is therefore not loaded.
-    private(set) var moduleUntrusted = false
+    private(set) var moduleProblem: ModuleProblem?
 
     /// The system lists the card but the middleware's PKCS#11 module does not see it.
     var cardNeedsReinsert: Bool {
@@ -251,7 +253,8 @@ final class AppModel {
             let profile = try RDPFile(contentsOf: url).makeProfile(name: name)
             editing = ProfileEditorModel(importing: profile)
         } catch {
-            logger.error("Cannot import \(url.lastPathComponent, privacy: .public): \(error, privacy: .public)")
+            logger.error(
+                "Cannot import \(url.lastPathComponent, privacy: .private(mask: .hash)): \(error, privacy: .private)")
             alert = .rdpUnreadable
         }
     }
@@ -259,14 +262,30 @@ final class AppModel {
     // MARK: - Middleware and connection
 
     func refreshMiddleware() {
-        var module = locator.resolve(configured: selectedProfile?.pkcs11Module)
-        // The module is loaded into the client: accept only intact, signed code.
-        moduleUntrusted = module.map { !CodeSignature.isValid(atPath: $0) } ?? false
-        if moduleUntrusted { module = nil }
+        let configured = selectedProfile?.pkcs11Module
+        let approvals = moduleApprovals
+        // The module is loaded into the client and sees the PIN (`ModuleTrust`).
+        let (module, problem) = ModuleProblem.evaluate(
+            configured: configured, resolved: locator.resolve(configured: configured)
+        ) { moduleChecker.trust(ofModuleAt: $0, approvals: approvals) }
+        moduleProblem = problem
         middleware =
             locator.installed.first { $0.modulePath == module }
             ?? module.map { .init(name: URL(filePath: $0).lastPathComponent, modulePath: $0, downloadURL: nil) }
         cards.module = middleware?.modulePath
+    }
+
+    private var moduleApprovals: ModuleApprovals {
+        get { ModuleApprovals(savedIn: .standard, domain: Bundle.main.bundleIdentifier ?? "") }
+        set { newValue.save(in: .standard) }
+    }
+
+    /// The user confirmed loading a module that is not from a verified publisher. The approval holds
+    /// for this file only: if it changes, CardGate asks again.
+    func approveModule(path: String, sha256: String) {
+        logger.info("Module approved by the user: \(path, privacy: .private(mask: .hash))")
+        moduleApprovals.approve(path: path, sha256: sha256)
+        refreshMiddleware()
     }
 
     func connect() {
@@ -278,7 +297,8 @@ final class AppModel {
             return
         }
         guard let module = middleware?.modulePath else {
-            alert = .noMiddleware
+            // A module problem (e.g. the module changed and needs approval) is shown in the window.
+            if moduleProblem == nil { alert = .noMiddleware }
             return
         }
         let executable = FreeRDPCommand.client(in: Bundle.main.bundleURL)
@@ -322,16 +342,5 @@ extension ScreenMetrics {
         let frame = screen.visibleFrame
         return ScreenMetrics(
             visibleSize: .init(width: Int(frame.width), height: Int(frame.height)), scale: screen.backingScaleFactor)
-    }
-}
-
-/// Code signature check of libraries loaded into the RDP client (PKCS#11 modules).
-enum CodeSignature {
-    static func isValid(atPath path: String) -> Bool {
-        var code: SecStaticCode?
-        guard SecStaticCodeCreateWithPath(URL(filePath: path) as CFURL, [], &code) == errSecSuccess, let code
-        else { return false }
-        return SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSCheckAllArchitectures), nil)
-            == errSecSuccess
     }
 }

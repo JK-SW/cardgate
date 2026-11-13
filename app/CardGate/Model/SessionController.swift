@@ -10,14 +10,13 @@ final class SessionController {
     /// `nil` before the first connection.
     private(set) var phase: SessionPhase?
     /// Recent client log lines for the log window (never contains the PIN; the client never logs it).
-    private(set) var log: [String] = []
+    private(set) var log = LogBuffer(capacity: 5000)
 
     private var process: Process?
     /// The last sessions' logs are also kept in files for support (never contain the PIN).
     private var logFile: FileHandle?
     static let logFiles = SessionLogFiles.standard
     private var parser = SessionLogParser()
-    private static let maxLogLines = 5000
     private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "session")
 
     /// The gateway is being checked before the client starts.
@@ -64,6 +63,7 @@ final class SessionController {
         }
         switch (event, phase) {
         case (.shown, .starting?), (.shown, .authenticatingGateway?):
+            parser.pinDialogShown()
             phase = .waitingForPIN
         case (.submitted, .waitingForPIN?):
             phase = .authenticatingGateway
@@ -81,28 +81,29 @@ final class SessionController {
         log.removeAll()
         phase = .starting
         guard let gateway, let url = GatewayCheckResult.url(for: gateway) else {
-            launch(command)
+            launch(command, gatewayTrusted: false)
             return
         }
         preflight = Task { [weak self] in
             let result = await GatewayCheckResult.probe(url)
             guard let self, !Task.isCancelled else { return }
             self.preflight = nil
-            self.logger.info("Gateway check \(url, privacy: .public): \(String(describing: result), privacy: .public)")
+            self.logger.info(
+                "Gateway check \(url, privacy: .private(mask: .hash)): \(String(describing: result), privacy: .public)")
             switch result {
             case .untrusted:
                 self.end(.failed(.untrustedCertificate))
             case .unreachable:
                 self.end(.failed(.gatewayUnreachable))
             case .trusted, .unknown:
-                self.launch(command)
+                self.launch(command, gatewayTrusted: result == .trusted)
             }
         }
     }
 
-    private func launch(_ command: FreeRDPCommand) {
+    private func launch(_ command: FreeRDPCommand, gatewayTrusted: Bool) {
         do {
-            try start(command)
+            try start(command, gatewayTrusted: gatewayTrusted)
         } catch {
             logger.error("Cannot start client: \(error.localizedDescription, privacy: .public)")
             end(.failed(.other(error.localizedDescription)))
@@ -116,7 +117,8 @@ final class SessionController {
         onEnded?(end)
     }
 
-    private func start(_ command: FreeRDPCommand) throws {
+    /// - Parameter gatewayTrusted: the system trusted the gateway's certificate (`GatewayCheckResult`).
+    private func start(_ command: FreeRDPCommand, gatewayTrusted: Bool) throws {
         guard process == nil else { return }
 
         let process = Process()
@@ -138,14 +140,17 @@ final class SessionController {
             exitContinuation.finish()
         }
 
-        parser = SessionLogParser()
+        parser = SessionLogParser(gatewayTrustedBySystem: gatewayTrusted)
         pinOutcome = nil
-        logger.info("Starting client: \(command.arguments.joined(separator: " "), privacy: .public)")
+        // Addresses and names stay out of the system log (they end up in diagnostics reports); the
+        // connection log file gets the full command line.
+        logger.info("Starting client (\(command.arguments.count) arguments)")
         try process.run()
         self.process = process
         self.pinSession = pinSession
         // Only now: a client that cannot start would leave an empty log and push out an old one.
         logFile = Self.openLogFile()
+        try? logFile?.write(contentsOf: Data("CardGate: \(command.arguments.joined(separator: " "))\n".utf8))
 
         let reader = OutputReader()
         Task { [weak self] in
@@ -215,7 +220,6 @@ final class SessionController {
         log.append(line)
         // A full disk must not crash the app; the log window still has the line.
         try? logFile?.write(contentsOf: Data((line + "\n").utf8))
-        if log.count > Self.maxLogLines { log.removeFirst(log.count - Self.maxLogLines) }
         if let next = parser.consume(line) {
             phase = next
             if next == .connected { onConnected?() }

@@ -179,9 +179,8 @@ struct ReadinessView: View {
 
     var body: some View {
         Group {
-            if model.moduleUntrusted {
-                Label("The smart card module is not signed and was not loaded.", systemImage: "xmark.shield.fill")
-                    .foregroundStyle(.red)
+            if let problem = model.moduleProblem {
+                ModuleProblemView(problem: problem)
             } else if model.middleware == nil {
                 VStack(spacing: 6) {
                     Label("No smart card software found", systemImage: "exclamationmark.triangle.fill")
@@ -349,6 +348,7 @@ private struct FailureView: View {
         case .gatewayUnreachable: "The gateway cannot be reached"
         case .gatewayDenied: "The gateway refused the sign-in"
         case .untrustedCertificate: "The gateway's certificate is not trusted"
+        case .gatewayCertificateNotPublic: "The gateway's certificate is not publicly trusted"
         case .multipleCertificates: "The card has several sign-in certificates"
         case .pinTimedOut: "The PIN was not entered in time"
         case .computerUnreachable: "The computer cannot be reached"
@@ -377,6 +377,12 @@ private struct FailureView: View {
             """
             The connection was stopped for your safety. Check the gateway address; if it is correct, \
             contact your IT department.
+            """
+        case .gatewayCertificateNotPublic:
+            """
+            CardGate accepts only certificates from public certification authorities. If your organization \
+            uses its own certificate, contact your IT department. Otherwise the connection may be \
+            intercepted: do not connect and report it to your IT department.
             """
         case .multipleCertificates:
             """

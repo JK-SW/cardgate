@@ -65,9 +65,12 @@ public struct FreeRDPCommand: Equatable, Sendable {
         }
         // Certificate chosen by CardGate when the card holds several (patched FreeRDP).
         if let certificateSHA1, CardCertificate.isFingerprint(certificateSHA1) {
-            environment["FREERDP_SMARTCARD_CERT_SHA1"] = certificateSHA1.lowercased()
+            environment[Self.certificateVariable] = certificateSHA1.lowercased()
         }
     }
+
+    /// The certificate to sign in with (patched FreeRDP, 0004); the PIN dialog reads it too.
+    public static let certificateVariable = "FREERDP_SMARTCARD_CERT_SHA1"
 
     /// Variables of the app's environment the client and the PIN dialog it starts still get.
     /// Nothing else is passed on: WinPR reads its log settings from the environment (`WLOG_FILTER`

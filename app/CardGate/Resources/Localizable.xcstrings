@@ -308,6 +308,22 @@
         }
       }
     },
+    "CardGate accepts only certificates from public certification authorities. If your organization uses its own certificate, contact your IT department. Otherwise the connection may be intercepted: do not connect and report it to your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate přijímá jen certifikáty od veřejných certifikačních autorit. Pokud vaše organizace používá vlastní certifikát, obraťte se na IT oddělení. Jinak může jít o odposlech: nepřipojujte se a nahlaste to IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate prijíma len certifikáty od verejných certifikačných autorít. Ak vaša organizácia používa vlastný certifikát, obráťte sa na IT oddelenie. Inak môže ísť o odpočúvanie: nepripájajte sa a nahláste to IT oddeleniu."
+          }
+        }
+      }
+    },
     "CardGate cannot save the settings for the connection. Check the free disk space.": {
       "localizations": {
         "cs": {
@@ -320,6 +336,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "CardGate nemôže uložiť nastavenie pripojenia. Skontrolujte voľné miesto na disku."
+          }
+        }
+      }
+    },
+    "CardGate cannot verify who made %@. A harmful module could misuse your PIN and card. CardGate asks again if the file changes.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate nemůže ověřit, kdo vytvořil %@. Škodlivý modul by mohl zneužít váš PIN a kartu. Pokud se soubor změní, CardGate se zeptá znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate nemôže overiť, kto vytvoril %@. Škodlivý modul by mohol zneužiť váš PIN a kartu. Ak sa súbor zmení, CardGate sa opýta znova."
           }
         }
       }
@@ -436,6 +468,22 @@
         }
       }
     },
+    "Check that the file exists and that you may read it, or install the card software again. A module set in the connection can be changed in its settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte, že soubor existuje a máte právo ho číst, nebo nainstalujte software ke kartě znovu. Modul nastavený v připojení lze změnit v jeho nastavení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte, či súbor existuje a máte právo ho čítať, alebo nainštalujte softvér ku karte znova. Modul nastavený v pripojení je možné zmeniť v jeho nastaveniach."
+          }
+        }
+      }
+    },
     "Check the imported connection": {
       "localizations": {
         "cs": {
@@ -448,6 +496,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skontrolujte importované pripojenie"
+          }
+        }
+      }
+    },
+    "Check the module path in the connection settings (section Card), or leave it empty.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte cestu k modulu v nastavení připojení (část Karta), nebo ji nechte prázdnou."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte cestu k modulu v nastaveniach pripojenia (časť Karta), alebo ju nechajte prázdnu."
           }
         }
       }
@@ -1204,6 +1268,22 @@
         }
       }
     },
+    "It gets your PIN and access to the card. Use it only if you got it from your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostane váš PIN a přístup ke kartě. Použijte ho, jen pokud ho máte od IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostane váš PIN a prístup ku karte. Použite ho, len ak ho máte od IT oddelenia."
+          }
+        }
+      }
+    },
     "It is not a valid Remote Desktop file or it does not contain a computer address.": {
       "localizations": {
         "cs": {
@@ -1216,6 +1296,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nejde o platný súbor vzdialenej plochy alebo neobsahuje adresu počítača."
+          }
+        }
+      }
+    },
+    "It is not loaded. Install the card software again or contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nebude načten. Nainstalujte software ke kartě znovu nebo se obraťte na IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nebude načítaný. Nainštalujte softvér ku karte znova alebo sa obráťte na IT oddelenie."
           }
         }
       }
@@ -2308,6 +2404,22 @@
         }
       }
     },
+    "The gateway's certificate is not publicly trusted": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát brány není veřejně důvěryhodný"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát brány nie je verejne dôveryhodný"
+          }
+        }
+      }
+    },
     "The gateway's certificate is not trusted": {
       "localizations": {
         "cs": {
@@ -2550,18 +2662,66 @@
         }
       }
     },
-    "The smart card module is not signed and was not loaded.": {
+    "The smart card module cannot be read.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Modul pro čipovou kartu není podepsaný, a proto nebyl načten."
+            "value": "Modul čipové karty nelze přečíst."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Modul pre čipovú kartu nie je podpísaný, a preto nebol načítaný."
+            "value": "Modul čipovej karty nie je možné prečítať."
+          }
+        }
+      }
+    },
+    "The smart card module is not from a verified publisher.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul čipové karty není od ověřeného vydavatele."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul čipovej karty nie je od overeného vydavateľa."
+          }
+        }
+      }
+    },
+    "The smart card module set for this connection was not found.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul čipové karty nastavený pro toto připojení nebyl nalezen."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul čipovej karty nastavený pre toto pripojenie sa nenašiel."
+          }
+        }
+      }
+    },
+    "The smart card module was changed after it was signed.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul čipové karty byl po podepsání změněn."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul čipovej karty bol po podpísaní zmenený."
           }
         }
       }
@@ -2610,6 +2770,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "V tejto verzii aplikácie nie sú aktualizácie k dispozícii."
+          }
+        }
+      }
+    },
+    "Use Module": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít modul"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť modul"
+          }
+        }
+      }
+    },
+    "Use This Module…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít tento modul…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť tento modul…"
+          }
+        }
+      }
+    },
+    "Use a module from an unverified publisher?": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použít modul od neověřeného vydavatele?"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Použiť modul od neovereného vydavateľa?"
           }
         }
       }

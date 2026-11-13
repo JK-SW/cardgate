@@ -144,7 +144,6 @@ final class PINPromptModel {
     let host: String?
     /// Limits and remaining attempts as reported by the card (read without a PIN, takes seconds).
     private(set) var policy = PINPolicy.unknown
-    private(set) var policyKnown = false
     /// When the dialog appeared (see `PINEntryGuard`).
     private(set) var entryGuard = PINEntryGuard()
     /// `entryGuard` accepts Enter (redraws the Sign In button when it does).
@@ -167,11 +166,12 @@ final class PINPromptModel {
         }
         guard let module else { return }
         Task {
-            let policy = await Task.detached { PKCS11Probe.pinPolicy(module: module) }.value
-            if let policy {
-                self.policy = policy
-                policyKnown = true
-            }
+            // The client passes the selected certificate on to this dialog (it runs as its child).
+            let certificate = ProcessInfo.processInfo.environment[FreeRDPCommand.certificateVariable]
+            let policy = await Task.detached {
+                PKCS11Probe.pinPolicy(module: module, certificateSHA1: certificate)
+            }.value
+            if let policy { self.policy = policy }
         }
     }
 }
@@ -273,7 +273,7 @@ private struct PINPromptView: View {
         } else if policy.countLow {
             Text("A wrong PIN was entered before. Only a few attempts remain.")
                 .foregroundStyle(.orange)
-        } else if model.policyKnown {
+        } else if policy.lengthsKnown {
             Text(
                 "The PIN has \(policy.minLength)–\(policy.maxLength) characters. Several wrong attempts lock the card."
             )

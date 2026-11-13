@@ -167,17 +167,27 @@ final class CardMonitor {
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = FileHandle.nullDevice
-            process.terminationHandler = { _ in
-                let output = pipe.fileHandleForReading.readDataToEndOfFile()
-                let text = (String(bytes: output, encoding: .utf8) ?? "").trimmingCharacters(
-                    in: .whitespacesAndNewlines)
+            process.terminationHandler = { finished in
+                // Not to the end of the output: a process the card driver started may hold the pipe.
+                let output = pipe.fileHandleForReading.readAvailableWithoutWaiting()
                 continuation.resume(
-                    returning: PKCS11ProbeResult(encoded: text) ?? PKCS11ProbeResult(state: .failed(code: -2)))
+                    returning: PKCS11ProbeResult(
+                        processOutput: String(bytes: output, encoding: .utf8) ?? "",
+                        signal: finished.terminationReason == .uncaughtSignal ? finished.terminationStatus : nil))
             }
             do {
                 try process.run()
             } catch {
                 continuation.resume(returning: PKCS11ProbeResult(state: .moduleNotLoadable))
+                return
+            }
+            // A hanging card driver must not block connecting (`checkTimeout`). The check runs in its
+            // own process group (see `CardGateApp`), stopped as a whole: a process the driver started
+            // goes too (`ProcessGroup.kill`).
+            let group = process.processIdentifier
+            let timeout = PKCS11ProbeResult.checkTimeout.components.seconds
+            DispatchQueue.global().asyncAfter(deadline: .now() + .seconds(Int(timeout))) {
+                if process.isRunning { ProcessGroup.kill(leader: group) }
             }
         }
     }
@@ -208,7 +218,7 @@ final class CardMonitor {
             }
             let name = SecCertificateCopySubjectSummary(certificate) as String? ?? tokenID
             let der = SecCertificateCopyData(certificate) as Data
-            let sha1 = Insecure.SHA1.hash(data: der).map { String(format: "%02x", $0) }.joined()
+            let sha1 = Insecure.SHA1.hash(data: der).lowercaseHex
             let values =
                 SecCertificateCopyValues(
                     certificate,
