@@ -1,4 +1,5 @@
 import CardGateKit
+import Foundation
 import Testing
 
 /// Log lines in the format of FreeRDP 3 (`[time] [pid:tid] [LEVEL][tag] - [function]: message`).
@@ -256,5 +257,39 @@ struct SessionLogParserTests {
         starting.consume(Log.cardReady)
         starting.stopRequested()
         #expect(starting.processExited(status: 15) == .ended(.closedByUser))
+    }
+
+    /// A client that crashes while the desktop is shown must not look like a normal disconnect.
+    @Test func crashAfterConnectingIsAnError() {
+        var parser = SessionLogParser()
+        parser.consume(Log.gdiInit)
+        #expect(parser.processExited(status: 11, crashed: true) == .ended(.failed(.other("signal 11"))))
+
+        var connecting = SessionLogParser()
+        connecting.consume(Log.cardReady)
+        #expect(connecting.processExited(status: 6, crashed: true) == .ended(.failed(.other("signal 6"))))
+
+        // A reason logged before wins over the crash.
+        var refused = SessionLogParser()
+        refused.consume(Log.cardReady)
+        refused.consume(Log.wrongPIN)
+        #expect(refused.processExited(status: 11, crashed: true) == .ended(.failed(.wrongPIN)))
+    }
+
+    /// Asked to quit by someone else (`killall`, logout): a normal end, not a crash.
+    @Test func quitSignalIsNoCrash() {
+        for signal in [SIGTERM, SIGINT, SIGHUP] {
+            var parser = SessionLogParser()
+            parser.consume(Log.gdiInit)
+            #expect(parser.processExited(status: signal, crashed: true) == .ended(.closedByUser))
+        }
+    }
+
+    /// Cancel or Disconnect kills a client that does not quit in time: that is not a crash.
+    @Test func killAfterStopIsNoError() {
+        var parser = SessionLogParser()
+        parser.consume(Log.gdiInit)
+        parser.stopRequested()
+        #expect(parser.processExited(status: 9, crashed: true) == .ended(.closedByUser))
     }
 }

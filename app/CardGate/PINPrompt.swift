@@ -25,27 +25,43 @@ enum PINPrompt {
     /// Without a PIN for this long the dialog gives up (the gateway closes idle connections).
     static let timeout: Duration = .seconds(120)
 
-    /// What happens to the dialog; posted as distributed notifications without any data so the
-    /// app can show the right status.
-    enum Event: String, CaseIterable, Sendable {
-        case shown, submitted, cancelled, timedOut
+    typealias Event = PINDialogEvent
 
-        nonisolated var notification: Notification.Name {
-            Notification.Name("io.github.jk-sw.cardgate.pin-prompt.\(rawValue)")
-        }
-    }
+    /// The client that asked for the PIN, read once at start: once it is gone the parent is launchd.
+    private static let client = getppid()
+    /// The connection the dialog belongs to (inherited from the client, see `PINDialogMessages`).
+    private static let session = PINDialogMessages.sessionID(in: ProcessInfo.processInfo.environment)
 
     private static func post(_ event: Event) {
         DistributedNotificationCenter.default().postNotificationName(
-            event.notification, object: nil, userInfo: nil, deliverImmediately: true)
+            event.notification, object: session, userInfo: nil, deliverImmediately: true)
     }
 
-    /// Closes the dialog when the RDP client that asked for the PIN goes away (disconnect, crash).
-    private static func exitWithParent() -> any DispatchSourceProcess {
-        let source = DispatchSource.makeProcessSource(identifier: getppid(), eventMask: .exit, queue: .main)
+    /// Closes the PIN dialog of the connection `session`, if it shows one.
+    static func close(session: String) {
+        DistributedNotificationCenter.default().postNotificationName(
+            PINDialogMessages.close, object: session, userInfo: nil, deliverImmediately: true)
+    }
+
+    /// Closes the dialog when the RDP client that asked for the PIN goes away (disconnect, crash)
+    /// or the app cancels the connection (the client then gets no PIN and gives up by itself).
+    /// - Returns: stops watching.
+    private static func exitWithClient() -> () -> Void {
+        let source = DispatchSource.makeProcessSource(identifier: client, eventMask: .exit, queue: .main)
         source.setEventHandler { quit(1) }
         source.resume()
-        return source
+        let center = DistributedNotificationCenter.default()
+        let observer = session.map { session in
+            center.addObserver(forName: PINDialogMessages.close, object: session, queue: .main) { _ in
+                MainActor.assumeIsolated { quit(1) }
+            }
+        }
+        // The client may have ended (Cancel) before the watch started; nobody would get a PIN.
+        if client <= 1 || getppid() != client { quit(1) }
+        return {
+            source.cancel()
+            if let observer { center.removeObserver(observer) }
+        }
     }
 
     /// Ends the dialog process at once. `exit` would run the cleanup handlers of the loaded
@@ -70,7 +86,7 @@ enum PINPrompt {
 
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
-        let parentWatch = exitWithParent()
+        let stopWatching = exitWithClient()
 
         let model = PINPromptModel(host: AskPassCommand.host(fromPrompt: prompt))
         var pin: String?
@@ -92,13 +108,14 @@ enum PINPrompt {
         var timedOut = false
         let timer = Task {
             try? await Task.sleep(for: timeout)
+            guard !Task.isCancelled else { return }  // the dialog finished before
             timedOut = true
             app.stopModal()
         }
         post(.shown)
         app.runModal(for: window)
         timer.cancel()
-        parentWatch.cancel()
+        stopWatching()
 
         guard !timedOut else {
             post(.timedOut)

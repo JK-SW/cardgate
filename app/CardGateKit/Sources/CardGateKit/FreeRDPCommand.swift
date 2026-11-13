@@ -11,7 +11,20 @@ public struct FreeRDPCommand: Equatable, Sendable {
     /// Where the client is in the app bundle (relative to `Contents`) and in the assembled helper
     /// (`build/helper`). It is wrapped in a small agent app (`LSUIElement`), so the Dock and the
     /// app switcher show only CardGate; CardGate brings the session window forward itself.
-    public static let bundledClientPath = "Helpers/CardGateSession.app/Contents/MacOS/sdl-freerdp"
+    public static let bundledClientPath = bundledClientApp + "/Contents/MacOS/sdl-freerdp"
+    /// The agent app around the client, relative to `Contents` (its bundle identifier finds clients
+    /// left running).
+    public static let bundledClientApp = "Helpers/CardGateSession.app"
+
+    /// The client's agent app inside the app bundle `app` (`CardGate.app`).
+    public static func clientApp(in app: URL) -> URL {
+        app.appending(path: "Contents").appending(path: bundledClientApp)
+    }
+
+    /// The client executable inside the app bundle `app`.
+    public static func client(in app: URL) -> URL {
+        app.appending(path: "Contents").appending(path: bundledClientPath)
+    }
 
     public enum BuildError: Error, Equatable, Sendable {
         /// The PKCS#11 module path cannot be passed safely as a FreeRDP sub-option.
@@ -52,6 +65,24 @@ public struct FreeRDPCommand: Equatable, Sendable {
         if let certificateSHA1, CardCertificate.isFingerprint(certificateSHA1) {
             environment["FREERDP_SMARTCARD_CERT_SHA1"] = certificateSHA1.lowercased()
         }
+    }
+
+    /// Variables of the app's environment the client and the PIN dialog it starts still get.
+    /// Nothing else is passed on: WinPR reads its log settings from the environment (`WLOG_FILTER`
+    /// could turn on the smart card data dumps, which contain the PIN), OpenSSL its trust store
+    /// (`SSL_CERT_FILE`) and dyld libraries to load (`DYLD_INSERT_LIBRARIES`). The proxy variables
+    /// stay: FreeRDP connects to the gateway through them (`libfreerdp/core/proxy.c`).
+    public static let inheritedVariables: Set<String> = [
+        "HOME", "USER", "LOGNAME", "TMPDIR", "PATH", "SHELL", "LANG", "__CF_USER_TEXT_ENCODING",
+        "https_proxy", "HTTPS_PROXY", "no_proxy", "NO_PROXY",
+    ]
+
+    /// The environment to start the client with: the allowed variables of `inherited` (and the
+    /// locale, `LC_*`) and this command's own variables.
+    public func processEnvironment(inheriting inherited: [String: String]) -> [String: String] {
+        inherited
+            .filter { Self.inheritedVariables.contains($0.key) || $0.key.hasPrefix("LC_") }
+            .merging(environment) { _, own in own }
     }
 
     /// FreeRDP redirects readers whose name contains this text; it splits its options at commas.

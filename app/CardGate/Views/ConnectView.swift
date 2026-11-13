@@ -31,7 +31,7 @@ struct ConnectView: View {
                     GatewayStatusView()
                 }
                 ReadinessView()
-                SessionStatusView(phase: model.session.phase)
+                SessionStatusView(phase: model.session.phase, stopping: model.session.isStopping)
                 connectButton
                 if model.showsDonationOffer && !model.session.isRunning {
                     DonationOfferView()
@@ -88,12 +88,16 @@ struct ConnectView: View {
 
     @ViewBuilder private var connectButton: some View {
         if model.session.isRunning {
+            // Until the desktop is shown there is nothing to disconnect: the attempt is cancelled.
+            let connected = model.session.phase == .connected
             Button(role: .destructive) {
                 model.session.stop()
             } label: {
-                Text("Disconnect").frame(minWidth: 200)
+                Text(connected ? "Disconnect" : "Cancel").frame(minWidth: 200)
             }
             .controlSize(.extraLarge)
+            .disabled(model.session.isStopping)
+            .accessibilityIdentifier("disconnect")
         } else {
             Button {
                 model.connect()
@@ -249,8 +253,18 @@ private struct ExpiryWarningView: View {
 /// Human readable connection progress and errors with advice.
 struct SessionStatusView: View {
     let phase: SessionPhase?
+    /// Cancel or Disconnect was chosen and the client is quitting.
+    var stopping = false
 
     var body: some View {
+        if stopping {
+            progress(phase == .connected ? "Disconnecting…" : "Cancelling…")
+        } else {
+            phaseView
+        }
+    }
+
+    @ViewBuilder private var phaseView: some View {
         switch phase {
         case nil, .ended(.closedByUser):
             EmptyView()

@@ -72,8 +72,10 @@ final class AppModel {
             onClientEnded?()
             // Only after a normal disconnect from a working session, never after an error.
             if sessionReachedDesktop, end == .closedByUser, donation.isDue() { showsDonationOffer = true }
-            // After an error the gateway may be the reason; a normal end needs no check.
-            if end != .closedByUser { checkGateway(force: true) }
+            // After an error the gateway may be the reason; a normal end needs no check. Not after
+            // "gateway unreachable": the port may answer while HTTPS fails (e.g. a middlebox that
+            // resets TLS), and the check would clear the error the user has just been shown.
+            if end != .closedByUser, end != .failed(.gatewayUnreachable) { checkGateway(force: true) }
         }
         // Network changes (Wi-Fi off, cable plugged in, VPN, another Wi-Fi network – its router
         // differs) may change whether the gateway is reachable.
@@ -257,8 +259,7 @@ final class AppModel {
             alert = .noMiddleware
             return
         }
-        let executable = Bundle.main.bundleURL.appending(path: "Contents")
-            .appending(path: FreeRDPCommand.bundledClientPath)
+        let executable = FreeRDPCommand.client(in: Bundle.main.bundleURL)
         guard let clientConfig, FileManager.default.isExecutableFile(atPath: executable.path(percentEncoded: false))
         else {
             alert = .clientMissing
