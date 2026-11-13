@@ -195,6 +195,33 @@ struct FreeRDPCommandTests {
         #expect(bad.environment["FREERDP_SMARTCARD_CERT_SHA1"] == nil)
     }
 
+    /// The client gets only the variables it needs: WinPR log settings could log the PIN, OpenSSL
+    /// would trust other certificates and dyld would load other libraries.
+    @Test func passesOnlyAllowedEnvironment() throws {
+        let command = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config,
+            askPass: AskPassCommand(executable: URL(filePath: "/x/CardGate"), arguments: ["--askpass"]))
+        let environment = command.processEnvironment(inheriting: [
+            "HOME": "/Users/test", "LANG": "cs_CZ.UTF-8", "LC_CTYPE": "UTF-8", "PATH": "/usr/bin:/bin",
+            "WLOG_FILTER": "com.freerdp.core:DEBUG", "WLOG_LEVEL": "TRACE", "WLOG_APPENDER": "udp",
+            "SSL_CERT_FILE": "/tmp/ca.pem", "SSL_CERT_DIR": "/tmp/certs",
+            "DYLD_INSERT_LIBRARIES": "/tmp/x.dylib", "XDG_CONFIG_HOME": "/tmp/other",
+            "FREERDP_SMARTCARD_CERT_SHA1": "00", "https_proxy": "http://proxy.example.com:3128",
+            "NO_PROXY": "intranet.example.com",
+        ])
+        #expect(environment["https_proxy"] == "http://proxy.example.com:3128", "the gateway may need a proxy")
+        #expect(environment["NO_PROXY"] == "intranet.example.com")
+        #expect(environment["HOME"] == "/Users/test")
+        #expect(environment["LANG"] == "cs_CZ.UTF-8")
+        #expect(environment["LC_CTYPE"] == "UTF-8")
+        #expect(environment["PATH"] == "/usr/bin:/bin")
+        #expect(!environment.keys.contains { $0.hasPrefix("WLOG_") || $0.hasPrefix("SSL_") || $0.hasPrefix("DYLD_") })
+        #expect(environment["FREERDP_SMARTCARD_CERT_SHA1"] == nil, "only CardGate chooses the certificate")
+        #expect(environment["XDG_CONFIG_HOME"] == config.directory.path(percentEncoded: false))
+        #expect(environment["FREERDP_ASKPASS"] == command.environment["FREERDP_ASKPASS"])
+        #expect(environment["SDL_MAC_BACKGROUND_APP"] == "1")
+    }
+
     @Test func neverContainsSecrets() throws {
         let args = try command(profile()).arguments
         #expect(!args.contains { $0.hasPrefix("/p:") || $0.hasPrefix("/gp:") || $0.contains("pin") })

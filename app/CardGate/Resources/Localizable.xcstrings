@@ -225,6 +225,22 @@
         }
       }
     },
+    "Cancelling…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruším…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruším…"
+          }
+        }
+      }
+    },
     "Capture keyboard and mouse (system shortcuts go to Windows)": {
       "localizations": {
         "cs": {
@@ -768,6 +784,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpojené pre nečinnosť"
+          }
+        }
+      }
+    },
+    "Disconnecting…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojuji…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpájam…"
           }
         }
       }

@@ -1,4 +1,5 @@
 import CardGateKit
+import OSLog
 import SwiftUI
 
 /// Entry point: the same executable is the app and, when FreeRDP starts it with `--askpass`,
@@ -21,6 +22,12 @@ enum Main {
             print(PKCS11Probe.probe(module: module).encoded)
             exit(0)
         } else {
+            if let running = SingleInstance.otherInstance() {
+                // A second copy (another location, `open -n`) would share the log files, the
+                // connections and the PIN dialog's notifications with the first one.
+                SingleInstance.reopen(running)
+                exit(0)
+            }
             CardGateApp.main()
         }
     }
@@ -109,6 +116,62 @@ private struct OpenWindowButton: View {
     }
 }
 
+/// One CardGate per user session; the clients it started never outlive it (`InstancePolicy`).
+@MainActor
+enum SingleInstance {
+    private static let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "app")
+
+    private static func running(_ bundleIdentifier: String) -> [(app: NSRunningApplication, info: RunningInstance)] {
+        NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier)
+            .filter { !$0.isTerminated }
+            .map { app in
+                let info = RunningInstance(
+                    pid: app.processIdentifier, isRegularApp: app.activationPolicy == .regular, bundleURL: app.bundleURL
+                )
+                return (app, info)
+            }
+    }
+
+    static func otherInstance() -> NSRunningApplication? {
+        guard let identifier = Bundle.main.bundleIdentifier else { return nil }
+        let candidates = running(identifier)
+        let other = InstancePolicy.otherInstance(
+            among: candidates.map(\.info), current: NSRunningApplication.current.processIdentifier)
+        return candidates.first { $0.info.pid == other?.pid }?.app
+    }
+
+    /// Brings the running CardGate forward as if it was opened again (its window reappears even
+    /// when closed). A plain `activate()` from a process that is not active is ignored.
+    static func reopen(_ running: NSRunningApplication) {
+        guard let url = running.bundleURL else { return }
+        let done = DispatchSemaphore(value: 0)
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in
+            done.signal()
+        }
+        _ = done.wait(timeout: .now() + 5)
+    }
+
+    /// Ends this app's clients left running after it crashed or was force quit: there is only one
+    /// CardGate, so none of them belongs to a running app. They hold the redirected card.
+    static func endOrphanedClients() {
+        let app = Bundle.main.bundleURL
+        guard let identifier = Bundle(url: FreeRDPCommand.clientApp(in: app))?.bundleIdentifier else { return }
+        let clients = running(identifier)
+        for orphan in InstancePolicy.orphanedClients(among: clients.map(\.info), app: app) {
+            guard let client = clients.first(where: { $0.info.pid == orphan.pid })?.app else { continue }
+            let pid = orphan.pid
+            logger.error("Ending a client left running (pid \(pid))")
+            Task {
+                await ClientStop.run(
+                    connected: true,
+                    terminate: { kill(pid, SIGTERM) },
+                    isRunning: { !client.isTerminated },
+                    kill: { kill(pid, SIGKILL) })
+            }
+        }
+    }
+}
+
 /// Asks before quitting while a connection is open, and ends that connection then – a client
 /// left running without the app would have no status, log or PIN dialog guard.
 ///
@@ -123,6 +186,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     private var windows = SessionWindowPolicy()
+    /// Quitting waits for the client to end (`applicationShouldTerminate`).
+    private var quit = PendingQuit()
 
     private var mainWindow: NSWindow? {
         NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.main) == true }
@@ -136,6 +201,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func clientEnded() {
+        if quit.isWaiting {
+            finishQuit()
+            return
+        }
         guard windows.sessionEnded() else { return }
         mainWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate()
@@ -145,6 +214,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard windows.isShowingDesktop, let client = model?.session.clientApplication else { return }
         NSApp.yieldActivation(to: client)
         client.activate()
+    }
+
+    func applicationDidFinishLaunching(_: Notification) {
+        SingleInstance.endOrphanedClients()
     }
 
     func applicationDidBecomeActive(_: Notification) {
@@ -186,7 +259,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {
-        guard let session = model?.session, session.isRunning else { return .terminateNow }
+        let session = model?.session
+        switch quit.decide(sessionRunning: session?.isRunning == true) {
+        case .quitNow: return .terminateNow
+        case .keepWaiting: return .terminateLater  // e.g. logout while waiting for the client
+        case .ask: break
+        }
+        guard let session else { return .terminateNow }
         // E.g. Quit in the Dock menu while the remote desktop is in front.
         NSApp.activate()
         let alert = NSAlert()
@@ -195,7 +274,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: String(localized: "Quit and Disconnect"))
         alert.addButton(withTitle: String(localized: "Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return .terminateCancel }
+        let connected = session.phase == .connected
         session.stop()
-        return .terminateNow
+        guard session.isRunning else { return .terminateNow }  // only the gateway check ran
+        // The client is killed if it does not quit in time; the deadline is a last resort.
+        quit.begin()
+        Task { [weak self] in
+            try? await Task.sleep(for: ClientStop.quitDeadline(connected: connected))
+            self?.finishQuit()
+        }
+        return .terminateLater
+    }
+
+    private func finishQuit() {
+        if quit.finish() { NSApp.reply(toApplicationShouldTerminate: true) }
     }
 }

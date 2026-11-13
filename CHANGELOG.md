@@ -5,6 +5,28 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Změněno
+- Během navazování připojení je místo tlačítka Odpojit tlačítko **Zrušit**. Pokus ukončí hned, i když
+  se čeká na kartu, bránu nebo zadání PINu (okno PINu se zavře), a během ukončování ukazuje „Ruším…“.
+  Odpojit je až u připojené plochy.
+
+### Opraveno
+- Klient vzdálené plochy, který nereaguje, se po Zrušit nebo Odpojit po několika sekundách ukončí
+  vynuceně. Dřív zůstala aplikace trvale ve stavu „připojuji“.
+- Při ukončení CardGate během připojení aplikace počká, než se klient opravdu ukončí. Klient, který
+  zůstal běžet po pádu nebo vynuceném ukončení CardGate, se při dalším spuštění ukončí.
+- Neočekávaný pád klienta během připojení se hlásí jako chyba, ne jako běžné odpojení.
+- Neúspěšná kontrola certifikátu brány a chyba při spuštění klienta se zpracují stejně jako ostatní
+  konce připojení (okno CardGate se vrátí do popředí, po chybě se znovu ověří dostupnost brány).
+- Plný disk při zápisu záznamu připojení už aplikaci neshodí.
+- Druhá spuštěná kopie CardGate jen přepne na tu, která už běží.
+
+### Zabezpečení
+- Klient vzdálené plochy dostává z prostředí aplikace jen nezbytné proměnné. Proměnné pro záznam
+  (`WLOG_*`), úložiště certifikátů OpenSSL (`SSL_CERT_*`) ani načítání knihoven (`DYLD_*`) ho už
+  neovlivní.
+- Okno PINu a aplikace reagují jen na zprávy svého vlastního klienta, ne jiné kopie nebo jiného procesu.
+
 ## [0.5.0] - 2026-11-12
 
 Měřítko vzdálené plochy v nastavení, správné rozložení a měřítko na více monitorech, návrat

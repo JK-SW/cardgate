@@ -82,7 +82,10 @@ public struct SessionLogParser: Sendable {
     }
 
     /// Called when the client process exited.
-    public mutating func processExited(status: Int32) -> SessionPhase {
+    /// - Parameters:
+    ///   - status: the exit status, or the signal number when `crashed`.
+    ///   - crashed: a signal ended the client (`Process.terminationReason == .uncaughtSignal`).
+    public mutating func processExited(status: Int32, crashed: Bool = false) -> SessionPhase {
         if case .ended = phase { return phase }
         // An error logged while connecting is outdated once the desktop was shown.
         let failure = phase == .connected ? nil : failure
@@ -94,6 +97,10 @@ public struct SessionLogParser: Sendable {
             phase = .ended(serverEnd)  // e.g. signed out in Windows: the client just exits
         } else if let failure {
             phase = .ended(.failed(failure))
+        } else if crashed, !Self.quitSignals.contains(status) {
+            // A crash is never a normal end, not even after the desktop was shown (CardGate's own
+            // kill after Disconnect is handled above).
+            phase = .ended(.failed(.other("signal \(status)")))
         } else if phase == .connected || status == 0 {
             phase = .ended(.closedByUser)
         } else {
@@ -101,6 +108,9 @@ public struct SessionLogParser: Sendable {
         }
         return phase
     }
+
+    /// Signals that ask a process to quit (`killall`, logout, closing a terminal): not a crash.
+    static let quitSignals: Set<Int32> = [SIGTERM, SIGINT, SIGHUP]
 
     /// Texts of the FreeRDP log this parser depends on. A test checks that the bundled client still
     /// contains them, so a FreeRDP update cannot silently break the status display.

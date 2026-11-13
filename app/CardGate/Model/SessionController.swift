@@ -24,8 +24,12 @@ final class SessionController {
     private var preflight: Task<Void, Never>?
     /// How the PIN dialog of the current session ended, if it did not deliver a PIN.
     private var pinOutcome: PINPrompt.Event?
+    /// Names the current connection in the messages of its PIN dialog (`PINDialogMessages`).
+    private var pinSession: String?
 
     var isRunning: Bool { process != nil || preflight != nil }
+    /// Cancel or Disconnect was chosen; the client is quitting (see `ClientStop`).
+    private(set) var isStopping = false
 
     /// The running client (an agent app without a Dock icon), to bring its window forward.
     var clientApplication: NSRunningApplication? {
@@ -39,16 +43,25 @@ final class SessionController {
     init() {
         let center = DistributedNotificationCenter.default()
         for event in PINPrompt.Event.allCases {
-            let handler: @Sendable (Notification) -> Void = { [weak self] _ in
-                Task { @MainActor in self?.pinPrompt(event) }
+            let handler: @Sendable (Notification) -> Void = { [weak self] notification in
+                let sender = notification.object as? String
+                Task { @MainActor in self?.pinPrompt(event, client: sender) }
             }
             center.addObserver(forName: event.notification, object: nil, queue: .main, using: handler)
         }
     }
 
-    /// The PIN dialog runs in its own process and reports what happens to it.
-    private func pinPrompt(_ event: PINPrompt.Event) {
-        guard process != nil else { return }
+    /// The PIN dialog runs in its own process and reports what happens to it. It names the
+    /// connection it belongs to, so a dialog of another app instance or another process is ignored.
+    private func pinPrompt(_ event: PINPrompt.Event, client: String?) {
+        guard process != nil, let pinSession, PINDialogMessages.isFrom(session: pinSession, sender: client) else {
+            return
+        }
+        if isStopping {
+            // The client opened it after Cancel, before it ended: nobody should type a PIN now.
+            if event == .shown { PINPrompt.close(session: pinSession) }
+            return
+        }
         switch (event, phase) {
         case (.shown, .starting?), (.shown, .authenticatingGateway?):
             phase = .waitingForPIN
@@ -78,9 +91,9 @@ final class SessionController {
             self.logger.info("Gateway check \(url, privacy: .public): \(String(describing: result), privacy: .public)")
             switch result {
             case .untrusted:
-                self.phase = .ended(.failed(.untrustedCertificate))
+                self.end(.failed(.untrustedCertificate))
             case .unreachable:
-                self.phase = .ended(.failed(.gatewayUnreachable))
+                self.end(.failed(.gatewayUnreachable))
             case .trusted, .unknown:
                 self.launch(command)
             }
@@ -92,8 +105,15 @@ final class SessionController {
             try start(command)
         } catch {
             logger.error("Cannot start client: \(error.localizedDescription, privacy: .public)")
-            phase = .ended(.failed(.other(error.localizedDescription)))
+            end(.failed(.other(error.localizedDescription)))
         }
+    }
+
+    /// Every way a connection attempt ends goes through here, so the app always learns about it.
+    private func end(_ end: SessionEnd) {
+        isStopping = false
+        phase = .ended(end)
+        onEnded?(end)
     }
 
     private func start(_ command: FreeRDPCommand) throws {
@@ -102,8 +122,9 @@ final class SessionController {
         let process = Process()
         process.executableURL = command.executable
         process.arguments = command.arguments
-        var environment = ProcessInfo.processInfo.environment
-        environment.merge(command.environment) { _, new in new }
+        let pinSession = PINDialogMessages.newSessionID()
+        var environment = command.processEnvironment(inheriting: ProcessInfo.processInfo.environment)
+        environment[PINDialogMessages.sessionVariable] = pinSession
         process.environment = environment
 
         let pipe = Pipe()
@@ -111,31 +132,53 @@ final class SessionController {
         process.standardError = pipe
         process.standardInput = FileHandle.nullDevice
 
-        let (exits, exitContinuation) = AsyncStream<Int32>.makeStream()
+        let (exits, exitContinuation) = AsyncStream<(status: Int32, crashed: Bool)>.makeStream()
         process.terminationHandler = { finished in
-            exitContinuation.yield(finished.terminationStatus)
+            exitContinuation.yield((finished.terminationStatus, finished.terminationReason == .uncaughtSignal))
             exitContinuation.finish()
         }
 
         parser = SessionLogParser()
         pinOutcome = nil
-        logFile = Self.openLogFile()
         logger.info("Starting client: \(command.arguments.joined(separator: " "), privacy: .public)")
         try process.run()
         self.process = process
+        self.pinSession = pinSession
+        // Only now: a client that cannot start would leave an empty log and push out an old one.
+        logFile = Self.openLogFile()
 
+        let reader = OutputReader()
         Task { [weak self] in
             do {
                 for try await line in pipe.fileHandleForReading.bytes.lines {
+                    // A process the client started (the PIN dialog) may keep the pipe open after
+                    // the client ended; what it writes then belongs to no session.
+                    guard self?.process === process else { break }
                     self?.receive(line)
                 }
             } catch {
                 self?.logger.error("Reading client output failed: \(error.localizedDescription, privacy: .public)")
             }
-            for await status in exits {
-                self?.finished(status: status)
+            reader.done = true
+        }
+        // The session ends when the client exits, not when its output closes (see above); the last
+        // lines (the reason it ended) get a moment to arrive.
+        Task { [weak self] in
+            for await exit in exits {
+                var waited = 0
+                while !reader.done, waited < 20 {
+                    try? await Task.sleep(for: .milliseconds(50))
+                    waited += 1
+                }
+                self?.finished(status: exit.status, crashed: exit.crashed)
             }
         }
+    }
+
+    /// Whether the client's output was read to its end.
+    @MainActor
+    private final class OutputReader {
+        var done = false
     }
 
     /// Forgets the result of a finished connection (e.g. after the card was replaced).
@@ -143,20 +186,35 @@ final class SessionController {
         if process == nil, case .ended = phase { phase = nil }
     }
 
-    /// Asks the client to disconnect and quit (or cancels the gateway check).
+    /// Cancels the connection attempt or disconnects: cancels the gateway check, or asks the client
+    /// to quit and kills it if it does not (`ClientStop`). An open PIN dialog closes at once.
     func stop() {
         if let preflight {
             preflight.cancel()
             self.preflight = nil
-            phase = .ended(.closedByUser)
+            end(.closedByUser)
         }
-        if process != nil { parser.stopRequested() }
-        process?.terminate()
+        guard let process, !isStopping else { return }
+        isStopping = true
+        parser.stopRequested()
+        let pid = process.processIdentifier
+        if let pinSession { PINPrompt.close(session: pinSession) }
+        Task { [weak self] in
+            await ClientStop.run(
+                connected: self?.phase == .connected,
+                terminate: { process.terminate() },
+                isRunning: { self?.process === process && process.isRunning },
+                kill: {
+                    self?.logger.error("Client did not quit, killing it")
+                    Darwin.kill(pid, SIGKILL)
+                })
+        }
     }
 
     private func receive(_ line: String) {
         log.append(line)
-        logFile?.write(Data((line + "\n").utf8))
+        // A full disk must not crash the app; the log window still has the line.
+        try? logFile?.write(contentsOf: Data((line + "\n").utf8))
         if log.count > Self.maxLogLines { log.removeFirst(log.count - Self.maxLogLines) }
         if let next = parser.consume(line) {
             phase = next
@@ -164,21 +222,27 @@ final class SessionController {
         }
     }
 
-    private func finished(status: Int32) {
+    private func finished(status: Int32, crashed: Bool) {
         process = nil
+        pinSession = nil
         try? logFile?.close()
         logFile = nil
-        phase = parser.processExited(status: status)
-        switch (pinOutcome, phase) {
-        case (.cancelled?, .ended(.failed)?):
-            phase = .ended(.closedByUser)  // the user cancelled the PIN dialog
-        case (.timedOut?, .ended?):
-            phase = .ended(.failed(.pinTimedOut))
+        logger.info("Client exited with \(crashed ? "signal" : "status", privacy: .public) \(status)")
+        var result: SessionEnd
+        if case .ended(let end) = parser.processExited(status: status, crashed: crashed) {
+            result = end
+        } else {
+            result = .failed(.other("exit status \(status)"))  // the parser always ends; never stay running
+        }
+        switch (pinOutcome, result) {
+        case (.cancelled?, .failed):
+            result = .closedByUser  // the user cancelled the PIN dialog
+        case (.timedOut?, _):
+            result = .failed(.pinTimedOut)
         default:
             break
         }
-        if case .ended(let end)? = phase { onEnded?(end) }
-        logger.info("Client exited with status \(status)")
+        end(result)
     }
 
     private static func openLogFile() -> FileHandle? {
