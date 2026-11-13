@@ -230,26 +230,6 @@ final class CardGateUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["pc99.example.com"].exists)
     }
 
-    /// A configured module that does not exist: no card software, Connect stays off (no card needed).
-    func testAMissingModuleBlocksConnecting() {
-        let app = launch()
-        openNewConnection(app)
-        addConnection(app, name: "Office", computer: "pc01.example.com", module: "/nonexistent/pkcs11.dylib")
-        XCTAssertTrue(app.staticTexts["No smart card software found"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["connect"].isEnabled)
-    }
-
-    /// A module that is not validly signed is never loaded into the app or the client.
-    func testAnUnsignedModuleIsNotLoaded() throws {
-        let module = try writeFile("unsigned.dylib", "not a signed library")
-        let app = launch()
-        openNewConnection(app)
-        addConnection(app, name: "Office", computer: "pc01.example.com", module: module.path(percentEncoded: false))
-        XCTAssertTrue(
-            app.staticTexts["The smart card module is not signed and was not loaded."].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["connect"].isEnabled)
-    }
-
     /// Connect is only possible with a usable card; the test never clicks it (no PIN).
     func testConnectFollowsTheCardReadiness() {
         let app = launch()

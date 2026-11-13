@@ -120,6 +120,43 @@ struct SessionLogParserTests {
         #expect(parser.processExited(status: 1) == .ended(.failed(.untrustedCertificate)))
     }
 
+    /// The system trusted the gateway (keychain, e.g. an organization's own CA), the client did not:
+    /// it trusts only public certification authorities.
+    @Test func gatewayCertificateTrustedOnlyByThisMac() {
+        let untrusted = Log.line(
+            "ERROR", "com.freerdp.crypto", "[tls_verify_certificate]: certificate not trusted, aborting.")
+        var parser = SessionLogParser(gatewayTrustedBySystem: true)
+        parser.consume(untrusted)
+        parser.consume(Log.transportFailed)
+        #expect(parser.processExited(status: 1) == .ended(.failed(.gatewayCertificateNotPublic)))
+
+        // A different inner certificate stays a possible interception.
+        var mismatch = SessionLogParser(gatewayTrustedBySystem: true)
+        mismatch.consume(
+            Log.line(
+                "ERROR", "com.freerdp.core.gateway.rdg_sc",
+                "[sc_verify_peer]: inner TLS certificate differs from the RD Gateway certificate, aborting"))
+        #expect(mismatch.processExited(status: 1) == .ended(.failed(.untrustedCertificate)))
+    }
+
+    /// Before the gateway accepted the sign-in, a broken transport is not the computer's fault.
+    @Test func transportFailureBeforeTheGatewaySignIn() {
+        var starting = SessionLogParser()
+        starting.consume(Log.transportFailed)
+        #expect(starting.processExited(status: 13) == .ended(.failed(.gatewayUnreachable)))
+
+        // The PIN dialog was shown (the client had reached the gateway), the card login not done yet.
+        var enteringPIN = SessionLogParser()
+        enteringPIN.pinDialogShown()
+        enteringPIN.consume(Log.transportFailed)
+        #expect(enteringPIN.processExited(status: 13) == .ended(.failed(.connectionLost)))
+
+        var signingIn = SessionLogParser()
+        signingIn.consume(Log.cardReady)
+        signingIn.consume(Log.transportFailed)
+        #expect(signingIn.processExited(status: 13) == .ended(.failed(.connectionLost)))
+    }
+
     @Test func multipleCertificatesAndInnerCertificateMismatch() {
         var parser = SessionLogParser()
         parser.consume(

@@ -30,6 +30,9 @@ public enum SessionFailure: Equatable, Sendable {
     case gatewayDenied
     /// The gateway's TLS certificate is not trusted (possible interception).
     case untrustedCertificate
+    /// This Mac trusts the gateway's certificate, the client does not: the client trusts only public
+    /// certification authorities, not certificates an organization installed in the keychain.
+    case gatewayCertificateNotPublic
     /// The card holds more than one certificate usable for sign-in.
     case multipleCertificates
     /// The PIN was not entered in time.
@@ -60,8 +63,15 @@ public struct SessionLogParser: Sendable {
     private var stoppedByApp = false
     /// The computer sent a negotiation failure (e.g. it requires TLS or NLA): it was reached.
     private var negotiationRefused = false
+    /// The PIN dialog was shown: the client had reached the gateway (the sign-in line follows only
+    /// after the card login).
+    private var pinRequested = false
+    /// The system trusted the gateway's certificate before the client started (`GatewayCheckResult`).
+    private let gatewayTrustedBySystem: Bool
 
-    public init() {}
+    public init(gatewayTrustedBySystem: Bool = false) {
+        self.gatewayTrustedBySystem = gatewayTrustedBySystem
+    }
 
     /// Processes one log line and returns the new phase if it changed.
     @discardableResult
@@ -79,6 +89,11 @@ public struct SessionLogParser: Sendable {
     /// PIN – the user must know an attempt was used).
     public mutating func stopRequested() {
         stoppedByApp = true
+    }
+
+    /// The client asked for the PIN (its dialog reports it to the app, the log does not).
+    public mutating func pinDialogShown() {
+        pinRequested = true
     }
 
     /// Called when the client process exited.
@@ -166,6 +181,15 @@ public struct SessionLogParser: Sendable {
             // computer (name mistyped or unknown, computer off or offline – it does not say which).
             if phase == .connectingComputer, failure == .other("ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED") {
                 failure = negotiationRefused ? .securityRefused : .computerUnreachable
+            }
+            // A broken transport (the only source of `computerUnreachable` in the table) is the
+            // computer's only after the gateway accepted the sign-in. Before the PIN was asked for,
+            // the connection to the gateway could not be set up (e.g. TLS); after, it broke.
+            if failure == .computerUnreachable, phase != .connectingComputer {
+                failure = phase == .starting && !pinRequested ? .gatewayUnreachable : .connectionLost
+            }
+            if failure == .untrustedCertificate, gatewayTrustedBySystem, line.contains("certificate not trusted") {
+                failure = .gatewayCertificateNotPublic
             }
             self.failure = self.failure ?? failure
             return nil

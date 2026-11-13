@@ -30,6 +30,18 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
   srozumitelnou hláškou, ne „Aplikace je neúplná“. Hláška u karty s více certifikáty radí vybrat
   certifikát v nastavení připojení.
 - Druhá spuštěná kopie CardGate jen přepne na tu, která už běží.
+- Kontrola brány před připojením už nezablokuje funkční bránu: přesměrování na jinou adresu, přerušené
+  spojení nebo nestandardní nastavení TLS rozhodne až samotné připojení.
+- Brána, které důvěřuje jen tento Mac (např. vlastní certifikát organizace v klíčence), má vlastní hlášku:
+  CardGate přijímá jen certifikáty od veřejných certifikačních autorit; jinak může jít o odposlech.
+- Spojení, které se nepodaří navázat s bránou nebo se přeruší během přihlašování k ní, se hlásí jako
+  nedostupná brána nebo přerušené připojení, ne jako nedostupný počítač.
+- Zaseknutá kontrola karty se po 15 sekundách ukončí, takže Připojit už nezůstane trvale nedostupné.
+- S více kartami (nebo kartou s více PINy) okno PINu bere délku PINu a varování „poslední pokus“ z karty
+  s vybraným certifikátem, ne z první nalezené.
+- Neexistující modul karty nastavený v připojení se hlásí i s cestou a radou, ne jako „Software pro
+  čipovou kartu nebyl nalezen“.
+- Okno záznamu připojení u dlouhého připojení dál posouvá na konec a nezpomaluje.
 
 ### Zabezpečení
 - Klient vzdálené plochy dostává z prostředí aplikace jen nezbytné proměnné. Proměnné pro záznam
@@ -38,6 +50,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 - Okno PINu a aplikace reagují jen na zprávy svého vlastního klienta, ne jiné kopie nebo jiného procesu.
 - Nastavení připojení otevřené importem souboru `.rdp` varuje, ať se připojujete jen k adresám od svého
   IT oddělení (vzdálený počítač může během připojení používat vaši kartu).
+- Modul karty (PKCS#11) se bez dotazu načte, jen když je podepsaný certifikátem Developer ID. Jiný modul
+  (i upravený a znovu podepsaný nebo bez podpisu) se použije až po výslovném potvrzení a při každé změně
+  souboru se CardGate zeptá znovu. Modul s porušeným podpisem se nenačte.
+- Adresy brány a počítače už nejsou čitelně v systémovém protokolu, celý příkaz je jen v záznamu připojení.
 
 ## [0.5.0] - 2026-11-12
 

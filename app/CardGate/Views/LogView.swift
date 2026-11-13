@@ -6,22 +6,23 @@ struct LogView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let lines = model.session.log
+        let lines = model.session.log.lines
         ScrollViewReader { proxy in
             ScrollView([.vertical, .horizontal]) {
                 LazyVStack(alignment: .leading, spacing: 1) {
-                    ForEach(lines.indices, id: \.self) { index in
-                        Text(lines[index])
+                    ForEach(lines) { line in
+                        Text(line.text)
                             .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(color(of: lines[index]))
-                            .id(index)
+                            .foregroundStyle(color(of: line.text))
                     }
                 }
                 .textSelection(.enabled)
                 .padding(8)
             }
-            .onChange(of: lines.count) { _, count in
-                if count > 0 { proxy.scrollTo(count - 1, anchor: .bottom) }
+            // By the number of the last line: it changes with every new line, also once old lines
+            // are dropped and the count stays the same.
+            .onChange(of: lines.last?.id) { _, last in
+                if let last { proxy.scrollTo(last, anchor: .bottom) }
             }
         }
         .overlay {
@@ -34,7 +35,7 @@ struct LogView: View {
         .toolbar {
             Button {
                 NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(lines.joined(separator: "\n"), forType: .string)
+                NSPasteboard.general.setString(model.session.log.texts.joined(separator: "\n"), forType: .string)
             } label: {
                 Label("Copy Log", systemImage: "doc.on.doc")
             }
