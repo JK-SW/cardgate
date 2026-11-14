@@ -76,6 +76,10 @@ GitHub and sends nothing about you.
   done, or remove the card.
 - The app connects only to a gateway with a trusted certificate. If it reports an untrusted
   certificate, do not continue and contact your IT department.
+- The gateway's certificate must be issued by a publicly trusted certificate authority. The app
+  does not accept a certificate of an internal (company) authority, even if the Mac trusts it (for
+  example in Keychain or through device management): it reports that the gateway's certificate is
+  not publicly trusted.
 
 ## Troubleshooting
 

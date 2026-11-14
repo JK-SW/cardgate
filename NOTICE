@@ -4,5 +4,5 @@ Copyright 2026 Ing. Jiří Kubínek
 Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 The application bundles third-party software (FreeRDP, OpenSSL, SDL, SDL_ttf, FreeType,
-cJSON) under their own licenses; the full texts are shipped in the app
+cJSON, Sparkle) under their own licenses; the full texts are shipped in the app
 (Contents/Resources/ThirdPartyNotices.txt) and shown in its About window.

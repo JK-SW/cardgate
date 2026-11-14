@@ -41,6 +41,7 @@ targets:
       - framework: ../build/prefix/sparkle/Sparkle.framework
         embed: true
         codeSign: true
+    # The only source of the app's Info.plist: XcodeGen writes CardGate/Info.plist (not versioned).
     info:
       path: CardGate/Info.plist
       properties:

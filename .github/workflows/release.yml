@@ -1,6 +1,10 @@
 name: Release
 
 # A release is made by changing VERSION (and adding its section to CHANGELOG.md) on main.
+#
+# Two jobs: `build` runs the build tools from Homebrew and never sees the signing key or a token
+# that can write; `publish` installs nothing, signs the archive `build` made for Sparkle (and checks
+# the signature with the public key in the app) and creates the release.
 on:
   push:
     branches: [main]
@@ -8,15 +12,24 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  build:
     runs-on: macos-26
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
+      - name: Release only from main
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+            echo "::error::Releases are made only from main, not from $GITHUB_REF"; exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # build number = commit count
+          persist-credentials: false
 
       - name: Read version
         id: version
@@ -26,7 +39,7 @@ jobs:
           if git rev-parse "v$version" >/dev/null 2>&1; then
             echo "Tag v$version already exists" >&2; exit 1
           fi
-          scripts/release-notes.sh > release-notes.md
+          scripts/release-notes.sh > /dev/null
 
       - name: Install build tools
         run: brew install cmake ninja pkg-config xcodegen swiftlint
@@ -48,31 +61,68 @@ jobs:
       - name: Build release app
         run: scripts/build-app.sh
 
+      - name: Upload archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: build/dist/CardGate-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build  # fails on any branch but main
+    runs-on: macos-26
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download archive
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: dist
+
+      - name: Unpack the app
+        run: |
+          ditto -x -k "dist/CardGate-$VERSION.zip" "$RUNNER_TEMP/app"
+          test -d "$RUNNER_TEMP/app/CardGate.app"
+
+      - name: Get Sparkle tools
+        # The tools from the Sparkle release pinned in deps.lock, not the ones the build job made.
+        run: |
+          source scripts/common.sh
+          sparkle="$(unpack sparkle)"
+          echo "SPARKLE_SIGN_UPDATE=$sparkle/bin/sign_update" >> "$GITHUB_ENV"
+
       - name: Sign the update and write the update feed
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           [[ -n "$SPARKLE_ED_PRIVATE_KEY" ]] || { echo "::error::secret SPARKLE_ED_PRIVATE_KEY is not set"; exit 1; }
           key="$RUNNER_TEMP/sparkle-ed25519.key"
           (umask 077; printf '%s' "$SPARKLE_ED_PRIVATE_KEY" > "$key")
           trap 'rm -f "$key"' EXIT
-          SPARKLE_KEY_FILE="$key" scripts/make-appcast.sh "build/dist/CardGate-$VERSION.zip" build/dist/CardGate.app \
-            > build/dist/appcast.xml
+          SPARKLE_KEY_FILE="$key" scripts/make-appcast.sh "dist/CardGate-$VERSION.zip" "$RUNNER_TEMP/app/CardGate.app" \
+            > dist/appcast.xml
 
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          cd build/dist
+          scripts/release-notes.sh > "$RUNNER_TEMP/release-notes.md"
+          cd dist
           shasum -a 256 "CardGate-$VERSION.zip" > SHA256SUMS.txt
           {
-            cat ../../release-notes.md
+            cat "$RUNNER_TEMP/release-notes.md"
             printf '\n### Instalace\n'
             printf 'Stáhněte `CardGate-%s.zip`, poklepáním ho rozbalte a přetáhněte CardGate do složky Aplikace. ' "$VERSION"
             printf 'Postup při prvním spuštění je v [návodu](https://github.com/JK-SW/cardgate/blob/main/docs/navod.cs.md).\n'
             printf '\n### Kontrolní součet SHA-256\n```\n'; cat SHA256SUMS.txt; printf '```\n'
           } > notes.md
           gh release create "v$VERSION" "CardGate-$VERSION.zip" SHA256SUMS.txt appcast.xml \
-            --title "CardGate $VERSION" --notes-file notes.md --target "$GITHUB_SHA"
+            --repo "$GITHUB_REPOSITORY" --title "CardGate $VERSION" --notes-file notes.md --target "$GITHUB_SHA"

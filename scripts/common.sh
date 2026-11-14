@@ -32,7 +32,8 @@ CMAKE_COMMON=(
   -DCMAKE_INSTALL_PREFIX="$PREFIX"
   -DCMAKE_PREFIX_PATH="$PREFIX"
   -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/local;/opt/local"
-  -DCMAKE_MAKE_PROGRAM="$(command -v ninja)"
+  # Tolerant: scripts that build nothing (release signing, tests) also source this file.
+  -DCMAKE_MAKE_PROGRAM="$(command -v ninja || true)"
   -DCMAKE_OSX_ARCHITECTURES="$ARCH"
   -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET"
   -DCMAKE_INSTALL_NAME_DIR="@rpath"

@@ -1,0 +1,45 @@
+name: Dependency updates
+
+# Once a week: compares scripts/deps.lock with the upstream releases and opens an issue for each newer
+# version (once; a closed issue is not opened again). No secrets, no build.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Open issues for newer versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          scripts/check-dependency-updates.sh > updates.txt
+          cat updates.txt
+          while read -r name pinned new url; do
+            title="Dependency update: $name $new"
+            existing="$(gh issue list --state all --search "\"$title\" in:title" --json title \
+              --jq "map(select(.title == \"$title\")) | length")"
+            if [[ "$existing" != 0 ]]; then
+              echo "Already reported: $title"; continue
+            fi
+            body="$(printf '%s\n' \
+              "\`scripts/deps.lock\` pins $name $pinned; upstream released $new: $url" \
+              "" \
+              "- [ ] Read the release notes, above all security fixes." \
+              "- [ ] Update the version and SHA-256 in \`scripts/deps.lock\` (check the notes there)." \
+              "- [ ] Rebuild (\`scripts/build-deps.sh\`, patches still apply) and run the tests." \
+              "" \
+              "Close this issue if the update is not wanted; it will not be opened again.")"
+            gh issue create --title "$title" --body "$body"
+          done < updates.txt
