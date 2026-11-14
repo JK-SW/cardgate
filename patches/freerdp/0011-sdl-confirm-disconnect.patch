@@ -1,0 +1,341 @@
+--- a/client/SDL/SDL3/CMakeLists.txt
++++ b/client/SDL/SDL3/CMakeLists.txt
+@@ -160,6 +160,8 @@
+   # Restores minimized windows when the app is activated (sdl_freerdp.cpp).
+   find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+   list(APPEND LIBS ${COREFOUNDATION_FRAMEWORK})
++  # Cmd+Q and the question before disconnecting use AppKit through the runtime (sdl_context.cpp).
++  list(APPEND LIBS objc)
+ endif()
+ 
+ target_link_libraries(${MODULE_NAME} PRIVATE ${LIBS})
+--- a/client/SDL/SDL3/sdl_context.hpp
++++ b/client/SDL/SDL3/sdl_context.hpp
+@@ -42,6 +42,12 @@
+ 
+ #include "dialogs/sdl_connection_dialog_wrapper.hpp"
+ 
++#if defined(__APPLE__)
++/* Cmd+Q no longer quits through the app menu, where it cannot be told from a quit request of the
++ * system (logout, restart): it arrives as a key and asks first (SdlContext::confirmDisconnect). */
++void sdl_macos_remove_quit_shortcut();
++#endif
++
+ class SdlContext
+ {
+   public:
+@@ -64,6 +70,15 @@
+ 
+ 	void setConnected(bool val);
+ 	[[nodiscard]] bool isConnected() const;
++
++	/* Asks before the user ends a running session (window closed, Cmd+Q); see the definition. */
++	[[nodiscard]] bool confirmDisconnect(SDL_WindowID windowID);
++	/* Ends the session because the user or the system asked to (see the definition). */
++	void disconnectRequested();
++	/* disconnectRequested() was called: reconnecting must stop. */
++	[[nodiscard]] bool isDisconnectRequested() const;
++	/* The process got a termination signal: end the session without asking. */
++	void quitBySignal();
+ 	void cleanup();
+ 
+ 	[[nodiscard]] bool resizeable() const;
+@@ -214,6 +229,10 @@
+ 	wLog* _log = nullptr;
+ 
+ 	std::atomic<bool> _connected = false;
++	std::atomic<bool> _quitBySignal = false;
++	std::atomic<bool> _disconnectRequested = false;
++	std::atomic<bool> _confirmingDisconnect = false;
++	bool _swallowQuitKeyUp = false; /* the Q of Cmd+Q never reaches the session */
+ 	bool _cursor_visible = true;
+ 	std::unique_ptr<rdpPointer, void (*)(rdpPointer*)> _cursor;
+ 	CursorType _cursorType = CURSOR_NULL;
+--- a/client/SDL/SDL3/sdl_context.cpp
++++ b/client/SDL/SDL3/sdl_context.cpp
+@@ -35,6 +35,19 @@
+ 
+ #include "dialogs/sdl_dialogs.hpp"
+ #include <freerdp/client/aad_helper.h>
++#include <freerdp/scancode.h>
++
++#if defined(__APPLE__)
++#include <CoreFoundation/CoreFoundation.h>
++
++/* The Objective-C runtime, declared here: its headers define BOOL differently from WinPR. */
++extern "C"
++{
++	void* objc_getClass(const char* name);
++	void* sel_registerName(const char* name);
++	void objc_msgSend(void);
++}
++#endif
+ 
+ static constexpr auto sdl_allow_screensaver = "sdl-allow-screensaver";
+ static constexpr auto sdl_connection_dialog = "sdl-connection-dialog";
+@@ -802,6 +815,9 @@
+ 		{
+ 			if (client_auto_reconnect(instance))
+ 			{
++				/* Disconnect was asked for while the attempt ran: end it after all. */
++				if (isDisconnectRequested())
++					disconnectRequested();
+ 				// Retry was successful, discard dialog
+ 				getDialog().show(false);
+ 				continue;
+@@ -1392,8 +1408,10 @@
+ 		break;
+ 		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+ 		{
++			if (!confirmDisconnect(ev.windowID))
++				break;
+ 			SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Window closed, terminating RDP session...");
+-			freerdp_abort_connect_context(context());
++			disconnectRequested();
+ 		}
+ 		break;
+ 		default:
+@@ -1711,6 +1729,32 @@
+ 		case SDL_EVENT_KEY_UP:
+ 		{
+ 			const auto& cev = ev.key;
++#if defined(__APPLE__)
++			const SDL_Keymod others = SDL_KMOD_CTRL | SDL_KMOD_ALT | SDL_KMOD_SHIFT;
++			if ((cev.type == SDL_EVENT_KEY_DOWN) && (cev.key == SDLK_Q) &&
++			    ((cev.mod & SDL_KMOD_GUI) != 0) && ((cev.mod & others) == 0))
++			{
++				/* Cmd+Q (sdl_macos_remove_quit_shortcut) */
++				_swallowQuitKeyUp = true;
++				if (cev.repeat)
++					return true;
++				/* Cmd is the Windows key in the session; released alone it opens the Start
++				 * menu. A Ctrl tap while it is down keeps it closed. */
++				auto input = context()->input;
++				std::ignore =
++				    freerdp_input_send_keyboard_event_ex(input, TRUE, FALSE, RDP_SCANCODE_LCONTROL);
++				std::ignore = freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE,
++				                                                   RDP_SCANCODE_LCONTROL);
++				if (confirmDisconnect(cev.windowID))
++					disconnectRequested();
++				return true;
++			}
++			if ((cev.type == SDL_EVENT_KEY_UP) && (cev.key == SDLK_Q) && _swallowQuitKeyUp)
++			{
++				_swallowQuitKeyUp = false;
++				return true;
++			}
++#endif
+ 			return getInputChannelContext().handleEvent(cev);
+ 		}
+ 		default:
+@@ -1935,6 +1979,147 @@
+ 	return _connected;
+ }
+ 
++#if defined(__APPLE__)
++void sdl_macos_remove_quit_shortcut()
++{
++	using SendObject = void* (*)(void*, void*);
++	using SendIndex = void* (*)(void*, void*, long);
++	using SendCount = long (*)(void*, void*);
++	using SendFind = long (*)(void*, void*, void*, void*);
++	using SendSet = void (*)(void*, void*, const void*);
++	const auto send = reinterpret_cast<SendObject>(objc_msgSend);
++	const auto count = reinterpret_cast<SendCount>(objc_msgSend);
++	const auto item = reinterpret_cast<SendIndex>(objc_msgSend);
++
++	void* app = send(objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
++	void* menu = app ? send(app, sel_registerName("mainMenu")) : nullptr;
++	if (!menu || (count(menu, sel_registerName("numberOfItems")) < 1))
++		return;
++	void* appItem = item(menu, sel_registerName("itemAtIndex:"), 0);
++	void* appMenu = appItem ? send(appItem, sel_registerName("submenu")) : nullptr;
++	if (!appMenu)
++		return;
++	const long index = reinterpret_cast<SendFind>(objc_msgSend)(
++	    appMenu, sel_registerName("indexOfItemWithTarget:andAction:"), nullptr,
++	    sel_registerName("terminate:"));
++	if (index < 0)
++		return;
++	void* quit = item(appMenu, sel_registerName("itemAtIndex:"), index);
++	if (quit)
++		reinterpret_cast<SendSet>(objc_msgSend)(quit, sel_registerName("setKeyEquivalent:"),
++		                                        CFSTR(""));
++}
++
++/* Closes the open question once the process is told to end (info: the flag set by the signal
++ * handler, which cannot do this itself). Runs on the main run loop, also while the question is
++ * shown. */
++static void close_question_on_signal(CFRunLoopTimerRef timer, void* info)
++{
++	WINPR_UNUSED(timer);
++	/* Also a quit request of the system (logout, restart) that came meanwhile. */
++	if (!static_cast<std::atomic<bool>*>(info)->load() && !SDL_HasEvent(SDL_EVENT_QUIT))
++		return;
++	using SendObject = void* (*)(void*, void*);
++	using Send = void (*)(void*, void*);
++	void* app = reinterpret_cast<SendObject>(objc_msgSend)(objc_getClass("NSApplication"),
++	                                                       sel_registerName("sharedApplication"));
++	if (app)
++		reinterpret_cast<Send>(objc_msgSend)(app, sel_registerName("abortModal"));
++}
++#endif
++
++static const char* env_or(const char* name, const char* fallback)
++{
++	const char* value = getenv(name);
++	return (value && *value) ? value : fallback;
++}
++
++/* Whether the user really wants to end the session they closed (window closed, Cmd+Q). Asked
++ * only while connected and when the environment variable FREERDP_CONFIRM_DISCONNECT holds the
++ * question (the launching application passes the texts in the user's language:
++ * FREERDP_CONFIRM_DISCONNECT_DETAIL, _BUTTON and _CANCEL). Never asked when the process is told to
++ * end by a signal; a quit request of the system (logout, restart) does not ask either. */
++bool SdlContext::confirmDisconnect(SDL_WindowID windowID)
++{
++	const char* question = getenv("FREERDP_CONFIRM_DISCONNECT");
++	if (!question || !*question || !isConnected() || _quitBySignal)
++		return true;
++	if (_confirmingDisconnect)
++		return false; /* closed again while the question is shown */
++
++	_confirmingDisconnect = true;
++	const SDL_MessageBoxButtonData buttons[] = {
++		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0,
++		  env_or("FREERDP_CONFIRM_DISCONNECT_CANCEL", "Cancel") },
++		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1,
++		  env_or("FREERDP_CONFIRM_DISCONNECT_BUTTON", "Disconnect") },
++	};
++	/* On the window that was closed, so the question is where the user looks. */
++	SDL_Window* parent = nullptr;
++	if (auto window = getWindowForId(windowID))
++		parent = window->window();
++	else if (!_windows.empty())
++		parent = _windows.begin()->second.window();
++	const SDL_MessageBoxData data = { SDL_MESSAGEBOX_WARNING,
++	                                  parent,
++	                                  question,
++	                                  env_or("FREERDP_CONFIRM_DISCONNECT_DETAIL", ""),
++	                                  static_cast<int>(ARRAYSIZE(buttons)),
++	                                  buttons,
++	                                  nullptr };
++	int button = 0;
++#if defined(__APPLE__)
++	CFRunLoopTimerContext timerContext = { 0, &_quitBySignal, nullptr, nullptr, nullptr };
++	CFRunLoopTimerRef watch = CFRunLoopTimerCreate(nullptr, CFAbsoluteTimeGetCurrent() + 0.2, 0.2,
++	                                               0, 0, close_question_on_signal, &timerContext);
++	if (watch)
++		CFRunLoopAddTimer(CFRunLoopGetMain(), watch, kCFRunLoopCommonModes);
++#endif
++	const bool shown = SDL_ShowMessageBox(&data, &button);
++#if defined(__APPLE__)
++	if (watch)
++	{
++		CFRunLoopTimerInvalidate(watch);
++		CFRelease(watch);
++	}
++#endif
++	_confirmingDisconnect = false;
++
++	/* Closing again while asked is part of the same request. */
++	SDL_FlushEvent(SDL_EVENT_WINDOW_CLOSE_REQUESTED);
++	if (_quitBySignal || SDL_HasEvent(SDL_EVENT_QUIT))
++		return true;
++	if (!shown)
++	{
++		WLog_Print(_log, WLOG_WARN, "cannot ask before disconnecting: %s", SDL_GetError());
++		return true;
++	}
++	const bool disconnect = (button == 1);
++	WLog_Print(_log, WLOG_INFO, "disconnect %s by the user",
++	           disconnect ? "confirmed" : "cancelled");
++	return disconnect;
++}
++
++/* While reconnecting another error may already be set and freerdp_abort_connect_context keeps it;
++ * the cancel replaces it, so the reconnection loop stops (client_auto_reconnect_do). */
++void SdlContext::disconnectRequested()
++{
++	/* A reconnection attempt may reset the last error (rdg_connect): this flag stays. */
++	_disconnectRequested = true;
++	freerdp_set_last_error_log(context(), FREERDP_ERROR_CONNECT_CANCELLED);
++	std::ignore = freerdp_abort_connect_context(context());
++}
++
++bool SdlContext::isDisconnectRequested() const
++{
++	return _disconnectRequested;
++}
++
++void SdlContext::quitBySignal()
++{
++	_quitBySignal = true;
++}
++
+ rdpContext* SdlContext::context() const
+ {
+ 	WINPR_ASSERT(_context);
+--- a/client/SDL/SDL3/sdl_freerdp.cpp
++++ b/client/SDL/SDL3/sdl_freerdp.cpp
+@@ -157,8 +157,11 @@
+ }
+ 
+ static void sdl_term_handler([[maybe_unused]] int signum, [[maybe_unused]] const char* signame,
+-                             [[maybe_unused]] void* context)
++                             void* context)
+ {
++	auto sdl = get_context(context);
++	if (sdl)
++		sdl->quitBySignal();
+ 	std::ignore = sdl_push_quit();
+ }
+ 
+@@ -201,7 +204,9 @@
+ 				switch (windowEvent.type)
+ 				{
+ 					case SDL_EVENT_QUIT:
+-						std::ignore = freerdp_abort_connect_context(sdl->context());
++						/* A signal or the system (logout, restart): never asked (Cmd+Q is a key).
++						 */
++						sdl->disconnectRequested();
+ 						break;
+ 					case SDL_EVENT_USER_CERT_DIALOG:
+ 					{
+@@ -691,6 +696,10 @@
+ 		return -1;
+ 	if (!SDL_SetHint(SDL_HINT_SCREENSAVER_INHIBIT_ACTIVITY_NAME, "RDP session running"))
+ 		return -1;
++	/* Closing the window ends the session (asking first, SdlContext::confirmDisconnect), not a
++	 * second quit request that would ask again. */
++	if (!SDL_SetHint(SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "0"))
++		return -1;
+ #if SDL_VERSION_ATLEAST(3, 4, 0)
+ 	if (!SDL_SetHint(SDL_HINT_MOUSE_DPI_SCALE_CURSORS, "1"))
+ 		return -1;
+@@ -710,6 +719,9 @@
+ 	/* Basic SDL initialization */
+ 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
+ 		return -1;
++#if defined(__APPLE__)
++	sdl_macos_remove_quit_shortcut();
++#endif
+ 
+ #if defined(__APPLE__)
+ 	/* macOS has no num lock state, SDL_KMOD_NUM always starts off and we would turn num lock
+--- a/client/SDL/SDL3/dialogs/sdl_dialogs.cpp
++++ b/client/SDL/SDL3/dialogs/sdl_dialogs.cpp
+@@ -245,6 +245,13 @@
+ 	auto sdl = get_context(instance->context);
+ 	auto settings = instance->context->settings;
+ 	const BOOL enabled = freerdp_settings_get_bool(settings, FreeRDP_AutoReconnectionEnabled);
++
++	/* Called before every attempt: one the user asked to stop is not made. */
++	if (sdl->isDisconnectRequested())
++	{
++		WLog_Print(sdl->getWLog(), WLOG_WARN, "Autoreconnect aborted by user");
++		return -1;
++	}
+ 	const size_t delay = freerdp_settings_get_uint32(settings, FreeRDP_TcpConnectTimeout);
+ 
+ 	sdl->getDialog().setTitle("Retry connection to %s",

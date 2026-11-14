@@ -8,6 +8,9 @@ public struct FreeRDPCommand: Equatable, Sendable {
     public var arguments: [String]
     public var environment: [String: String]
 
+    /// The client reconnects on its own after an outage (CardGate → Settings).
+    public var reconnects: Bool { arguments.contains("+auto-reconnect") }
+
     /// Where the client is in the app bundle (relative to `Contents`) and in the assembled helper
     /// (`build/helper`). It is wrapped in a small agent app (`LSUIElement`), so the Dock and the
     /// app switcher show only CardGate; CardGate brings the session window forward itself.
@@ -40,15 +43,17 @@ public struct FreeRDPCommand: Equatable, Sendable {
     ///   - screen: the display the window opens on; window sizes are given in its points.
     ///   - certificateSHA1: card certificate to sign in with (when the card holds several).
     ///   - smartCardReader: the reader with the card; only it is redirected to the remote computer.
+    ///   - options: the app settings for every connection.
     public init(
         executable: URL, profile: ConnectionProfile, pkcs11Module: String, config: FreeRDPClientConfig,
         askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil, certificateSHA1: String? = nil,
-        smartCardReader: String? = nil
+        smartCardReader: String? = nil, options: SessionOptions = .off
     ) throws(BuildError) {
         guard profile.gateway != nil else { throw .gatewayRequired }
         guard Self.isUsableModulePath(pkcs11Module) else { throw .invalidModulePath }
         self.executable = executable
-        self.arguments = Self.arguments(profile: profile, pkcs11Module: pkcs11Module, screen: screen)
+        self.arguments = Self.arguments(
+            profile: profile, pkcs11Module: pkcs11Module, screen: screen, keepConnection: options.keepConnection)
         if let reader = smartCardReader, Self.isUsableReaderFilter(reader) {
             // Without it every reader of the Mac is redirected; Windows sign-in then may look at an
             // empty one (e.g. a reader built into the keyboard) and ask to insert the card.
@@ -62,6 +67,12 @@ public struct FreeRDPCommand: Equatable, Sendable {
         ]
         if let askPass {
             environment["FREERDP_ASKPASS"] = askPass.shellCommand
+        }
+        if options.keepConnection {
+            environment["FREERDP_GATEWAY_KEEPALIVE"] = String(SessionOptions.keepAliveSeconds)  // patch 0001
+        }
+        if let question = options.disconnectQuestion {
+            environment.merge(question.environment) { _, new in new }  // patch 0011
         }
         // Certificate chosen by CardGate when the card holds several (patched FreeRDP).
         if let certificateSHA1, CardCertificate.isFingerprint(certificateSHA1) {
@@ -100,7 +111,9 @@ public struct FreeRDPCommand: Equatable, Sendable {
         !reader.isEmpty && !reader.contains(",") && !reader.contains(where: \.isNewline)
     }
 
-    static func arguments(profile: ConnectionProfile, pkcs11Module: String, screen: ScreenMetrics?) -> [String] {
+    static func arguments(
+        profile: ConnectionProfile, pkcs11Module: String, screen: ScreenMetrics?, keepConnection: Bool
+    ) -> [String] {
         let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
         var args = [
             "/v:\(profile.computer)",
@@ -151,6 +164,13 @@ public struct FreeRDPCommand: Equatable, Sendable {
         }
         // CardGate shows progress and errors itself; no FreeRDP connection dialog.
         args.append("-sdl-connection-dialog")
+        // The display may turn off as set in macOS (CardGate keeps the Mac awake, if set).
+        args.append("+sdl-allow-screensaver")
+        if keepConnection {
+            // Reconnects after an outage with the PIN it already has (no new PIN dialog); a PIN the
+            // card rejects is never offered again (patch 0001).
+            args += ["+auto-reconnect", "/auto-reconnect-max-retries:\(SessionOptions.reconnectAttempts)"]
+        }
         args.append("/log-level:INFO")
         args.append("/log-filters:" + logFilters.joined(separator: ","))
         return args

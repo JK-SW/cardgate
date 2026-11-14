@@ -1,0 +1,56 @@
+--- a/client/common/client.c
++++ b/client/common/client.c
+@@ -1487,6 +1487,16 @@
+ 	}
+ }
+ 
++/* The user (or the app, by a signal) ended the session while it was being reconnected. */
++WINPR_ATTR_NODISCARD
++static BOOL client_auto_reconnect_cancelled(freerdp* instance)
++{
++	if (freerdp_get_last_error(instance->context) != FREERDP_ERROR_CONNECT_CANCELLED)
++		return FALSE;
++	WLog_WARN(TAG, "Autoreconnect aborted by user");
++	return TRUE;
++}
++
+ WINPR_ATTR_NODISCARD
+ static BOOL client_auto_reconnect_do(freerdp* instance, BOOL retry, UINT32 numRetries,
+                                      UINT32 maxRetries)
+@@ -1513,7 +1523,14 @@
+ 		numRetries++;
+ 
+ 		if (freerdp_reconnect(instance))
++		{
++			/* Closed while the attempt ran: the session is not wanted any more. */
++			if (client_auto_reconnect_cancelled(instance))
++				return FALSE;
++			WLog_INFO(TAG, "Reconnected (attempt %" PRIu32 " of %" PRIu32 ")", numRetries,
++			          maxRetries);
+ 			return TRUE;
++		}
+ 
+ 		/* The server can also reject the credentials on a reconnect attempt, e.g. after a
+ 		 * password change. Retrying them only locks the account sooner. */
+@@ -1524,14 +1541,17 @@
+ 			          freerdp_get_last_error_name(err));
+ 			return FALSE;
+ 		}
+-		if (err == FREERDP_ERROR_CONNECT_CANCELLED)
+-		{
+-			WLog_WARN(TAG, "Autoreconnect aborted by user");
++		if (client_auto_reconnect_cancelled(instance))
+ 			return FALSE;
+-		}
+ 
++		/* Disconnecting must not wait for the delay. (A server that ended the attempt also sets
++		 * the abort event; the next attempt resets it and tries again.) */
+ 		for (SSIZE_T x = 0; x < delay / 10; x++)
++		{
++			if (client_auto_reconnect_cancelled(instance))
++				return FALSE;
+ 			Sleep(10);
++		}
+ 	}
+ 
+ 	WLog_ERR(TAG, "Maximum reconnect retries exceeded");

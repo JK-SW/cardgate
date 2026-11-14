@@ -10,7 +10,20 @@ public enum SessionPhase: Equatable, Sendable {
     case connectingComputer
     /// The remote desktop is shown.
     case connected
+    /// The connection broke; the client is connecting again (its window stays open).
+    case reconnecting
     case ended(SessionEnd)
+
+    /// The remote desktop appears for the first time in this session (`previous` is the phase
+    /// before), not again after the client reconnected.
+    public func desktopAppears(after previous: SessionPhase?) -> Bool {
+        self == .connected && previous != .reconnecting
+    }
+
+    /// The remote desktop window is open: the session is up or being restored.
+    public var hasDesktop: Bool {
+        self == .connected || self == .reconnecting
+    }
 }
 
 public enum SessionEnd: Equatable, Sendable {
@@ -26,6 +39,9 @@ public enum SessionFailure: Equatable, Sendable {
     case wrongPIN
     /// The card is locked after too many wrong PINs.
     case cardLocked
+    /// The card refused the sign-in with an error that does not say why: maybe a wrong PIN, maybe a
+    /// failing card or reader. The PIN is not offered again.
+    case cardRefusedLogin
     case gatewayUnreachable
     case gatewayDenied
     /// The gateway's TLS certificate is not trusted (possible interception).
@@ -35,6 +51,11 @@ public enum SessionFailure: Equatable, Sendable {
     case gatewayCertificateNotPublic
     /// The card holds more than one certificate usable for sign-in.
     case multipleCertificates
+    /// The gateway's certificate changed during the session: it is not reconnected to (the card is
+    /// used only with the certificate checked before connecting).
+    case gatewayCertificateChanged
+    /// The card's key is not an RSA key; signing in to the gateway supports only RSA.
+    case unsupportedCardKey
     /// The PIN was not entered in time.
     case pinTimedOut
     case computerUnreachable
@@ -68,16 +89,27 @@ public struct SessionLogParser: Sendable {
     private var pinRequested = false
     /// The system trusted the gateway's certificate before the client started (`GatewayCheckResult`).
     private let gatewayTrustedBySystem: Bool
+    /// The connection of a shown desktop broke ("Network disconnect!"); the client may reconnect.
+    private var connectionBroke = false
+    /// Why reconnecting failed, if the client said so.
+    private var reconnectFailure: SessionFailure?
+    /// The client reconnects after an outage (`FreeRDPCommand.reconnects`); without it an outage
+    /// ends the session at once.
+    private let reconnects: Bool
 
-    public init(gatewayTrustedBySystem: Bool = false) {
+    public init(gatewayTrustedBySystem: Bool = false, reconnects: Bool = true) {
         self.gatewayTrustedBySystem = gatewayTrustedBySystem
+        self.reconnects = reconnects
     }
 
     /// Processes one log line and returns the new phase if it changed.
     @discardableResult
     public mutating func consume(_ line: String) -> SessionPhase? {
         guard var next = nextPhase(for: line) else { return nil }
-        if stoppedByApp, case .ended(.failed) = next { next = .ended(.closedByUser) }
+        // After CardGate stopped the client only a reconnection failure from before still counts.
+        if stoppedByApp, case .ended(.failed(let failure)) = next, failure != reconnectFailure {
+            next = .ended(.closedByUser)
+        }
         guard next != phase else { return nil }
         if case .ended = phase { return nil }  // terminal
         phase = next
@@ -103,20 +135,24 @@ public struct SessionLogParser: Sendable {
     public mutating func processExited(status: Int32, crashed: Bool = false) -> SessionPhase {
         if case .ended = phase { return phase }
         // An error logged while connecting is outdated once the desktop was shown.
-        let failure = phase == .connected ? nil : failure
+        let failure = phase.hasDesktop ? nil : failure
         if stoppedByApp {
-            phase = failure.map { .ended(.failed($0)) } ?? .ended(.closedByUser)
+            // A PIN attempt used while reconnecting is still reported.
+            phase = (failure ?? reconnectFailure).map { .ended(.failed($0)) } ?? .ended(.closedByUser)
             return phase
         }
-        if phase == .connected, let serverEnd {
+        if phase.hasDesktop, let serverEnd {
             phase = .ended(serverEnd)  // e.g. signed out in Windows: the client just exits
         } else if let failure {
             phase = .ended(.failed(failure))
         } else if crashed, !Self.quitSignals.contains(status) {
-            // A crash is never a normal end, not even after the desktop was shown (CardGate's own
-            // kill after Disconnect is handled above).
+            // A crash is never a normal end, not even after the desktop was shown or while
+            // reconnecting (CardGate's own kill after Disconnect is handled above).
             phase = .ended(.failed(.other("signal \(status)")))
-        } else if phase == .connected || status == 0 {
+        } else if phase.hasDesktop, connectionBroke {
+            // Not reconnecting (turned off), or it gave up.
+            phase = .ended(.failed(reconnectFailure ?? .connectionLost))
+        } else if phase.hasDesktop || status == 0 {
             phase = .ended(.closedByUser)
         } else {
             phase = .ended(.failed(.other("exit status \(status)")))
@@ -142,6 +178,12 @@ public struct SessionLogParser: Sendable {
         "certificate not trusted",
         "inner TLS certificate differs",
         "Network disconnect!",
+        "Attempting reconnect (",
+        "Reconnected (attempt",
+        "Autoreconnect aborted by user",
+        "- not retrying",
+        "RD Gateway certificate changed",
+        "client certificate has no RSA key",
         "Credential prompt cancelled",
         "ERRCONNECT_CONNECT_CANCELLED",
         "ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED",
@@ -158,6 +200,10 @@ public struct SessionLogParser: Sendable {
     ]
 
     private mutating func nextPhase(for line: String) -> SessionPhase? {
+        // Reconnecting goes through the connection steps again: they are not shown.
+        if phase.hasDesktop {
+            return endOfConnectedSession(line)
+        }
         if line.contains("smart card ready for RD Gateway authentication") {
             return .authenticatingGateway
         }
@@ -174,7 +220,7 @@ public struct SessionLogParser: Sendable {
         if line.contains("nego_process_negotiation_failure") {
             negotiationRefused = true
         }
-        if phase != .connected, !stoppedByApp, var failure = Self.failure(in: line) {
+        if !stoppedByApp, var failure = Self.failure(in: line) {
             // The gateway accepted the sign-in, then the connection to the computer failed. If the
             // computer answered with a negotiation failure it was reached but refuses the security;
             // otherwise the gateway closed the channel without a reason: it could not reach the
@@ -188,33 +234,75 @@ public struct SessionLogParser: Sendable {
             if failure == .computerUnreachable, phase != .connectingComputer {
                 failure = phase == .starting && !pinRequested ? .gatewayUnreachable : .connectionLost
             }
-            if failure == .untrustedCertificate, gatewayTrustedBySystem, line.contains("certificate not trusted") {
-                failure = .gatewayCertificateNotPublic
-            }
-            self.failure = self.failure ?? failure
+            self.failure = self.failure ?? refined(failure, line: line)
             return nil
-        }
-        if phase == .connected {
-            return endOfConnectedSession(line)
         }
         return nil
     }
 
-    /// How a session that reached the desktop ends. Closing the window, Disconnect in the Dock or
-    /// quitting log a cancel first; signing out in Windows sends an error info code; a broken
-    /// connection logs only the transport error and "Network disconnect!".
+    /// How a session that reached the desktop goes on or ends. Closing the window, Disconnect in the
+    /// Dock or quitting log a cancel first; signing out in Windows sends an error info code; a broken
+    /// connection logs only the transport error and "Network disconnect!", then the client reconnects
+    /// (if set) or exits.
     private mutating func endOfConnectedSession(_ line: String) -> SessionPhase? {
-        if line.contains("ERRCONNECT_CONNECT_CANCELLED") {
-            return .ended(.closedByUser)
+        // A failure of the reconnection the user has to know about (a PIN attempt used, an untrusted
+        // gateway) is still shown when they then close the window.
+        if line.contains("ERRCONNECT_CONNECT_CANCELLED") || line.contains("Credential prompt cancelled")
+            || line.contains("Autoreconnect aborted by user")
+        {
+            return .ended(reconnectFailure.map { .failed($0) } ?? .closedByUser)
         }
         if let range = line.range(of: #"ERRINFO_[A-Z0-9_]+"#, options: .regularExpression) {
             serverEnd = serverEnd ?? Self.serverEnd(String(line[range]))
             return nil
         }
         if line.contains("Network disconnect!") {
-            return .ended(serverEnd ?? .failed(.connectionLost))
+            // Windows said why, or CardGate stopped it: the client does not reconnect.
+            if let serverEnd { return .ended(serverEnd) }
+            if stoppedByApp { return .ended(.closedByUser) }
+            // Without reconnecting the client just quits; say so now, not only when it has exited.
+            guard reconnects else { return .ended(.failed(.connectionLost)) }
+            connectionBroke = true
+            return nil
+        }
+        // Also after errors the client reconnects on its own (e.g. a failed graphics subsystem).
+        if line.contains("Attempting reconnect (") {
+            // What ended the connection before is not why reconnecting fails.
+            if phase == .connected { serverEnd = nil }
+            connectionBroke = true
+            return .reconnecting
+        }
+        if line.contains("Reconnected (attempt") {
+            // A new connection: what ended or failed before no longer applies.
+            connectionBroke = false
+            reconnectFailure = nil
+            serverEnd = nil
+            return .connected
+        }
+        // The first failure the user has to act on; network errors of the attempts before do not hide it.
+        if phase == .reconnecting, !stoppedByApp, reconnectFailure == nil,
+            let failure = Self.failure(in: line).map({ refined($0, line: line) }).flatMap(Self.reportedWhenReconnecting)
+        {
+            reconnectFailure = failure
         }
         return nil
+    }
+
+    /// A certificate the system trusts but the client does not is not a sign of interception.
+    private func refined(_ failure: SessionFailure, line: String) -> SessionFailure {
+        failure == .untrustedCertificate && gatewayTrustedBySystem && line.contains("certificate not trusted")
+            ? .gatewayCertificateNotPublic : failure
+    }
+
+    /// Failures of a reconnection worth telling apart from a lost connection: the user has to act.
+    static func reportedWhenReconnecting(_ failure: SessionFailure) -> SessionFailure? {
+        switch failure {
+        case .wrongPIN, .cardLocked, .cardRefusedLogin, .noCertificate, .multipleCertificates, .untrustedCertificate,
+            .gatewayCertificateNotPublic, .gatewayCertificateChanged, .gatewayDenied:
+            failure
+        default:
+            nil
+        }
     }
 
     /// Windows' reasons for ending a session ([MS-RDPBCGR] 2.2.5.1.1). An unknown code is an error
@@ -237,10 +325,14 @@ public struct SessionLogParser: Sendable {
     private static let knownFailures: [(text: String, failure: SessionFailure)] = [
         ("no suitable smartcard certificates", .noCertificate),
         ("WRONG PIN", .wrongPIN),
+        // The card refused the sign-in with another code: the PIN is never offered again (patch 0001).
+        ("- not retrying", .cardRefusedLogin),
         ("certificate not trusted", .untrustedCertificate),
+        ("RD Gateway certificate changed", .gatewayCertificateChanged),
         ("inner TLS certificate differs", .untrustedCertificate),
         ("more than one suitable smartcard certificate", .multipleCertificates),
         ("PIN is LOCKED", .cardLocked),
+        ("client certificate has no RSA key", .unsupportedCardKey),
         ("ERRCONNECT_DNS_NAME_NOT_FOUND", .gatewayUnreachable),
         ("ERRCONNECT_CONNECT_FAILED", .gatewayUnreachable),
         ("ERRCONNECT_ACCESS_DENIED", .gatewayDenied),

@@ -81,11 +81,13 @@ build_freerdp() {
 }
 
 # Static analysis of the C sources CardGate adds to FreeRDP (fails the build on any finding).
+# libfreerdp/utils/smartcard_call.c (patch 0006) is left out: the analyzer reports two false memory
+# leaks in FreeRDP's own code there (HashTable_Insert takes ownership).
 analyze_patched_sources() {
   local s="$1" file cmd
-  for file in libfreerdp/core/gateway/rdg_sc.c libfreerdp/core/smartcardlogon.c \
-    client/SDL/SDL3/sdl_monitor.cpp client/SDL/SDL3/sdl_context.cpp client/SDL/SDL3/sdl_freerdp.cpp \
-    client/SDL/SDL3/sdl_utils.cpp; do
+  for file in libfreerdp/core/gateway/rdg_sc.c libfreerdp/core/gateway/rdg.c libfreerdp/core/smartcardlogon.c \
+    client/common/client.c client/SDL/SDL3/sdl_monitor.cpp client/SDL/SDL3/sdl_context.cpp \
+    client/SDL/SDL3/sdl_freerdp.cpp client/SDL/SDL3/sdl_utils.cpp; do
     cmd="$(python3 -I -c '
 import json, shlex, sys
 for entry in json.load(open(sys.argv[1])):
@@ -98,8 +100,16 @@ for entry in json.load(open(sys.argv[1])):
 ' "$OBJ/freerdp/compile_commands.json" "$file")"
     [[ -n "$cmd" ]] || die "no compile command for $file"
     log "Static analysis: $file"
-    (cd "$OBJ/freerdp" && eval "$CC --analyze -Xanalyzer -analyzer-output=text -Werror $cmd -o /dev/null") \
-      || die "static analyzer reported issues in $file"
+    # Compiler warnings fail the analysis (-Werror); the analyzer's own findings are warnings named by
+    # checker (e.g. [core.NullDereference], [unix.Malloc]) that -Werror does not turn into errors.
+    local findings
+    findings="$(cd "$OBJ/freerdp" \
+      && eval "$CC --analyze -Xanalyzer -analyzer-output=text -Werror $cmd -o /dev/null" 2>&1)" \
+      || die "static analysis failed for $file: $findings"
+    if grep -Eq 'warning: .*\[[a-z]+(\.[A-Za-z0-9]+)+\]$' <<<"$findings"; then
+      printf '%s\n' "$findings" >&2
+      die "static analyzer reported issues in $file"
+    fi
   done
 }
 

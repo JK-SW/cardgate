@@ -54,13 +54,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Přidat připojení nebo zobrazit záznam"
+            "value": "Přidat připojení nebo zobrazit log"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pridať pripojenie alebo zobraziť záznam"
+            "value": "Pridať pripojenie alebo zobraziť log"
           }
         }
       }
@@ -77,6 +77,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pokročilé"
+          }
+        }
+      }
+    },
+    "After a short network outage CardGate tries to connect again without you having to enter the PIN.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po krátkém výpadku sítě se CardGate pokusí připojit znovu bez nutnosti zadávat PIN."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po krátkom výpadku siete sa CardGate pokúsi pripojiť znova bez nutnosti zadávať PIN."
           }
         }
       }
@@ -141,6 +157,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reláciu prevzalo iné pripojenie"
+          }
+        }
+      }
+    },
+    "Ask before disconnecting": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ptát se před odpojením"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pýtať sa pred odpojením"
           }
         }
       }
@@ -324,6 +356,22 @@
         }
       }
     },
+    "CardGate can sign in to the gateway only with an RSA key; this card has another type (for example ECC). Contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate se umí k bráně přihlásit jen klíčem RSA; tato karta má jiný typ (například ECC). Obraťte se na IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CardGate sa vie k bráne prihlásiť len kľúčom RSA; táto karta má iný typ (napríklad ECC). Obráťte sa na IT oddelenie."
+          }
+        }
+      }
+    },
     "CardGate cannot save the settings for the connection. Check the free disk space.": {
       "localizations": {
         "cs": {
@@ -416,6 +464,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Certifikát platný do %@"
+          }
+        }
+      }
+    },
+    "Changes apply to the next connection.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Změny platí pro příští připojení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zmeny platia pre ďalšie pripojenie."
           }
         }
       }
@@ -777,13 +841,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Záznam připojení"
+            "value": "Log připojení"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Záznam pripojenia"
+            "value": "Log pripojenia"
           }
         }
       }
@@ -857,13 +921,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kopírovat záznam"
+            "value": "Kopírovat log"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kopírovať záznam"
+            "value": "Kopírovať log"
           }
         }
       }
@@ -873,13 +937,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zkopírujte záznam a pošlete ho IT oddělení"
+            "value": "Zkopírujte log a pošlete ho IT oddělení"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skopírujte záznam a pošlite ho IT oddeleniu"
+            "value": "Skopírujte log a pošlite ho IT oddeleniu"
           }
         }
       }
@@ -937,13 +1001,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Podrobnosti jsou v záznamu připojení (%@)."
+            "value": "Podrobnosti jsou v logu připojení (%@)."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Podrobnosti sú v zázname pripojenia (%@)."
+            "value": "Podrobnosti sú v logu pripojenia (%@)."
           }
         }
       }
@@ -960,6 +1024,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpojiť"
+          }
+        }
+      }
+    },
+    "Disconnect from the remote desktop?": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojit od vzdálené plochy?"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojiť od vzdialenej plochy?"
           }
         }
       }
@@ -1140,6 +1220,22 @@
         }
       }
     },
+    "For your safety the connection was not restored with the card. Connect again: CardGate checks the new certificate first.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro vaši bezpečnost se připojení s kartou neobnovilo. Připojte se znovu: CardGate nový certifikát nejdřív ověří."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pre vašu bezpečnosť sa pripojenie s kartou neobnovilo. Pripojte sa znova: CardGate nový certifikát najprv overí."
+          }
+        }
+      }
+    },
     "Full screen": {
       "localizations": {
         "cs": {
@@ -1312,6 +1408,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nebude načítaný. Nainštalujte softvér ku karte znova alebo sa obráťte na IT oddelenie."
+          }
+        }
+      }
+    },
+    "Keep the Mac awake while connected": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Během připojení nenechat Mac usnout"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počas pripojenia nenechať Mac uspať"
+          }
+        }
+      }
+    },
+    "Keep the connection alive and restore it after an outage": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udržovat připojení a po výpadku ho obnovit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udržiavať pripojenie a po výpadku ho obnoviť"
           }
         }
       }
@@ -1632,6 +1760,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Načítavam kartu…"
+          }
+        }
+      }
+    },
+    "Remote desktop connection (CardGate)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení ke vzdálené ploše (CardGate)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie k vzdialenej ploche (CardGate)"
           }
         }
       }
@@ -2020,6 +2164,22 @@
         }
       }
     },
+    "The PIN may have been wrong, or the card or reader failed. Remove the card, insert it again and connect once more. Be careful: after several wrong PINs the card gets locked.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN mohl být chybný, nebo selhala karta či čtečka. Vytáhněte kartu, znovu ji vložte a připojte se znovu. Pozor: po několika chybných PINech se karta zablokuje."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN mohol byť chybný, alebo zlyhala karta či čítačka. Vytiahnite kartu, znova ju vložte a pripojte sa znova. Pozor: po niekoľkých chybných PINoch sa karta zablokuje."
+          }
+        }
+      }
+    },
     "The PIN was not accepted. Be careful: after several wrong attempts the card gets locked.": {
       "localizations": {
         "cs": {
@@ -2128,6 +2288,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Karta teraz nie je dostupná na prihlásenie."
+          }
+        }
+      }
+    },
+    "The card refused the sign-in": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta přihlášení odmítla"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta prihlásenie odmietla"
+          }
+        }
+      }
+    },
+    "The card's key type is not supported": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typ klíče na kartě není podporován"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typ kľúča na karte nie je podporovaný"
           }
         }
       }
@@ -2260,6 +2452,22 @@
         }
       }
     },
+    "The connection was interrupted. Reconnecting…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení se přerušilo. Obnovuji…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie sa prerušilo. Obnovujem…"
+          }
+        }
+      }
+    },
     "The connection was stopped for your safety. Check the gateway address; if it is correct, contact your IT department.": {
       "localizations": {
         "cs": {
@@ -2272,6 +2480,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojenie bolo z bezpečnostných dôvodov zastavené. Skontrolujte adresu brány; ak je správna, kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "The display may still turn off; closing the lid still puts the Mac to sleep.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Displej může zhasnout; zavření víka Mac uspí i tak."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Displej môže zhasnúť; zatvorenie veka Mac uspí aj tak."
           }
         }
       }
@@ -2404,6 +2628,22 @@
         }
       }
     },
+    "The gateway's certificate changed": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát brány se změnil"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát brány sa zmenil"
+          }
+        }
+      }
+    },
     "The gateway's certificate is not publicly trusted": {
       "localizations": {
         "cs": {
@@ -2473,13 +2713,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zde se zobrazí záznam posledního připojení."
+            "value": "Zde se zobrazí log posledního připojení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu sa zobrazí záznam posledného pripojenia."
+            "value": "Tu sa zobrazí log posledného pripojenia."
           }
         }
       }
@@ -2544,6 +2784,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojenie k vzdialenej ploche sa ukončí."
+          }
+        }
+      }
+    },
+    "The remote desktop does not respond until the connection is restored.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzdálená plocha nebude reagovat, dokud se připojení neobnoví."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzdialená plocha nebude reagovať, kým sa pripojenie neobnoví."
           }
         }
       }
@@ -2854,6 +3110,22 @@
         }
       }
     },
+    "When you close the remote desktop window or press ⌘Q in it.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Při zavření okna vzdálené plochy nebo stisku ⌘Q v něm."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pri zatvorení okna vzdialenej plochy alebo stlačení ⌘Q v ňom."
+          }
+        }
+      }
+    },
     "Window": {
       "localizations": {
         "cs": {
@@ -2882,6 +3154,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chybný PIN"
+          }
+        }
+      }
+    },
+    "You can turn off this question in CardGate → Settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tento dotaz můžete vypnout v CardGate → Nastavení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Túto otázku môžete vypnúť v CardGate → Nastavenia."
           }
         }
       }

@@ -1,0 +1,35 @@
+--- a/client/SDL/SDL3/sdl_context.cpp
++++ b/client/SDL/SDL3/sdl_context.cpp
+@@ -1964,9 +1964,18 @@
+ 	if (suppress && freerdp_settings_get_bool(context()->settings, FreeRDP_RemoteApplicationMode))
+ 		return true;
+ 
++	/* While reconnecting there is no session to tell (input is skipped then, too); a session
++	 * restored later sends its output anyway. */
++	if (!freerdp_is_active_state(context()))
++		return true;
++
+ 	auto gdi = context()->gdi;
+ 	WINPR_ASSERT(gdi);
+-	return gdi_send_suppress_output(gdi, suppress);
++	/* Only spares the server drawing: a session that broke meanwhile is noticed by the RDP thread,
++	 * a window event must not end the client for it. */
++	if (!gdi_send_suppress_output(gdi, suppress))
++		WLog_Print(_log, WLOG_WARN, "Could not send suppress output (%d)", suppress);
++	return true;
+ }
+ 
+ void SdlContext::setConnected(bool val)
+--- a/client/SDL/SDL3/sdl_freerdp.cpp
++++ b/client/SDL/SDL3/sdl_freerdp.cpp
+@@ -328,6 +328,10 @@
+ 	{
+ 		WLog_Print(sdl->getWLog(), WLOG_ERROR, "[exception] %s", msg.what());
+ 		rc = msg.rc();
++		/* Without its event loop the client cannot go on: end the session, or the client waits
++		 * for it forever (freerdp_client_stop joins the RDP thread) with an unresponsive window. */
++		freerdp_set_last_error_if_not(sdl->context(), FREERDP_ERROR_CONNECT_UNDEFINED);
++		std::ignore = freerdp_abort_connect_context(sdl->context());
+ 	}
+ 
+ 	return rc;

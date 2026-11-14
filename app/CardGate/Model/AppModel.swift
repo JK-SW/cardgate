@@ -321,17 +321,27 @@ final class AppModel {
                 alert = .clientSettingsNotSaved
                 return
             }
+            let options = SessionOptions(defaults: .standard, question: Self.disconnectQuestion)
             do throws(FreeRDPCommand.BuildError) {
                 let command = try FreeRDPCommand(
                     executable: executable, profile: profile, pkcs11Module: module,
                     config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current,
-                    certificateSHA1: certificate.sha1, smartCardReader: card?.reader)
-                session.connect(command, gateway: profile.gateway)
+                    certificateSHA1: certificate.sha1, smartCardReader: card?.reader, options: options)
+                session.connect(command, gateway: profile.gateway, preventSleep: options.preventSleep)
             } catch {
                 logger.error("Cannot build the client command: \(String(describing: error), privacy: .public)")
                 alert = AppAlert(error)
             }
         }
+    }
+
+    /// What the remote desktop window asks when it is closed (CardGate → Settings can turn it off).
+    static var disconnectQuestion: DisconnectQuestion {
+        DisconnectQuestion(
+            title: String(localized: "Disconnect from the remote desktop?"),
+            detail: String(localized: "You can turn off this question in CardGate → Settings."),
+            disconnect: String(localized: "Disconnect"),
+            cancel: String(localized: "Cancel"))
     }
 }
 

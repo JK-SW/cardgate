@@ -109,6 +109,10 @@ final class CardGateUITests: XCTestCase {
         XCTAssertTrue(automaticUpdates.waitForExistence(timeout: 5))
         XCTAssertEqual(automaticUpdates.value as? Int, 0, "-SUEnableAutomaticChecks NO is shown")
         XCTAssertTrue(app.staticTexts["Check for updates automatically"].exists)
+        // Not clicked either: they are stored in the user's real preferences.
+        for option in ["settings.keepConnection", "settings.preventSleep", "settings.confirmDisconnect"] {
+            XCTAssertTrue(app.switches[option].exists, option)
+        }
         app.typeKey("w", modifierFlags: .command)
 
         // The guide opens in the browser; only its presence is checked.
@@ -148,13 +152,15 @@ final class CardGateUITests: XCTestCase {
     func testWindowSizeIsOnlyOfferedForAWindow() {
         let app = launch()
         openNewConnection(app)
-        XCTAssertTrue(app.popUpButtons["profile.windowSize"].exists)
-        app.popUpButtons["profile.displayMode"].click()
-        app.menuItems["Full screen"].click()
+        // A new connection opens in full screen.
+        XCTAssertEqual(app.popUpButtons["profile.displayMode"].value as? String, "Full screen")
         XCTAssertFalse(app.popUpButtons["profile.windowSize"].exists)
         app.popUpButtons["profile.displayMode"].click()
         app.menuItems["Window"].click()
         XCTAssertTrue(app.popUpButtons["profile.windowSize"].waitForExistence(timeout: 5))
+        app.popUpButtons["profile.displayMode"].click()
+        app.menuItems["Full screen"].click()
+        XCTAssertFalse(app.popUpButtons["profile.windowSize"].exists)
     }
 
     /// The scale is offered in every display mode and saved.

@@ -189,9 +189,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         didSet {
             model?.onDesktopShown = { [weak self] in self?.desktopShown() }
             model?.onClientEnded = { [weak self] in self?.clientEnded() }
+            followSession()
         }
     }
     private var windows = SessionWindowPolicy()
+    private let reconnectNotice = ReconnectNotice()
     /// Quitting waits for the client to end (`applicationShouldTerminate`).
     private var quit = PendingQuit()
 
@@ -204,6 +206,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mainWindow?.orderOut(nil)
         // The client never activates itself (agent app).
         showDesktop()
+    }
+
+    /// Shows the reconnect notice while the session phase says so (re-registers after each change).
+    private func followSession() {
+        guard let session = model?.session else { return }
+        let showsNotice = withObservationTracking {
+            windows.showsReconnectNotice(phase: session.phase)
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.followSession() }
+        }
+        if showsNotice {
+            reconnectNotice.show(session: session)
+        } else {
+            reconnectNotice.hide()
+        }
     }
 
     private func clientEnded() {
@@ -236,7 +253,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Dock or app switcher while connected: the user wants the remote desktop.
     private func forwardActivation() {
-        let windowVisible = NSApp.windows.contains { $0.isVisible && ($0.canBecomeMain || $0.canBecomeKey) }
+        // The reconnect notice stays over the desktop; it is not a CardGate window to keep in front.
+        let windowVisible = NSApp.windows.contains {
+            $0.isVisible && ($0.canBecomeMain || $0.canBecomeKey) && $0 !== reconnectNotice.window
+        }
         if windows.forwardsActivation(windowVisible: windowVisible, modalOpen: NSApp.modalWindow != nil) {
             showDesktop()
         }
@@ -280,7 +300,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: String(localized: "Quit and Disconnect"))
         alert.addButton(withTitle: String(localized: "Cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return .terminateCancel }
-        let connected = session.phase == .connected
+        let connected = session.phase?.hasDesktop == true
         session.stop()
         guard session.isRunning else { return .terminateNow }  // only the gateway check ran
         // The client is killed if it does not quit in time; the deadline is a last resort.

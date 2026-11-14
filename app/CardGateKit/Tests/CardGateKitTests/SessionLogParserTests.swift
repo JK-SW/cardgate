@@ -19,6 +19,11 @@ enum Log {
         "ERROR", "com.freerdp.core", "[freerdp_abort_connect_context]: ERRCONNECT_CONNECT_CANCELLED [0x0002000B]")
     static let networkDisconnect = line(
         "INFO", "com.freerdp.client.common", "[client_auto_reconnect_ex]: Network disconnect!")
+    static func reconnecting(_ attempt: Int) -> String {
+        line("INFO", "com.freerdp.client.common", "[client_auto_reconnect_do]: Attempting reconnect (\(attempt) of 10)")
+    }
+    static let reconnected = line(
+        "INFO", "com.freerdp.client.common", "[client_auto_reconnect_do]: Reconnected (attempt 2 of 10)")
     static let noCertificate = line(
         "ERROR", "com.freerdp.smartcardlogon", "[smartcard_getCert]: no suitable smartcard certificates were found")
     static let wrongPIN = line(
@@ -53,13 +58,30 @@ struct SessionLogParserTests {
         #expect(parser.phase == .ended(.closedByUser))
     }
 
-    /// Real case: network turned off while working.
+    /// Real case: network turned off while working, reconnecting turned off: the client quits, and
+    /// the lost connection is shown at once (also if the client then takes long to exit).
     @Test func lostConnectionIsReported() {
-        var parser = SessionLogParser()
+        var parser = SessionLogParser(reconnects: false)
         parser.consume(Log.gdiInit)
         parser.consume(Log.transportFailed)
         #expect(parser.consume(Log.networkDisconnect) == .ended(.failed(.connectionLost)))
         #expect(parser.processExited(status: 0) == .ended(.failed(.connectionLost)))
+
+        // With reconnecting the client may still come back, so the end comes when it exits.
+        var reconnecting = SessionLogParser(reconnects: true)
+        reconnecting.consume(Log.gdiInit)
+        reconnecting.consume(Log.transportFailed)
+        #expect(reconnecting.consume(Log.networkDisconnect) == nil)
+        #expect(reconnecting.phase == .connected)
+        #expect(reconnecting.processExited(status: 0) == .ended(.failed(.connectionLost)))
+    }
+
+    /// Only RSA keys can sign in to the gateway (patch 0001).
+    @Test func cardWithAnotherKeyType() {
+        var parser = SessionLogParser()
+        let message = "[sc_openssl_setup]: client certificate has no RSA key"
+        parser.consume(Log.line("ERROR", "com.freerdp.core.gateway.rdg_sc", message))
+        #expect(parser.processExited(status: 1) == .ended(.failed(.unsupportedCardKey)))
     }
 
     /// Real case: Start → Sign out (and tsdiscon) in Windows; the client exits without more.
