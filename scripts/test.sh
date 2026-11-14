@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# All checks that must pass before a commit and in CI: lint, unit tests, app build, localization.
+# All checks that must pass before a commit and in CI: lint, unit tests, app build, release script
+# tests, localization.
 source "$(dirname "$0")/common.sh"
 cd "$ROOT"
 
@@ -20,5 +21,6 @@ log "App build"
 xcodebuild -project app/CardGate.xcodeproj -scheme CardGate -configuration Debug \
   -destination "platform=macOS,arch=arm64" -derivedDataPath "$BUILD/DerivedData" -quiet build
 
+"$ROOT/scripts/test-release-scripts.sh"
 "$ROOT/scripts/check-localization.sh"
 log "All checks passed"

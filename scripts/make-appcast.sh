@@ -3,11 +3,15 @@
 #
 # Usage: scripts/make-appcast.sh <archive.zip> <app bundle>
 # The EdDSA private key is read from the file in $SPARKLE_KEY_FILE (never from the repository).
+# $SPARKLE_SIGN_UPDATE: Sparkle's sign_update (default: the one scripts/build-deps.sh installed).
+# $PUBLISHED_APPCAST: the feed of the release users have now (URL or file; "none" before the first
+# release); the new build number must be higher, or Sparkle would not offer the update.
 source "$(dirname "$0")/common.sh"
 ZIP="${1:?archive}"; APP="${2:?app bundle}"
 [[ -f "${SPARKLE_KEY_FILE:-}" ]] || die "SPARKLE_KEY_FILE must point to the EdDSA private key"
-SIGN="$PREFIX/sparkle/bin/sign_update"
+SIGN="${SPARKLE_SIGN_UPDATE:-$PREFIX/sparkle/bin/sign_update}"
 [[ -x "$SIGN" ]] || die "Sparkle tools missing – run scripts/build-deps.sh sparkle"
+PUBLISHED_APPCAST="${PUBLISHED_APPCAST:-https://github.com/JK-SW/cardgate/releases/latest/download/appcast.xml}"
 
 VERSION="$(tr -d '[:space:]' <"$ROOT/VERSION")"
 PLIST="$APP/Contents/Info.plist"
@@ -16,23 +20,43 @@ MIN_SYSTEM="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$PLIST
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")" == "$VERSION" ]] \
   || die "the app is not version $VERSION"
 
-# The private key must belong to the public key built into the app, or the app rejects the update.
+[[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || die "the app's build number '$BUILD_NUMBER' is not a number"
+
+# Sparkle offers an update only when its build number (CFBundleVersion) is higher than the installed
+# one; a rewritten history can lower the commit count the build number comes from.
+if [[ "$PUBLISHED_APPCAST" != none ]]; then
+  if [[ "$PUBLISHED_APPCAST" == *://* ]]; then
+    feed="$(curl -fsSL --retry 3 "$PUBLISHED_APPCAST")" || die "cannot read the published feed $PUBLISHED_APPCAST"
+  else
+    feed="$(cat "$PUBLISHED_APPCAST")"
+  fi
+  published="$(sed -n 's:.*<sparkle\:version>\([0-9][0-9]*\)</sparkle\:version>.*:\1:p' <<<"$feed" | head -n 1)"
+  [[ -n "$published" ]] || die "the published feed has no build number"
+  ((BUILD_NUMBER > published)) \
+    || die "build $BUILD_NUMBER is not higher than build $published of the published release"
+fi
+
 PUBLIC_KEY="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$PLIST" 2>/dev/null || true)"
 [[ -n "$PUBLIC_KEY" ]] || die "the app has no SUPublicEDKey (app/sparkle-public-key.txt)"
-DERIVED="$( { printf '302e020100300506032b657004220420' | xxd -r -p; base64 -d <"$SPARKLE_KEY_FILE"; } \
-  | "$PREFIX/bin/openssl" pkey -inform DER -pubout -outform DER | tail -c 32 | base64)"
-[[ "$DERIVED" == "$PUBLIC_KEY" ]] || die "the signing key does not match the app's SUPublicEDKey"
 
-SIGNATURE="$("$SIGN" --ed-key-file "$SPARKLE_KEY_FILE" "$ZIP")"   # sparkle:edSignature="…" length="…"
+SIGNATURE="$("$SIGN" --ed-key-file "$SPARKLE_KEY_FILE" "$ZIP")"
+pattern='^[[:space:]]*sparkle:edSignature="([A-Za-z0-9+/=]+)"[[:space:]]+length="([0-9]+)"[[:space:]]*$'
+[[ "$SIGNATURE" =~ $pattern ]] || die "unexpected sign_update output: $SIGNATURE"
+ED_SIGNATURE="${BASH_REMATCH[1]}"; LENGTH="${BASH_REMATCH[2]}"
+
+# The private key must belong to the public key built into the app, or the app rejects the update.
+status=0
+swift "$ROOT/scripts/verify-update-signature.swift" "$ZIP" "$ED_SIGNATURE" "$PUBLIC_KEY" || status=$?
+case "$status" in
+  0) ;;
+  1) die "the signature does not verify with the app's SUPublicEDKey (wrong signing key?)" ;;
+  *) die "verify-update-signature.swift failed ($status): bad archive, signature or SUPublicEDKey" ;;
+esac
 URL="https://github.com/JK-SW/cardgate/releases/download/v$VERSION/$(basename "$ZIP")"
 
 "$ROOT/scripts/release-notes.sh" | python3 -I -c '
 import datetime, html, re, sys
-version, build, min_system, url, signature = sys.argv[1:6]
-m = re.fullmatch(r"\s*sparkle:edSignature=\"([A-Za-z0-9+/=]+)\"\s+length=\"(\d+)\"\s*", signature)
-if not m:
-    sys.exit("unexpected sign_update output")
-ed_signature, length = m.groups()
+version, build, min_system, url, ed_signature, length = sys.argv[1:7]
 
 def inline(text):
     text = html.escape(text, quote=False)
@@ -78,4 +102,4 @@ print(f"""<?xml version="1.0" encoding="utf-8"?>
     </item>
   </channel>
 </rss>""")
-' "$VERSION" "$BUILD_NUMBER" "$MIN_SYSTEM" "$URL" "$SIGNATURE"
+' "$VERSION" "$BUILD_NUMBER" "$MIN_SYSTEM" "$URL" "$ED_SIGNATURE" "$LENGTH"

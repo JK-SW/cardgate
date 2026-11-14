@@ -77,6 +77,9 @@ z GitHubu a nič o vás neodosiela.
   Po skončení práce sa odpojte, prípadne kartu vytiahnite.
 - Aplikácia sa pripojí len k bráne s dôveryhodným certifikátom. Ak ohlási nedôveryhodný
   certifikát, nepokračujte a kontaktujte IT oddelenie.
+- Certifikát brány musí vydať verejne dôveryhodná certifikačná autorita. Certifikát internej
+  (firemnej) autority aplikácia neprijme, aj keď mu Mac dôveruje (napr. v Kľúčenke alebo cez
+  správu zariadení) – ohlási, že certifikát brány nie je verejne dôveryhodný.
 
 ## Keď niečo nefunguje
 

@@ -78,6 +78,14 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
   přihlášení odmítla“ (PIN mohl být chybný, nebo selhala karta či čtečka).
 - Přihlášení kartou k bráně se zastaví, když nejde ověřit, že vnitřní spojení vede k téže bráně
   (dřív by se v tom případě pokračovalo bez kontroly).
+- Vydávání je oddělené od podepisování aktualizací. Sestavení a nástroje pro něj nemají přístup ke
+  klíči, kterým se aktualizace podepisují. Podpis provede samostatný krok, který nic neinstaluje
+  a podpis ověří veřejným klíčem v aplikaci. Vydat jde jen z hlavní větve a jen se sestavením, které
+  má vyšší číslo než poslední vydání (jinak by se aktualizace nenabídla).
+- Nové verze přibalených knihoven se každý týden kontrolují automaticky. Postup pro neveřejné
+  hlášení zranitelností popisuje `SECURITY.md`.
+- Návod uvádí, že brána musí mít certifikát od veřejně důvěryhodné certifikační autority.
+  Certifikát vnitřní (firemní) autority CardGate nepřijme.
 
 ## [0.5.0] - 2026-11-12
 
