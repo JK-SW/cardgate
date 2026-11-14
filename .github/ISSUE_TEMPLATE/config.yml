@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Bezpečnostní problém / Security vulnerability
+    url: https://github.com/JK-SW/cardgate/security/advisories/new
+    about: Hlaste neveřejně, ne jako issue. Report privately, not as an issue (SECURITY.md).

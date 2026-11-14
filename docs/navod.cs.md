@@ -23,7 +23,8 @@ Tento návod otevřete i z aplikace: **Nápověda → Návod k CardGate**.
 ## Nastavení připojení
 
 1. Spusťte CardGate a klikněte na **Nastavit připojení**
-   (nebo **Importovat soubor .rdp…**, pokud vám ho IT oddělení poslalo).
+   (nebo **Importovat soubor .rdp…**, pokud vám ho IT oddělení poslalo). Připojujte se jen k adresám
+   od IT oddělení: po dobu připojení může vzdálený počítač používat vaši kartu.
 2. Vyplňte **Počítač** (např. `pc01.example.com`) a **Bránu**.
 3. Volitelně zvolte zobrazení (výchozí je celá obrazovka, nebo okno), počáteční velikost okna, měřítko
    (velikost textu a aplikací ve Windows; **Automaticky** = 200 % na displeji Retina, jinak 100 %),
@@ -37,7 +38,7 @@ Připojení můžete mít i více – přepínáte je v horní liště okna.
 ## Připojení
 
 1. Vložte kartu nebo token.
-2. Klikněte na **Připojit**.
+2. Klikněte na **Připojit**. Dokud se plocha neotevře, můžete pokus ukončit tlačítkem **Zrušit**.
 3. Zadejte **PIN** ke kartě. Pozor: po několika chybných pokusech se karta zablokuje.
 4. Otevře se okno se vzdálenou plochou a okno CardGate se schová. V Docku je stále jen ikona
    CardGate: kliknutím na ni (nebo přes ⌘Tab) se vrátíte ke vzdálené ploše. Zelené tlačítko
@@ -95,10 +96,17 @@ z GitHubu a nic o vás neodesílá.
 | Typ klíče na kartě není podporován | K bráně se lze přihlásit jen kartou s klíčem RSA. Obraťte se na IT oddělení. |
 | Bránu nelze kontaktovat | Zkontrolujte připojení k internetu a adresu brány. |
 | Připojení nemá zadanou bránu | CardGate se připojuje jen přes bránu. Klikněte na **Upravit připojení** a doplňte adresu brány. |
+| Spojení bylo přerušeno | Síť vypadla a obnovení se nepodařilo (nebo je v Nastavení vypnuté). Zkontrolujte připojení k internetu a připojte se znovu. |
+| Modul čipové karty není od ověřeného vydavatele | Modul ke kartě nepochází od ověřeného výrobce. Použijte ho (**Použít tento modul…**), jen pokud víte, odkud je (např. od IT oddělení). |
+| Modul čipové karty nastavený pro toto připojení nebyl nalezen | Opravte cestu v **Upravit připojení** (část Karta), nebo ji nechte prázdnou. |
 
 Podrobnosti najdete v menu **Okno → Log připojení**; tlačítkem **Kopírovat log** ho můžete
 poslat IT oddělení. Log neobsahuje PIN.
 Logy posledních pěti připojení jsou také ve složce `~/Library/Logs/CardGate`.
+
+Chybu aplikace nebo námět nahlaste v [Issues](https://github.com/JK-SW/cardgate/issues) (log před vložením zkontrolujte a adresy
+nahraďte např. `pc01.example.com`). Bezpečnostní problém hlaste neveřejně
+([Report a vulnerability](https://github.com/JK-SW/cardgate/security/advisories/new)).
 
 ## Pro správce IT
 

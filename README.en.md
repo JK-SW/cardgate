@@ -51,6 +51,18 @@ notes from `CHANGELOG.md` (written in Czech for the app's users).
 CardGate is free. If it helps you, you can support the author on
 [Ko-fi](https://ko-fi.com/jirikubinek).
 
+## Reporting a problem
+
+| What happened | Where to report it |
+|---|---|
+| Something does not work, a wrong message, an idea | **Publicly** in [Issues](https://github.com/JK-SW/cardgate/issues/new/choose): choose *Bug* or *Idea*. |
+| A security problem: someone could get the PIN, misuse the card, fake the gateway or an update, or get around the app's protections | **Privately** through [Report a vulnerability](https://github.com/JK-SW/cardgate/security/advisories/new) (only the author sees it), not in Issues. See [SECURITY.md](SECURITY.md). |
+
+If unsure, report privately. For a bug, include the CardGate version (**CardGate → About CardGate**),
+the macOS version, the card type and the connection log (**Window → Connection Log → Copy Log**).
+Never include a PIN, a certificate or real gateway and computer addresses; replace them, e.g. with
+`gateway.example.com`.
+
 ## License
 
 Apache License 2.0, see [LICENSE](LICENSE). Bundled third-party components keep
