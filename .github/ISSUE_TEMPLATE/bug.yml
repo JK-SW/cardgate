@@ -1,0 +1,35 @@
+name: Chyba / Bug
+description: Něco nefunguje nebo hlásí chybu. Something does not work.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Bezpečnostní problém nehlaste tady**, ale neveřejně (SECURITY.md). Nikdy nepřikládejte PIN, certifikát
+        ani skutečné adresy brány a počítače – nahraďte je např. `gateway.example.com`.
+        **Do not report security problems here** (see SECURITY.md). Never include a PIN, a certificate or real addresses.
+  - type: textarea
+    id: what
+    attributes:
+      label: Co se stalo / What happened
+      description: Co jste dělali, co jste čekali a co se stalo (případně text hlášky). What you did, expected and got.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Verze CardGate a macOS / CardGate and macOS version
+      placeholder: CardGate 0.6.0, macOS 26.1
+    validations:
+      required: true
+  - type: input
+    id: card
+    attributes:
+      label: Karta a software ke kartě / Card and card software
+      placeholder: např. ProID+ 4.x, čtečka …
+  - type: textarea
+    id: log
+    attributes:
+      label: Log připojení / Connection log
+      description: Okno → Log připojení → Kopírovat log. Adresy nahraďte. Window → Connection Log → Copy Log; replace addresses.
+      render: text

@@ -10,6 +10,7 @@ způsob přihlášení k bráně neumí. CardGate ano, včetně přihlášení k
 - Vlastní okno pro zadání PINu s ochranou proti nechtěnému chybnému PINu; PIN se nikde neukládá.
 - Kontrola karty a certifikátu (upozorní na blížící se konec platnosti), srozumitelné chybové hlášky.
 - Celá obrazovka, více monitorů, schránka, zvuk, přesměrování karty do vzdálené plochy.
+- Udržení připojení a obnovení po krátkém výpadku sítě bez nového PINu; Mac během připojení neusne.
 - Čeština, slovenština a angličtina.
 
 ## Stažení a instalace
@@ -30,8 +31,19 @@ s modulem PKCS#11.
 ## Podpora
 
 CardGate je zdarma. Pokud vám pomáhá, můžete autora podpořit na
-[Ko-fi](https://ko-fi.com/jirikubinek). Chyby a náměty hlaste v
-[Issues](https://github.com/JK-SW/cardgate/issues).
+[Ko-fi](https://ko-fi.com/jirikubinek).
+
+## Nahlášení problému
+
+| Co se stalo | Kam to nahlásit |
+|---|---|
+| Něco nefunguje, chybná hláška, nápad na vylepšení | **Veřejně** v [Issues](https://github.com/JK-SW/cardgate/issues/new/choose) – vyberte *Chyba* nebo *Námět*. |
+| Bezpečnostní problém: může někdo získat PIN, zneužít kartu, podvrhnout bránu nebo aktualizaci, obejít ochranu aplikace | **Neveřejně** přes [Report a vulnerability](https://github.com/JK-SW/cardgate/security/advisories/new) (vidí to jen autor). Ne do Issues. Podrobnosti v [SECURITY.md](SECURITY.md). |
+
+Pokud si nejste jistí, hlaste neveřejně. K chybě pomůže verze CardGate (menu **CardGate → O aplikaci CardGate**),
+verze macOS, typ karty a log připojení (menu **Okno → Log připojení → Kopírovat log**).
+Nikdy nepřikládejte PIN, certifikát ani skutečné adresy brány a počítače – nahraďte je např.
+`gateway.example.com`.
 
 ## Licence
 

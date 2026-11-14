@@ -22,7 +22,8 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 
 ## Setting up a connection
 
-1. Start CardGate and click **Set Up Connection** (or **Import .rdp File…**).
+1. Start CardGate and click **Set Up Connection** (or **Import .rdp File…**). Connect only to
+   addresses from your IT department: while connected, the remote computer can use your card.
 2. Enter the **Computer** (e.g. `pc01.example.com`) and the **Gateway**.
 3. Optionally choose the display mode (full screen by default, or a window), initial window size, scale (size of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound and scroll direction.
    Click **Save**.
@@ -33,7 +34,7 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 ## Connecting
 
 1. Insert your card or token.
-2. Click **Connect**.
+2. Click **Connect**. Until the desktop opens, **Cancel** stops the attempt.
 3. Enter the **PIN** of your card. Several wrong attempts lock the card.
 4. The remote desktop opens and the CardGate window hides. The Dock still shows only CardGate:
    click it (or use ⌘Tab) to return to the remote desktop. The green button in the window's title
@@ -92,10 +93,17 @@ GitHub and sends nothing about you.
 | The card's key type is not supported | Only cards with an RSA key can sign in to the gateway. Contact your IT department. |
 | The gateway cannot be reached | Check your internet connection and the gateway address. |
 | The connection has no gateway | CardGate connects only through an RD Gateway. Click **Edit Connection** and add the gateway address. |
+| The connection was interrupted | The network failed and reconnecting did not succeed (or it is off in Settings). Check your internet connection and connect again. |
+| The smart card module is not from a verified publisher | The card module does not come from a verified maker. Use it (**Use This Module…**) only if you know where it is from (e.g. your IT department). |
+| The smart card module set for this connection was not found | Fix the path in **Edit Connection** (section Card), or leave it empty. |
 
 Details are in **Window → Connection Log**; **Copy Log** lets you send it to your IT department.
 The log never contains the PIN.
 The logs of the last five connections are also in the folder `~/Library/Logs/CardGate`.
+
+Report a bug or an idea in [Issues](https://github.com/JK-SW/cardgate/issues) (check the log before you paste it and replace addresses,
+e.g. with `pc01.example.com`). Report a security problem privately
+([Report a vulnerability](https://github.com/JK-SW/cardgate/security/advisories/new)).
 
 ## For IT administrators
 

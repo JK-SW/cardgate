@@ -1,0 +1,11 @@
+name: Námět / Idea
+description: Návrh na vylepšení. A suggestion for an improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Co by pomohlo / What would help
+      description: Co chcete udělat a proč to dnes nejde nebo je to obtížné. What you want to do and why.
+    validations:
+      required: true
