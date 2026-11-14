@@ -5,7 +5,23 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- **Udržování a obnovení připojení** (Nastavení, výchozí zapnuto): CardGate posílá bráně udržovací
+  zprávy, takže připojení v klidu už po několika minutách nespadne, a po krátkém výpadku sítě se
+  připojí znovu sám, bez nového PINu. Během obnovování je nad plochou okénko „Připojení se přerušilo.
+  Obnovuji…“ s tlačítkem Odpojit.
+  Kartu přitom použije jen u brány se stejným certifikátem, jaký CardGate ověřil před připojením.
+- **Mac během připojení neusne při nečinnosti** (Nastavení, výchozí zapnuto); displej přitom zhasne podle
+  nastavení macOS, zavření víka nebo ruční uspání Mac uspí i tak. Okno vzdálené plochy už zhasnutí
+  displeje nebrání.
+- **Dotaz před odpojením** (Nastavení, výchozí zapnuto): zavření okna vzdálené plochy nebo ⌘Q v něm se
+  nejdřív zeptá. Odpojit v CardGate a v Docku se neptá.
+
 ### Změněno
+- Nové připojení se ve výchozím nastavení otevře **na celou obrazovku** (dřív v okně). Uložená
+  připojení si svou volbu ponechají; soubor .rdp bez určeného režimu se otevře na celou obrazovku jako v mstsc.
+- Záznam připojení se nově jmenuje **Log připojení** (menu Okno), aby nepůsobil dojmem, že se
+  připojení nahrává.
 - Během navazování připojení je místo tlačítka Odpojit tlačítko **Zrušit**. Pokus ukončí hned, i když
   se čeká na kartu, bránu nebo zadání PINu (okno PINu se zavře), a během ukončování ukazuje „Ruším…“.
   Odpojit je až u připojené plochy.
@@ -22,7 +38,9 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 - Neočekávaný pád klienta během připojení se hlásí jako chyba, ne jako běžné odpojení.
 - Neúspěšná kontrola certifikátu brány a chyba při spuštění klienta se zpracují stejně jako ostatní
   konce připojení (okno CardGate se vrátí do popředí, po chybě se znovu ověří dostupnost brány).
-- Plný disk při zápisu záznamu připojení už aplikaci neshodí.
+- Plný disk při zápisu logu připojení už aplikaci neshodí.
+- Minimalizace nebo obnovení okna vzdálené plochy během výpadku sítě už klienta nezasekne. Klient,
+  kterému selže zpracování událostí okna, relaci ukončí, místo aby zůstal viset s nereagujícím oknem.
 - Poškozený soubor s připojeními se už při dalším uložení nepřepíše: nečitelný soubor se odloží
   jako záloha, jedno poškozené připojení nezablokuje ostatní a soubor z novější verze CardGate zůstane
   beze změny. Soubor se navíc už nezapisuje při každém spuštění.
@@ -41,10 +59,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
   s vybraným certifikátem, ne z první nalezené.
 - Neexistující modul karty nastavený v připojení se hlásí i s cestou a radou, ne jako „Software pro
   čipovou kartu nebyl nalezen“.
-- Okno záznamu připojení u dlouhého připojení dál posouvá na konec a nezpomaluje.
+- Okno logu připojení u dlouhého připojení dál posouvá na konec a nezpomaluje.
+- Karta s jiným než RSA klíčem (např. ECC) má vlastní srozumitelnou hlášku místo „Připojení se nezdařilo“.
 
 ### Zabezpečení
-- Klient vzdálené plochy dostává z prostředí aplikace jen nezbytné proměnné. Proměnné pro záznam
+- Klient vzdálené plochy dostává z prostředí aplikace jen nezbytné proměnné. Proměnné pro logování
   (`WLOG_*`), úložiště certifikátů OpenSSL (`SSL_CERT_*`) ani načítání knihoven (`DYLD_*`) ho už
   neovlivní.
 - Okno PINu a aplikace reagují jen na zprávy svého vlastního klienta, ne jiné kopie nebo jiného procesu.
@@ -53,7 +72,12 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 - Modul karty (PKCS#11) se bez dotazu načte, jen když je podepsaný certifikátem Developer ID. Jiný modul
   (i upravený a znovu podepsaný nebo bez podpisu) se použije až po výslovném potvrzení a při každé změně
   souboru se CardGate zeptá znovu. Modul s porušeným podpisem se nenačte.
-- Adresy brány a počítače už nejsou čitelně v systémovém protokolu, celý příkaz je jen v záznamu připojení.
+- Adresy brány a počítače už nejsou čitelně v systémovém protokolu, celý příkaz je jen v logu připojení.
+- PIN odmítnutý kartou se už nikdy znovu nepoužije, ať middleware chybu hlásí jakýmkoli kódem (dřív jen
+  pět známých kódů). Když karta přihlášení odmítne bez udání důvodu, CardGate to hlásí jako „Karta
+  přihlášení odmítla“ (PIN mohl být chybný, nebo selhala karta či čtečka).
+- Přihlášení kartou k bráně se zastaví, když nejde ověřit, že vnitřní spojení vede k téže bráně
+  (dřív by se v tom případě pokračovalo bez kontroly).
 
 ## [0.5.0] - 2026-11-12
 

@@ -24,7 +24,7 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 
 1. Start CardGate and click **Set Up Connection** (or **Import .rdp File…**).
 2. Enter the **Computer** (e.g. `pc01.example.com`) and the **Gateway**.
-3. Optionally choose the display mode, initial window size, scale (size of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound and scroll direction.
+3. Optionally choose the display mode (full screen by default, or a window), initial window size, scale (size of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound and scroll direction.
    Click **Save**.
 
 <img src="images/en/welcome.png" width="360" alt="CardGate welcome screen">
@@ -39,6 +39,16 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
    click it (or use ⌘Tab) to return to the remote desktop. The green button in the window's title
    bar switches full screen. Right-click the Dock icon for **Disconnect**.
 5. When you disconnect or close the remote desktop, the CardGate window comes back.
+
+**CardGate → Settings…** (⌘,) has three options, all on by default:
+- **Keep the connection alive and restore it after an outage** – after a short network outage
+  CardGate connects again on its own, without a new PIN. Meanwhile the desktop shows its last picture
+  and does not respond; a small window over it says "The connection was interrupted. Reconnecting…"
+  and has a Disconnect button. It gives up after 2.5–5 minutes.
+- **Keep the Mac awake while connected** – the Mac does not sleep when idle and the connection stays
+  up; the display may turn off as set in macOS. Closing the lid or choosing Sleep still puts it to sleep.
+- **Ask before disconnecting** – closing the remote desktop window (or ⌘Q in it) asks first.
+  **Disconnect** in CardGate or in the Dock does not ask.
 
 <img src="images/en/main-window.png" width="400" alt="Main window with a ready card">
 <img src="images/en/pin.png" width="290" alt="PIN dialog">
@@ -58,7 +68,9 @@ GitHub and sends nothing about you.
 ## Security
 
 - The PIN is never stored. The PIN dialog accepts only PINs of the length the card allows and warns
-  when a wrong PIN was entered before or this is the last attempt.
+  when a wrong PIN was entered before or this is the last attempt. While connected the PIN stays
+  only in the client's memory (to sign in to Windows and to reconnect after an outage); a PIN the
+  card rejected is never used again.
 - While connected, the card is made available to the remote computer (for the Windows sign-in).
   Programs in the remote session can use it as if it were inserted there. Disconnect when you are
   done, or remove the card.
@@ -72,6 +84,8 @@ GitHub and sends nothing about you.
 | No certificate found on the card | Remove the card or token, insert it again and retry. |
 | No smart card software found | Install the software for your card (e.g. ProID+). |
 | Wrong PIN | Enter the correct PIN – repeated mistakes lock the card. |
+| The card refused the sign-in | The PIN may have been wrong, or the card or reader failed. Remove the card, insert it again and connect. Repeated wrong PINs lock the card. |
+| The card's key type is not supported | Only cards with an RSA key can sign in to the gateway. Contact your IT department. |
 | The gateway cannot be reached | Check your internet connection and the gateway address. |
 | The connection has no gateway | CardGate connects only through an RD Gateway. Click **Edit Connection** and add the gateway address. |
 

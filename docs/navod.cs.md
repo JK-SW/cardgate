@@ -25,7 +25,7 @@ Tento návod otevřete i z aplikace: **Nápověda → Návod k CardGate**.
 1. Spusťte CardGate a klikněte na **Nastavit připojení**
    (nebo **Importovat soubor .rdp…**, pokud vám ho IT oddělení poslalo).
 2. Vyplňte **Počítač** (např. `pc01.example.com`) a **Bránu**.
-3. Volitelně zvolte zobrazení (okno / celá obrazovka), počáteční velikost okna, měřítko
+3. Volitelně zvolte zobrazení (výchozí je celá obrazovka, nebo okno), počáteční velikost okna, měřítko
    (velikost textu a aplikací ve Windows; **Automaticky** = 200 % na displeji Retina, jinak 100 %),
    schránku, zvuk a směr posouvání myší. Klikněte na **Uložit**.
 
@@ -43,6 +43,15 @@ Připojení můžete mít i více – přepínáte je v horní liště okna.
    CardGate: kliknutím na ni (nebo přes ⌘Tab) se vrátíte ke vzdálené ploše. Zelené tlačítko
    v záhlaví okna přepíná celou obrazovku. Pravým tlačítkem na ikoně v Docku zvolíte **Odpojit**.
 5. Po odpojení nebo zavření vzdálené plochy se okno CardGate zase zobrazí.
+
+V **CardGate → Nastavení…** (⌘,) jsou tři volby, všechny výchozí zapnuté:
+- **Udržovat připojení a po výpadku ho obnovit** – při krátkém výpadku sítě se CardGate připojí
+  znovu sám, bez nového PINu. Plocha mezitím ukazuje poslední obraz a nereaguje; nad ní je okénko
+  „Připojení se přerušilo. Obnovuji…“ s tlačítkem Odpojit. Po 2,5–5 minutách to vzdá.
+- **Během připojení nenechat Mac usnout** – Mac při nečinnosti neusne a připojení vydrží; displej může
+  zhasnout podle nastavení macOS. Zavření víka nebo ruční uspání Mac uspí i tak.
+- **Ptát se před odpojením** – zavření okna vzdálené plochy (nebo ⌘Q v něm) se nejdřív zeptá.
+  **Odpojit** v CardGate nebo v Docku se neptá.
 
 <img src="images/cs/main-window.png" width="400" alt="Hlavní okno s připravenou kartou">
 <img src="images/cs/pin.png" width="290" alt="Okno pro zadání PINu">
@@ -63,7 +72,9 @@ z GitHubu a nic o vás neodesílá.
 ## Bezpečnost
 
 - PIN se nikde neukládá. Dialog pro PIN přijme jen PIN v délce, jakou karta povoluje, a upozorní,
-  když už byl dříve zadán chybný PIN nebo jde o poslední pokus.
+  když už byl dříve zadán chybný PIN nebo jde o poslední pokus. Po dobu připojení zůstává PIN jen
+  v paměti klienta (pro přihlášení do Windows a obnovení po výpadku); PIN, který karta odmítne,
+  se už nikdy znovu nepoužije.
 - Po dobu připojení je karta zpřístupněna vzdálenému počítači (kvůli přihlášení do Windows).
   Programy ve vzdálené relaci ji mohou používat stejně, jako by byla vložená přímo v něm.
   Po skončení práce se odpojte, případně kartu vytáhněte.
@@ -77,12 +88,14 @@ z GitHubu a nic o vás neodesílá.
 | Na kartě nebyl nalezen certifikát | Vytáhněte kartu/token, znovu zasuňte a zkuste znovu. |
 | Software pro čipovou kartu nebyl nalezen | Nainstalujte software ke kartě (např. ProID+). |
 | Chybný PIN | Zadejte správný PIN – opakované chyby kartu zablokují. |
+| Karta přihlášení odmítla | PIN mohl být chybný, nebo selhala karta či čtečka. Vytáhněte kartu, vložte ji znovu a připojte se. Opakované chybné PINy kartu zablokují. |
+| Typ klíče na kartě není podporován | K bráně se lze přihlásit jen kartou s klíčem RSA. Obraťte se na IT oddělení. |
 | Bránu nelze kontaktovat | Zkontrolujte připojení k internetu a adresu brány. |
 | Připojení nemá zadanou bránu | CardGate se připojuje jen přes bránu. Klikněte na **Upravit připojení** a doplňte adresu brány. |
 
-Podrobnosti najdete v menu **Okno → Záznam připojení**; tlačítkem **Kopírovat záznam** ho můžete
-poslat IT oddělení. Záznam neobsahuje PIN.
-Záznamy posledních pěti připojení jsou také ve složce `~/Library/Logs/CardGate`.
+Podrobnosti najdete v menu **Okno → Log připojení**; tlačítkem **Kopírovat log** ho můžete
+poslat IT oddělení. Log neobsahuje PIN.
+Logy posledních pěti připojení jsou také ve složce `~/Library/Logs/CardGate`.
 
 ## Pro správce IT
 

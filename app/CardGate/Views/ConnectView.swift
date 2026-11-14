@@ -95,7 +95,7 @@ struct ConnectView: View {
     @ViewBuilder private var connectButton: some View {
         if model.session.isRunning {
             // Until the desktop is shown there is nothing to disconnect: the attempt is cancelled.
-            let connected = model.session.phase == .connected
+            let connected = model.session.phase?.hasDesktop == true
             Button(role: .destructive) {
                 model.session.stop()
             } label: {
@@ -288,7 +288,7 @@ struct SessionStatusView: View {
 
     var body: some View {
         if stopping {
-            progress(phase == .connected ? "Disconnecting…" : "Cancelling…")
+            progress(phase?.hasDesktop == true ? "Disconnecting…" : "Cancelling…")
         } else {
             phaseView
         }
@@ -309,6 +309,8 @@ struct SessionStatusView: View {
         case .connected:
             Label("Connected", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
+        case .reconnecting:
+            progress("The connection was interrupted. Reconnecting…")
         case .ended(.failed(let failure)):
             FailureView(failure: failure)
         }
@@ -345,11 +347,14 @@ private struct FailureView: View {
         case .noCertificate: "No certificate found on the card"
         case .wrongPIN: "Wrong PIN"
         case .cardLocked: "The card is locked"
+        case .cardRefusedLogin: "The card refused the sign-in"
         case .gatewayUnreachable: "The gateway cannot be reached"
         case .gatewayDenied: "The gateway refused the sign-in"
         case .untrustedCertificate: "The gateway's certificate is not trusted"
         case .gatewayCertificateNotPublic: "The gateway's certificate is not publicly trusted"
         case .multipleCertificates: "The card has several sign-in certificates"
+        case .unsupportedCardKey: "The card's key type is not supported"
+        case .gatewayCertificateChanged: "The gateway's certificate changed"
         case .pinTimedOut: "The PIN was not entered in time"
         case .computerUnreachable: "The computer cannot be reached"
         case .securityRefused: "The computer requires a different connection security"
@@ -367,6 +372,11 @@ private struct FailureView: View {
             "Remove the card or token, insert it again and try once more."
         case .wrongPIN:
             "The PIN was not accepted. Be careful: after several wrong attempts the card gets locked."
+        case .cardRefusedLogin:
+            """
+            The PIN may have been wrong, or the card or reader failed. Remove the card, insert it again \
+            and connect once more. Be careful: after several wrong PINs the card gets locked.
+            """
         case .cardLocked:
             "Too many wrong PINs were entered. Unlock the card with the PUK or contact your IT department."
         case .gatewayUnreachable:
@@ -388,6 +398,16 @@ private struct FailureView: View {
             """
             Choose the certificate to sign in with: Edit Connection, section Card. If you do not know which \
             one, contact your IT department.
+            """
+        case .gatewayCertificateChanged:
+            """
+            For your safety the connection was not restored with the card. Connect again: CardGate \
+            checks the new certificate first.
+            """
+        case .unsupportedCardKey:
+            """
+            CardGate can sign in to the gateway only with an RSA key; this card has another type (for \
+            example ECC). Contact your IT department.
             """
         case .pinTimedOut:
             "The gateway does not wait long for the PIN. Click Connect and enter the PIN right away."

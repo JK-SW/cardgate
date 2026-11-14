@@ -33,7 +33,7 @@ final class ProfileEditorModel: Identifiable {
         name = profile?.name ?? defaultName
         computer = profile?.computer.description ?? ""
         gateway = profile?.gateway?.description ?? ""
-        displayMode = profile?.display.mode ?? .window
+        displayMode = profile?.display.mode ?? DisplaySettings().mode
         windowSize = profile?.display.windowSize
         scale = profile?.display.validScale  // an invalid stored value means Automatic
         clipboard = profile?.redirection.clipboard ?? true

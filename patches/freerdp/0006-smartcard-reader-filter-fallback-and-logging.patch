@@ -1,6 +1,6 @@
 --- a/libfreerdp/utils/smartcard_call.c
 +++ b/libfreerdp/utils/smartcard_call.c
-@@ -553,6 +553,21 @@
+@@ -553,6 +553,23 @@
  	return FALSE;
  }
  
@@ -13,7 +13,9 @@
 +	for (size_t pos = 0; msz && pos < cch && msz[pos];)
 +	{
 +		const size_t len = strnlen(&msz[pos], cch - pos);
-+		WLog_Print(log, WLOG_DEBUG, "%s reader %" PRIuz ": '%s'", what, count++, &msz[pos]);
++		const int shown = (len > INT32_MAX) ? INT32_MAX : (int)len;
++		WLog_Print(log, WLOG_DEBUG, "%s reader %" PRIuz ": '%.*s'", what, count++, shown,
++		           &msz[pos]);
 +		pos += len + 1;
 +	}
 +	WLog_Print(log, WLOG_DEBUG, "%s: %" PRIuz " reader(s)", what, count);
@@ -22,7 +24,7 @@
  WINPR_ATTR_NODISCARD
  static DWORD filter_device_by_name_a(wLinkedList* list, LPSTR* mszReaders, DWORD cchReaders)
  {
-@@ -562,6 +577,17 @@
+@@ -562,6 +579,17 @@
  	if (*mszReaders == nullptr || LinkedList_Count(list) < 1)
  		return cchReaders;
  
@@ -40,7 +42,7 @@
  	do
  	{
  		LPCSTR rreader = &(*mszReaders)[rpos];
-@@ -647,7 +673,9 @@
+@@ -647,7 +675,9 @@
  	}
  
  	void* original = mszReaders;
@@ -50,21 +52,24 @@
  	ret.msz = (BYTE*)mszReaders;
  	ret.cBytes = cchReaders;
  
-@@ -706,7 +734,19 @@
+@@ -706,7 +736,22 @@
  	}
  
  	void* original = mszReaders.pb;
 +	if (WLog_IsLevelActive(smartcard->log, WLOG_DEBUG))
 +	{
-+		char* local = ConvertMszWCharNToUtf8Alloc(mszReaders.pw, cchReaders, nullptr);
-+		log_reader_names(smartcard->log, "ListReadersW local", local, cchReaders);
++		size_t localLength = 0;
++		char* local = ConvertMszWCharNToUtf8Alloc(mszReaders.pw, cchReaders, &localLength);
++		log_reader_names(smartcard->log, "ListReadersW local", local, localLength);
 +		free(local);
 +	}
  	cchReaders = filter_device_by_name_w(smartcard->names, &mszReaders.pw, cchReaders);
 +	if (WLog_IsLevelActive(smartcard->log, WLOG_DEBUG))
 +	{
-+		char* redirected = ConvertMszWCharNToUtf8Alloc(mszReaders.pw, cchReaders, nullptr);
-+		log_reader_names(smartcard->log, "ListReadersW redirected", redirected, cchReaders);
++		size_t redirectedLength = 0;
++		char* redirected =
++		    ConvertMszWCharNToUtf8Alloc(mszReaders.pw, cchReaders, &redirectedLength);
++		log_reader_names(smartcard->log, "ListReadersW redirected", redirected, redirectedLength);
 +		free(redirected);
 +	}
  	ret.msz = mszReaders.pb;

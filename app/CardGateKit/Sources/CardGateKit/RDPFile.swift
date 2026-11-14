@@ -46,8 +46,11 @@ public struct RDPFile: Equatable, Sendable {
         }
 
         var display = DisplaySettings()
-        if self["screen mode id"] == "2" {
-            display.mode = self["use multimon"] == "1" ? .allDisplays : .fullScreen
+        // screen mode id 1 = window, 2 (also when missing, as in mstsc) = full screen.
+        if self["screen mode id"] == "1" {
+            display.mode = .window
+        } else if self["use multimon"] == "1" {
+            display.mode = .allDisplays
         }
         if let width = self["desktopwidth"].flatMap(Int.init),
             let height = self["desktopheight"].flatMap(Int.init)

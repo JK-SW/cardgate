@@ -81,7 +81,7 @@ public struct DisplaySettings: Codable, Equatable, Sendable {
     /// (200 % on a Retina display, otherwise 100 %).
     public var scale: Int?
 
-    public init(mode: Mode = .window, windowSize: WindowSize? = nil, scale: Int? = nil) {
+    public init(mode: Mode = .fullScreen, windowSize: WindowSize? = nil, scale: Int? = nil) {
         self.mode = mode
         self.windowSize = windowSize
         self.scale = scale

@@ -21,6 +21,10 @@ final class SessionController {
 
     /// The gateway is being checked before the client starts.
     private var preflight: Task<Void, Never>?
+    /// Keeps the Mac awake while the client runs (CardGate → Settings); the display may turn off.
+    @ObservationIgnored private var awake: (any NSObjectProtocol)? {
+        didSet { oldValue.map(ProcessInfo.processInfo.endActivity) }
+    }
     /// How the PIN dialog of the current session ended, if it did not deliver a PIN.
     private var pinOutcome: PINPrompt.Event?
     /// Names the current connection in the messages of its PIN dialog (`PINDialogMessages`).
@@ -76,8 +80,14 @@ final class SessionController {
 
     /// Checks the gateway with the system's certificate trust (keychain, revocation) and starts
     /// the client only if it is trusted, so a bad certificate never reaches the card.
-    func connect(_ command: FreeRDPCommand, gateway: HostAddress?) {
+    /// - Parameter preventSleep: keep the Mac awake until the client ends.
+    func connect(_ command: FreeRDPCommand, gateway: HostAddress?, preventSleep: Bool = false) {
         guard !isRunning else { return }
+        awake =
+            preventSleep
+            ? ProcessInfo.processInfo.beginActivity(
+                options: .idleSystemSleepDisabled,
+                reason: String(localized: "Remote desktop connection (CardGate)")) : nil
         log.removeAll()
         phase = .starting
         guard let gateway, let url = GatewayCheckResult.url(for: gateway) else {
@@ -113,6 +123,7 @@ final class SessionController {
     /// Every way a connection attempt ends goes through here, so the app always learns about it.
     private func end(_ end: SessionEnd) {
         isStopping = false
+        awake = nil
         phase = .ended(end)
         onEnded?(end)
     }
@@ -140,7 +151,7 @@ final class SessionController {
             exitContinuation.finish()
         }
 
-        parser = SessionLogParser(gatewayTrustedBySystem: gatewayTrusted)
+        parser = SessionLogParser(gatewayTrustedBySystem: gatewayTrusted, reconnects: command.reconnects)
         pinOutcome = nil
         // Addresses and names stay out of the system log (they end up in diagnostics reports); the
         // connection log file gets the full command line.
@@ -206,7 +217,7 @@ final class SessionController {
         if let pinSession { PINPrompt.close(session: pinSession) }
         Task { [weak self] in
             await ClientStop.run(
-                connected: self?.phase == .connected,
+                connected: self?.phase?.hasDesktop == true,
                 terminate: { process.terminate() },
                 isRunning: { self?.process === process && process.isRunning },
                 kill: {
@@ -221,8 +232,15 @@ final class SessionController {
         // A full disk must not crash the app; the log window still has the line.
         try? logFile?.write(contentsOf: Data((line + "\n").utf8))
         if let next = parser.consume(line) {
+            let restored = phase == .reconnecting
+            let appears = next.desktopAppears(after: phase)
             phase = next
-            if next == .connected { onConnected?() }
+            if appears { onConnected?() }
+            if next == .reconnecting {
+                logger.info("Session reconnecting")
+            } else if restored, next == .connected {
+                logger.info("Session restored")
+            }
         }
     }
 

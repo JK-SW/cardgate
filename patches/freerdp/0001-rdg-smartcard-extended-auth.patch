@@ -37,7 +37,21 @@
  FREERDP_LOCAL BOOL http_context_set_rdg_correlation_id(HttpContext* context,
 --- a/libfreerdp/core/gateway/rdg.c
 +++ b/libfreerdp/core/gateway/rdg.c
-@@ -39,6 +39,8 @@
+@@ -17,6 +17,8 @@
+  * limitations under the License.
+  */
+ 
++#include <errno.h>
++#include <stdatomic.h>
+ #include <stdint.h>
+ 
+ #include <freerdp/config.h>
+@@ -35,10 +37,13 @@
+ 
+ #include <freerdp/log.h>
+ #include <freerdp/error.h>
++#include <freerdp/timer.h>
+ #include <freerdp/utils/ringbuffer.h>
  #include <freerdp/utils/smartcardlogon.h>
  
  #include "rdg.h"
@@ -46,16 +60,35 @@
  #include "websocket.h"
  #include "../credssp_auth.h"
  #include "../proxy.h"
-@@ -137,6 +139,8 @@
+@@ -137,12 +142,19 @@
  	rdg_http_encoding_context transferEncoding;
  
  	SmartcardCertInfo* smartcard;
-+	rdgSc* sc; /* HTTP_EXTENDED_AUTH_SC inner TLS context */
++	rdgSc* sc;     /* HTTP_EXTENDED_AUTH_SC inner TLS context */
 +	BOOL scCbSent; /* channel binding token sent, waiting for the gateway ack */
  	wLog* log;
  
  	/* The header of the next packet, as much of it as has arrived: a read that would block returns
-@@ -543,6 +547,196 @@
+ 	 * without losing it, and the next read goes on from there (rdg_read_data_packet). */
+ 	BYTE nextHeader[8];
+ 	size_t nextHeaderLengthRead;
++
++	/* Keep-alive packets while nothing is sent (rdg_keep_alive_interval) */
++	atomic_uint_least64_t lastWriteMs; /* written by any thread that sends */
++	UINT32 keepAliveSeconds;
++	FreeRDP_TimerID keepAliveTimer;
+ };
+ 
+ enum
+@@ -367,6 +379,7 @@
+ WINPR_ATTR_NODISCARD
+ static BOOL rdg_write_packet(rdpRdg* rdg, wStream* sPacket)
+ {
++	atomic_store_explicit(&rdg->lastWriteMs, GetTickCount64(), memory_order_relaxed);
+ 	if (rdg->transferEncoding.isWebsocketTransport)
+ 		return websocket_context_write_wstream(rdg->transferEncoding.websocket, rdg->tlsOut->bio,
+ 		                                       sPacket, WebsocketBinaryOpcode);
+@@ -543,6 +556,236 @@
  }
  
  WINPR_ATTR_NODISCARD
@@ -83,6 +116,30 @@
 +static BOOL rdg_get_gateway_credentials(rdpContext* context, rdp_auth_reason reason);
 +static BOOL rdg_send_tunnel_request(rdpRdg* rdg);
 +
++/* Certificate of the RD Gateway the first smart card sign-in of this process went to. The app
++ * that started the client checked it (system trust, revocation); a reconnection uses the card only
++ * with the very same gateway certificate. */
++static X509* g_firstGateway = nullptr;
++
++/* Whether the card may sign in to this gateway: the first one, or the same one again. */
++WINPR_ATTR_NODISCARD
++static BOOL rdg_sc_same_gateway(rdpRdg* rdg, X509* gateway)
++{
++	if (!g_firstGateway)
++	{
++		if (!X509_up_ref(gateway))
++			return FALSE;
++		g_firstGateway = gateway;
++		return TRUE;
++	}
++	if (X509_cmp(gateway, g_firstGateway) == 0)
++		return TRUE;
++	WLog_Print(
++	    rdg->log, WLOG_ERROR,
++	    "the RD Gateway certificate changed since the session started, the card is not used");
++	return FALSE;
++}
++
 +/* HTTP_EXTENDED_AUTH_SC: pick the card certificate, ask for the PIN once, open the card. */
 +WINPR_ATTR_NODISCARD
 +static BOOL rdg_sc_init(rdpRdg* rdg)
@@ -93,9 +150,29 @@
 +	if (rdg_sc_pin_rejected())
 +	{
 +		/* Never offer a rejected PIN to the card again (reconnect, protocol fallback, ...). */
-+		WLog_Print(rdg->log, WLOG_ERROR, "WRONG PIN - the PIN was already rejected, not retrying.");
++		WLog_Print(rdg->log, WLOG_ERROR, "the card refused the PIN before - not offering it again");
 +		if (!freerdp_settings_set_string(settings, FreeRDP_GatewayPassword, nullptr))
 +			WLog_Print(rdg->log, WLOG_WARN, "cannot clear the rejected PIN");
++		/* Credentials that do not work end automatic reconnection (client_auto_reconnect_do). */
++		freerdp_set_last_error_log(context, FREERDP_ERROR_CONNECT_WRONG_PASSWORD);
++		return FALSE;
++	}
++
++	/* The inner TLS is pinned to the gateway; without the outer connection it cannot be. */
++	X509* gateway =
++	    (rdg->tlsOut && rdg->tlsOut->ssl) ? SSL_get1_peer_certificate(rdg->tlsOut->ssl) : nullptr;
++	if (!gateway)
++	{
++		WLog_Print(rdg->log, WLOG_ERROR, "cannot get the RD Gateway certificate");
++		return FALSE;
++	}
++	const BOOL sameGateway = rdg_sc_same_gateway(rdg, gateway);
++	X509_free(gateway);
++	if (!sameGateway)
++	{
++		/* Ends automatic reconnection (client_auto_reconnect_do): a new connection is checked
++		 * again by the app before it starts. */
++		freerdp_set_last_error_log(context, FREERDP_ERROR_CONNECT_ACCESS_DENIED);
 +		return FALSE;
 +	}
 +
@@ -129,18 +206,12 @@
 +	rdg->sc = rdg_sc_new(module, rdg->smartcard->slotId, certId, der, derLen, pin,
 +	                     settings->GatewayHostname);
 +	free(der);
-+	if (rdg->sc && rdg->tlsOut && rdg->tlsOut->ssl)
++	if (rdg->sc && !rdg_sc_set_expected_peer(rdg->sc, g_firstGateway))
 +	{
-+		X509* gateway = SSL_get1_peer_certificate(rdg->tlsOut->ssl);
-+		const BOOL pinned = gateway && rdg_sc_set_expected_peer(rdg->sc, gateway);
-+		X509_free(gateway);
-+		if (!pinned)
-+		{
-+			WLog_Print(rdg->log, WLOG_ERROR, "cannot get the RD Gateway certificate");
-+			rdg_sc_free(rdg->sc);
-+			rdg->sc = nullptr;
-+			return FALSE;
-+		}
++		WLog_Print(rdg->log, WLOG_ERROR, "cannot pin the inner TLS to the RD Gateway certificate");
++		rdg_sc_free(rdg->sc);
++		rdg->sc = nullptr;
++		return FALSE;
 +	}
 +	if (!rdg->sc && rdg_sc_pin_rejected())
 +	{
@@ -148,6 +219,7 @@
 +		if (!freerdp_settings_set_string(settings, FreeRDP_GatewayPassword, nullptr) ||
 +		    !freerdp_settings_set_string(settings, FreeRDP_Password, nullptr))
 +			return FALSE;
++		freerdp_set_last_error_log(context, FREERDP_ERROR_CONNECT_WRONG_PASSWORD);
 +	}
 +	return rdg->sc != nullptr;
 +}
@@ -196,7 +268,8 @@
 +			return FALSE;
 +		if (!rdg_sc_drain(rdg->sc, &out, &outLen))
 +			return FALSE;
-+		WLog_Print(rdg->log, WLOG_DEBUG, "sending channel binding token (%" PRIuz " bytes)", outLen);
++		WLog_Print(rdg->log, WLOG_DEBUG, "sending channel binding token (%" PRIuz " bytes)",
++		           outLen);
 +		rc = rdg_send_extauth_blob(rdg, out, outLen);
 +		free(out);
 +		if (!rc)
@@ -252,7 +325,7 @@
  static BOOL rdg_send_tunnel_request(rdpRdg* rdg)
  {
  	wStream* s = nullptr;
-@@ -879,6 +1073,18 @@
+@@ -879,6 +1122,18 @@
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_SSPI_NTLM)
  		return rdg_send_extauth_sspi(rdg);
  
@@ -271,7 +344,88 @@
  	return rdg_send_tunnel_request(rdg);
  }
  
-@@ -1232,7 +1438,10 @@
+@@ -1148,6 +1403,72 @@
+ 	return TRUE;
+ }
+ 
++WINPR_ATTR_NODISCARD static BOOL rdg_process_keep_alive_packet(rdpRdg* rdg);
++
++/* Seconds without anything sent after which a keep-alive packet goes to the gateway, from the
++ * environment variable FREERDP_GATEWAY_KEEPALIVE (unset or 0: none). A gateway, proxy or load
++ * balancer may close an idle tunnel although the session is still in use; [MS-TSGU] 2.2.10.8
++ * allows both sides to send keep-alive packets. */
++static UINT32 rdg_keep_alive_interval(void)
++{
++	const char* value = getenv("FREERDP_GATEWAY_KEEPALIVE");
++	if (!value || !*value)
++		return 0;
++	char* end = nullptr;
++	errno = 0;
++	const unsigned long seconds = strtoul(value, &end, 10);
++	if ((errno != 0) || !end || (*end != '\0') || (seconds > 3600))
++		return 0;
++	return (UINT32)seconds;
++}
++
++WINPR_ATTR_NODISCARD
++static uint64_t rdg_keep_alive_timer(rdpContext* context, void* userdata, FreeRDP_TimerID timerID,
++                                     uint64_t timestamp, uint64_t interval)
++{
++	WINPR_UNUSED(context);
++	WINPR_UNUSED(timerID);
++	WINPR_UNUSED(timestamp);
++	rdpRdg* rdg = userdata;
++	WINPR_ASSERT(rdg);
++	if (rdg->state != RDG_CLIENT_STATE_OPENED)
++		return interval;
++
++	EnterCriticalSection(&rdg->writeSection);
++	const UINT64 idleMs =
++	    GetTickCount64() - atomic_load_explicit(&rdg->lastWriteMs, memory_order_relaxed);
++	const BOOL due = idleMs >= 1000ull * rdg->keepAliveSeconds;
++	const BOOL sent = due && rdg_process_keep_alive_packet(rdg);
++	LeaveCriticalSection(&rdg->writeSection);
++	if (!due)
++		return interval;
++	if (!sent)
++	{
++		/* The tunnel is broken: reading it ends the session (or reconnects). */
++		WLog_Print(rdg->log, WLOG_WARN, "cannot send a keep-alive packet to the RD Gateway");
++		rdg->keepAliveTimer = 0;
++		return 0;
++	}
++	WLog_Print(rdg->log, WLOG_DEBUG, "keep-alive packet sent to the RD Gateway");
++	return interval;
++}
++
++/* Runs on the main loop (like the reads of the tunnel); checks four times per interval, so a
++ * keep-alive packet goes out at most a quarter of the interval late. */
++static void rdg_start_keep_alive(rdpRdg* rdg)
++{
++	rdg->keepAliveSeconds = rdg_keep_alive_interval();
++	if ((rdg->keepAliveSeconds == 0) || (rdg->keepAliveTimer != 0))
++		return;
++	const uint64_t checkNS = 250000000ull * rdg->keepAliveSeconds;
++	rdg->keepAliveTimer = freerdp_timer_add(rdg->context, checkNS, rdg_keep_alive_timer, rdg, true);
++	if (rdg->keepAliveTimer == 0)
++		WLog_Print(rdg->log, WLOG_WARN, "cannot start RD Gateway keep-alive packets");
++	else
++		WLog_Print(rdg->log, WLOG_INFO, "RD Gateway keep-alive after %" PRIu32 " s without sending",
++		           rdg->keepAliveSeconds);
++}
++
+ WINPR_ATTR_NODISCARD
+ static BOOL rdg_process_channel_response(rdpRdg* rdg, wStream* s)
+ {
+@@ -1183,6 +1504,7 @@
+ 		return FALSE;
+ 
+ 	rdg->state = RDG_CLIENT_STATE_OPENED;
++	rdg_start_keep_alive(rdg);
+ 	return TRUE;
+ }
+ 
+@@ -1232,7 +1554,10 @@
  			break;
  
  		case PKT_TYPE_EXTENDED_AUTH_MSG:
@@ -283,7 +437,7 @@
  			break;
  
  		default:
-@@ -1474,6 +1683,20 @@
+@@ -1474,6 +1799,20 @@
  		return FALSE;
  
  	WINPR_ASSERT(rpcFallback);
@@ -304,7 +458,24 @@
  	if (rdg->context->settings->GatewayHttpExtAuthBearer && rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_BEARER;
  	if (rdg->extAuth == HTTP_EXTENDED_AUTH_NONE)
-@@ -2357,6 +2580,13 @@
+@@ -1851,6 +2190,7 @@
+ static int rdg_write_data_packet(rdpRdg* rdg, const BYTE* buf, int isize)
+ {
+ 	WINPR_ASSERT(rdg);
++	atomic_store_explicit(&rdg->lastWriteMs, GetTickCount64(), memory_order_relaxed);
+ 	if (rdg->transferEncoding.isWebsocketTransport)
+ 		return rdg_write_websocket_data_packet(rdg, buf, isize);
+ 	else
+@@ -1907,7 +2247,7 @@
+ 	status = rdg_write_packet(rdg, sKeepAlive);
+ 	Stream_Free(sKeepAlive, TRUE);
+ 
+-	return ((status >= 0));
++	return status != 0; /* rdg_write_packet returns a BOOL */
+ }
+ 
+ WINPR_ATTR_NODISCARD
+@@ -2357,6 +2697,13 @@
  	if (settings->GatewayAccessToken)
  		rdg->extAuth = HTTP_EXTENDED_AUTH_PAA;
  
@@ -318,7 +489,7 @@
  	rdg->tlsOut = freerdp_tls_new(rdg->context);
  
  	if (!rdg->tlsOut)
-@@ -2408,6 +2638,12 @@
+@@ -2408,6 +2755,12 @@
  
  				break;
  
@@ -331,7 +502,18 @@
  			default:
  				WLog_Print(rdg->log, WLOG_DEBUG,
  				           "RDG extended authentication method %d not supported", rdg->extAuth);
-@@ -2454,6 +2690,7 @@
+@@ -2443,6 +2796,10 @@
+ 	if (!rdg)
+ 		return;
+ 
++	/* The timers are freed before the transport when the context is (rdp_free). */
++	if ((rdg->keepAliveTimer != 0) && rdg->context->rdp && rdg->context->rdp->timer)
++		(void)freerdp_timer_remove(rdg->context, rdg->keepAliveTimer);
++
+ 	freerdp_tls_free(rdg->tlsOut);
+ 	freerdp_tls_free(rdg->tlsIn);
+ 	http_context_free(rdg->http);
+@@ -2454,6 +2811,7 @@
  	DeleteCriticalSection(&rdg->writeSection);
  
  	smartcardCertInfo_Free(rdg->smartcard);
@@ -341,7 +523,7 @@
  
 --- /dev/null
 +++ b/libfreerdp/core/gateway/rdg_sc.c
-@@ -0,0 +1,507 @@
+@@ -0,0 +1,532 @@
 +/**
 + * FreeRDP: A Remote Desktop Protocol Implementation
 + * RD Gateway smart card extended authentication (HTTP_EXTENDED_AUTH_SC)
@@ -409,13 +591,13 @@
 +}
 +
 +static const BYTE di_sha1[] = { 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e,
-+	                            0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14 };
++                                0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14 };
 +static const BYTE di_sha256[] = { 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
-+	                              0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20 };
++                                  0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20 };
 +static const BYTE di_sha384[] = { 0x30, 0x41, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
-+	                              0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30 };
++                                  0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30 };
 +static const BYTE di_sha512[] = { 0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01,
-+	                              0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40 };
++                                  0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40 };
 +
 +/* Raw PKCS#1 v1.5 signature over an already encoded DigestInfo, done by the card. */
 +static int sc_card_sign(rdgSc* sc, const BYTE* data, size_t dataLen, BYTE* sig, size_t sigMax)
@@ -522,6 +704,27 @@
 +	return TRUE;
 +}
 +
++/* C_Login results that mean the card did not check the PIN: removed, not present, the reader or
++ * the session failed, out of memory. */
++static BOOL sc_login_failed_without_card(CK_RV rv)
++{
++	switch (rv)
++	{
++		case CKR_DEVICE_REMOVED:
++		case CKR_TOKEN_NOT_PRESENT:
++		case CKR_TOKEN_NOT_RECOGNIZED:
++		case CKR_DEVICE_ERROR:
++		case CKR_DEVICE_MEMORY:
++		case CKR_HOST_MEMORY:
++		case CKR_SESSION_CLOSED:
++		case CKR_SESSION_HANDLE_INVALID:
++		case CKR_CRYPTOKI_NOT_INITIALIZED:
++			return TRUE;
++		default:
++			return FALSE;
++	}
++}
++
 +static BOOL sc_pkcs11_open(rdgSc* sc, const char* modulePath, UINT32 slotId, const char* certIdHex,
 +                           const char* pin)
 +{
@@ -562,7 +765,7 @@
 +	/* Exactly one login attempt - a wrong PIN must not be retried (card PIN counter). */
 +	if (g_pinRejected)
 +	{
-+		WLog_ERR(TAG, "WRONG PIN - the PIN was already rejected, not retrying.");
++		WLog_ERR(TAG, "the card refused the PIN before - not offering it again");
 +		return FALSE;
 +	}
 +	rv = sc->p11->C_Login(sc->session, CKU_USER, (CK_UTF8CHAR_PTR)pin, (CK_ULONG)strlen(pin));
@@ -580,7 +783,12 @@
 +	}
 +	if ((rv != CKR_OK) && (rv != CKR_USER_ALREADY_LOGGED_IN))
 +	{
-+		WLog_ERR(TAG, "C_Login failed 0x%08lx", (unsigned long)rv);
++		/* Some middleware reports a wrong PIN with another code: never offer it again either,
++		 * unless the card was not there to check it (a later reconnection may try again). */
++		if (!sc_login_failed_without_card(rv))
++			g_pinRejected = TRUE;
++		WLog_ERR(TAG, "C_Login failed 0x%08lx%s", (unsigned long)rv,
++		         g_pinRejected ? " - not retrying" : "");
 +		return FALSE;
 +	}
 +
@@ -619,7 +827,7 @@
 +	SSL* ssl = X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
 +	rdgSc* sc = ssl ? (rdgSc*)SSL_get_app_data(ssl) : NULL;
 +	if (!sc || !sc->expectedPeer)
-+		return 1;
++		return 0; /* not pinned: never send the client certificate to an unchecked server */
 +	X509* peer = X509_STORE_CTX_get_current_cert(store);
 +	if (peer && (X509_cmp(peer, sc->expectedPeer) == 0))
 +		return 1;
@@ -699,8 +907,8 @@
 +	return TRUE;
 +}
 +
-+rdgSc* rdg_sc_new(const char* modulePath, UINT32 slotId, const char* certIdHex,
-+                  const BYTE* certDer, size_t certLen, const char* pin, const char* sni)
++rdgSc* rdg_sc_new(const char* modulePath, UINT32 slotId, const char* certIdHex, const BYTE* certDer,
++                  size_t certLen, const char* pin, const char* sni)
 +{
 +	if (!modulePath || !certIdHex || !certDer || !pin)
 +	{
@@ -782,8 +990,7 @@
 +
 +char* rdg_sc_user_id_from_sha1(const BYTE sha1[20])
 +{
-+	static const char alpha[] =
-+	    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#-";
++	static const char alpha[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#-";
 +	char marshaled[64] = { '@', '@', 'B' };
 +	size_t n = 3;
 +	UINT32 bits = 0;
@@ -934,3 +1141,13 @@
  	  nullptr, nullptr, -1, "gw", "Gateway Hostname" },
  #if defined(WITH_FREERDP_DEPRECATED_COMMANDLINE)
  	{ "g", COMMAND_LINE_VALUE_REQUIRED, "<gateway>[:<port>]", nullptr, nullptr, -1, nullptr,
+--- a/libfreerdp/core/rdp.c
++++ b/libfreerdp/core/rdp.c
+@@ -2642,6 +2642,7 @@
+ 	if (rdp)
+ 	{
+ 		freerdp_timer_free(rdp->timer);
++		rdp->timer = nullptr; /* the transport, freed next, checks it (rdg_free) */
+ 		rdp_reset_free(rdp);
+ 
+ 		freerdp_settings_free(rdp->settings);

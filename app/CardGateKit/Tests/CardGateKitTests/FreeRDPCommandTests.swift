@@ -11,7 +11,7 @@ struct FreeRDPCommandTests {
 
     func profile(
         gateway: String? = "rdg.example.com",
-        display: DisplaySettings = .init(),
+        display: DisplaySettings = .init(mode: .window),
         redirection: RedirectionSettings = .init()
     ) throws -> ConnectionProfile {
         ConnectionProfile(
@@ -42,6 +42,7 @@ struct FreeRDPCommandTests {
                 "+clipboard",
                 "/sound:sys:mac",
                 "-sdl-connection-dialog",
+                "+sdl-allow-screensaver",
                 "/log-level:INFO",
                 "/log-filters:com.freerdp.client.sdl.disp:DEBUG,com.freerdp.channels.disp.client:DEBUG,"
                     + "com.freerdp.utils.smartcard.ops:DEBUG,"
@@ -52,6 +53,46 @@ struct FreeRDPCommandTests {
                 "XDG_CONFIG_HOME": "/Users/test/Library/Application Support/CardGate/FreeRDP",
                 "SDL_MAC_BACKGROUND_APP": "1",
             ])
+    }
+
+    @Test func appSettingsForEveryConnection() throws {
+        let question = DisconnectQuestion(title: "Disconnect?", detail: "Detail", disconnect: "Yes", cancel: "No")
+        let asking = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config,
+            options: SessionOptions(keepConnection: false, preventSleep: true, disconnectQuestion: question))
+        #expect(!asking.arguments.contains { $0.contains("auto-reconnect") })
+        #expect(asking.environment["FREERDP_GATEWAY_KEEPALIVE"] == nil)
+        let keeping = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config,
+            options: SessionOptions(keepConnection: true, preventSleep: false, disconnectQuestion: nil))
+        #expect(keeping.arguments.suffix(4).prefix(2) == ["+auto-reconnect", "/auto-reconnect-max-retries:10"])
+        #expect(keeping.environment["FREERDP_GATEWAY_KEEPALIVE"] == "60")
+        #expect(keeping.reconnects && !asking.reconnects)
+        #expect(keeping.environment["FREERDP_CONFIRM_DISCONNECT"] == nil)
+        #expect(asking.environment["FREERDP_CONFIRM_DISCONNECT"] == "Disconnect?")
+        #expect(asking.environment["FREERDP_CONFIRM_DISCONNECT_DETAIL"] == "Detail")
+        #expect(asking.environment["FREERDP_CONFIRM_DISCONNECT_BUTTON"] == "Yes")
+        #expect(asking.environment["FREERDP_CONFIRM_DISCONNECT_CANCEL"] == "No")
+        // The client gets them although they are not inherited from the app.
+        #expect(asking.processEnvironment(inheriting: [:])["FREERDP_CONFIRM_DISCONNECT"] == "Disconnect?")
+        // The display may always turn off; keeping the Mac awake is CardGate's job.
+        #expect(asking.arguments.contains("+sdl-allow-screensaver"))
+    }
+
+    @Test func savedSettingsAreOnUntilTurnedOff() throws {
+        let domain = "cardgate-tests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: domain))
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let question = DisconnectQuestion(title: "Q", detail: "", disconnect: "D", cancel: "C")
+        #expect(
+            SessionOptions(defaults: defaults, question: question)
+                == SessionOptions(keepConnection: true, preventSleep: true, disconnectQuestion: question))
+        defaults.set(false, forKey: SessionOptions.Key.keepConnection)
+        defaults.set(false, forKey: SessionOptions.Key.preventSleep)
+        defaults.set(false, forKey: SessionOptions.Key.confirmDisconnect)
+        #expect(
+            SessionOptions(defaults: defaults, question: question)
+                == SessionOptions(keepConnection: false, preventSleep: false, disconnectQuestion: nil))
     }
 
     @Test func namesTheWindowAfterTheConnection() throws {

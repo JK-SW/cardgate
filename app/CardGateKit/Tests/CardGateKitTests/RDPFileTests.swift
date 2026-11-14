@@ -56,6 +56,10 @@ struct RDPFileTests {
         #expect(multi.display.mode == .allDisplays)
         let windowed = try RDPFile(data: Data("full address:s:pc\nscreen mode id:i:1".utf8)).makeProfile(name: "x")
         #expect(windowed.display.mode == .window)
+        // Without a mode full screen, like mstsc and like a new connection in CardGate.
+        let unset = try RDPFile(data: Data("full address:s:pc".utf8)).makeProfile(name: "x")
+        #expect(unset.display.mode == .fullScreen)
+        #expect(DisplaySettings().mode == .fullScreen)
     }
 
     /// A scale meant for a Windows PC would make everything tiny on a Retina display.
