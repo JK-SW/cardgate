@@ -8,64 +8,64 @@ struct ModuleProblemView: View {
     @State private var confirming = false
 
     var body: some View {
-        VStack(spacing: 6) {
+        Group {
             switch problem {
             case .configuredMissing(let path):
-                Label(
-                    "The smart card module set for this connection was not found.",
-                    systemImage: "exclamationmark.triangle.fill"
-                )
-                .foregroundStyle(.orange)
-                pathText(path)
-                Text("Check the module path in the connection settings (section Card), or leave it empty.")
-                    .foregroundStyle(.secondary)
-                editButton
+                NoticeView(
+                    tone: .warning, systemImage: "exclamationmark.triangle.fill",
+                    title: Text("The smart card module set for this connection was not found."),
+                    message: Text("Check the module path in the connection settings (section Card), or leave it empty.")
+                ) {
+                    pathText(path)
+                    editButton
+                }
             case .invalidSignature(let path):
-                Label("The smart card module was changed after it was signed.", systemImage: "xmark.shield.fill")
-                    .foregroundStyle(.red)
-                pathText(path)
-                Text("It is not loaded. Install the card software again or contact your IT department.")
-                    .foregroundStyle(.secondary)
-                if isConfigured { editButton }
+                NoticeView(
+                    tone: .error, systemImage: "xmark.shield.fill",
+                    title: Text("The smart card module was changed after it was signed."),
+                    message: Text("It is not loaded. Install the card software again or contact your IT department.")
+                ) {
+                    pathText(path)
+                    if isConfigured { editButton }
+                }
             case .unreadable(let path):
-                Label("The smart card module cannot be read.", systemImage: "xmark.shield.fill")
-                    .foregroundStyle(.red)
-                pathText(path)
-                Text(
-                    """
-                    Check that the file exists and that you may read it, or install the card software again. \
-                    A module set in the connection can be changed in its settings.
-                    """
-                )
-                .foregroundStyle(.secondary)
-                if isConfigured { editButton }
+                NoticeView(
+                    tone: .error, systemImage: "xmark.shield.fill",
+                    title: Text("The smart card module cannot be read."),
+                    message: Text(
+                        """
+                        Check that the file exists and that you may read it, or install the card software again. \
+                        A module set in the connection can be changed in its settings.
+                        """)
+                ) {
+                    pathText(path)
+                    if isConfigured { editButton }
+                }
             case .needsApproval(let path, let sha256):
-                Label(
-                    "The smart card module is not from a verified publisher.",
-                    systemImage: "exclamationmark.shield.fill"
-                )
-                .foregroundStyle(.orange)
-                pathText(path)
-                Text("It gets your PIN and access to the card. Use it only if you got it from your IT department.")
-                    .foregroundStyle(.secondary)
-                Button("Use This Module…") { confirming = true }
-                    .disabled(model.isBusy)
-                    .accessibilityIdentifier("module.approve")
-                    .alert("Use a module from an unverified publisher?", isPresented: $confirming) {
-                        Button("Use Module", role: .destructive) { model.approveModule(path: path, sha256: sha256) }
-                        Button("Cancel", role: .cancel) {}
-                    } message: {
-                        Text(
-                            """
-                            CardGate cannot verify who made \(URL(filePath: path).lastPathComponent). A harmful module \
-                            could misuse your PIN and card. CardGate asks again if the file changes.
-                            """)
-                    }
+                NoticeView(
+                    tone: .warning, systemImage: "exclamationmark.shield.fill",
+                    title: Text("The smart card module is not from a verified publisher."),
+                    message: Text(
+                        "It gets your PIN and access to the card. Use it only if you got it from your IT department.")
+                ) {
+                    pathText(path)
+                    Button("Use This Module…") { confirming = true }
+                        .disabled(model.isBusy)
+                        .padding(.top, 4)
+                        .accessibilityIdentifier("module.approve")
+                        .alert("Use a module from an unverified publisher?", isPresented: $confirming) {
+                            Button("Use Module", role: .destructive) { model.approveModule(path: path, sha256: sha256) }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text(
+                                """
+                                CardGate cannot verify who made \(URL(filePath: path).lastPathComponent). A harmful \
+                                module could misuse your PIN and card. CardGate asks again if the file changes.
+                                """)
+                        }
+                }
             }
         }
-        .multilineTextAlignment(.center)
-        .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: 420)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("moduleProblem")
     }
@@ -86,6 +86,7 @@ struct ModuleProblemView: View {
         if let profile = model.selectedProfile {
             Button("Edit Connection") { model.beginEditing(profile) }
                 .disabled(model.isBusy)
+                .padding(.top, 4)
         }
     }
 }

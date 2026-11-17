@@ -18,6 +18,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
   nejdřív zeptá. Odpojit v CardGate a v Docku se neptá.
 
 ### Změněno
+- **Nový vzhled hlavního okna**: připojení jsou v seznamu vlevo (každé s vlastním tlačítkem Upravit),
+  pod ním stav karty, Nové připojení a import `.rdp`. Vpravo je vybrané připojení s přehledem
+  karty, brány a platnosti certifikátu, průběh připojování po krocích (klient, PIN, brána, počítač)
+  a upozornění s doporučeným krokem. Log připojení a Klávesové zkratky mají tlačítka v liště. Okno
+  je širší a dá se zvětšit, nový obrázek monitoru s kartou, vzhled laděný i pro tmavý režim.
 - Nové připojení se ve výchozím nastavení otevře **na celou obrazovku** (dřív v okně). Uložená
   připojení si svou volbu ponechají; soubor .rdp bez určeného režimu se otevře na celou obrazovku jako v mstsc.
 - Záznam připojení se nově jmenuje **Log připojení** (menu Okno), aby nepůsobil dojmem, že se

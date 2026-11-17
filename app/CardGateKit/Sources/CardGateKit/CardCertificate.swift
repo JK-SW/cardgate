@@ -65,7 +65,7 @@ public struct CardCertificate: Equatable, Sendable, Identifiable {
         text.count == 40 && text.allSatisfy(\.isHexDigit)
     }
 
-    /// Warn this many days before the newest sign-in certificate expires.
+    /// Warn this many days before the sign-in certificate expires.
     public static let expiryWarningDays = 14
 
     /// Whole days until the certificate expires (0 = expires within a day), `nil` without an end date.
@@ -76,14 +76,13 @@ public struct CardCertificate: Equatable, Sendable, Identifiable {
         return max(0, calendar.dateComponents([.day], from: start, to: end).day ?? 0)
     }
 
-    /// Days left if the newest valid sign-in certificate expires within `expiryWarningDays`, else `nil`.
-    /// The newest one is decisive: an older certificate expiring next to a renewed one is no problem.
-    public static func expiryWarning(for certificates: [CardCertificate], at date: Date, calendar: Calendar = .current)
-        -> Int?
-    {
-        guard let newest = signInCandidates(in: certificates, at: date).first,
-            let days = newest.daysUntilExpiry(at: date, calendar: calendar), days < expiryWarningDays
-        else { return nil }
+    /// Days left if the certificate expires within `expiryWarningDays`, else `nil`. Asked of the
+    /// certificate a connection signs in with: the newest unless the connection chose another, so an
+    /// older certificate next to a renewed one is no problem.
+    public func expiryWarning(at date: Date, calendar: Calendar = .current) -> Int? {
+        guard let days = daysUntilExpiry(at: date, calendar: calendar), days < Self.expiryWarningDays else {
+            return nil
+        }
         return days
     }
 }

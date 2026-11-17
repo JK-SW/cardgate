@@ -1,105 +1,166 @@
 import CardGateKit
 import SwiftUI
 
-/// Main window: the selected connection, readiness of the card, status and the Connect button.
+/// Main window: the connections in the sidebar, the selected one with the card, status and Connect.
 struct ConnectView: View {
-    @Environment(AppModel.self) private var model
-    @Environment(\.openWindow) private var openWindow
+    /// The sidebar can be hidden (e.g. with one connection); a button in the toolbar shows it again.
+    @State private var columns = NavigationSplitViewVisibility.all
 
     var body: some View {
-        @Bindable var model = model
-        VStack(spacing: 20) {
-            if let profile = model.selectedProfile {
-                AppSymbol()
-                    .font(.system(size: 52))
-                VStack(spacing: 6) {
-                    Text(profile.name)
-                        .font(.title.weight(.semibold))
-                    Text(profile.computer.description)
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                    if let gateway = profile.gateway {
-                        Label {
-                            Text("via \(gateway.description)")
-                        } icon: {
-                            Image(systemName: "network.badge.shield.half.filled")
+        NavigationSplitView(columnVisibility: $columns) {
+            ConnectionSidebar()
+                // Both: SwiftUI on macOS ignores the column width alone.
+                .frame(minWidth: ConnectionSidebar.minimumWidth)
+                .navigationSplitViewColumnWidth(
+                    min: ConnectionSidebar.minimumWidth, ideal: ConnectionSidebar.minimumWidth,
+                    max: ConnectionSidebar.maximumWidth
+                )
+                .toolbar(removing: .sidebarToggle)
+        } detail: {
+            ConnectionDetail()
+                // Dragging the sidebar wider must not squeeze the overview and the notices.
+                .frame(minWidth: ConnectionDetailWidth.minimum)
+                .navigationSplitViewColumnWidth(
+                    min: ConnectionDetailWidth.minimum, ideal: ConnectionDetailWidth.minimum
+                )
+                .toolbar {
+                    if columns == .detailOnly {
+                        ToolbarItem(placement: .navigation) {
+                            Button {
+                                withAnimation { columns = .all }
+                            } label: {
+                                Label("Show Connections", systemImage: "sidebar.left")
+                            }
+                            .help("Show Connections")
+                            .accessibilityIdentifier("toolbar.showSidebar")
                         }
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
                     }
-                    GatewayStatusView()
+                    AppToolbar()
                 }
+        }
+        // The name of the connection is shown in the detail.
+        .toolbar(removing: .title)
+    }
+}
+
+/// The room the selected connection's details need: the overview and the notices with margins.
+enum ConnectionDetailWidth {
+    /// The overview, the notices and Connect.
+    static let content: CGFloat = 440
+    static let margin: CGFloat = 32
+    static let minimum = content + 2 * margin
+}
+
+/// The windows a user looks for in the main window (also in the menus).
+struct AppToolbar: ToolbarContent {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some ToolbarContent {
+        // Keeps the buttons on the right.
+        if #available(macOS 26, *) {
+            ToolbarSpacer(.flexible)
+        }
+        ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                openWindow(id: WindowID.log)
+            } label: {
+                Label("Connection Log", systemImage: "doc.text.magnifyingglass")
+            }
+            .help("Connection Log")
+            .accessibilityIdentifier("toolbar.log")
+
+            Button {
+                openWindow(id: WindowID.shortcuts)
+            } label: {
+                Label("Keyboard Shortcuts", systemImage: "keyboard")
+            }
+            .help("Keyboard Shortcuts")
+            .accessibilityIdentifier("toolbar.shortcuts")
+        }
+    }
+}
+
+/// The selected connection: where it goes, whether everything is ready, the progress and Connect,
+/// together in the middle of the window.
+private struct ConnectionDetail: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if let profile = model.selectedProfile {
+            let readiness = model.cardReadiness
+            FillingScrollView {
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    content(profile, readiness: readiness)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, ConnectionDetailWidth.margin)
+                .padding(.top, 4)
+                .padding(.bottom, 24)
+            }
+        }
+    }
+
+    private func content(_ profile: ConnectionProfile, readiness: CardReadiness) -> some View {
+        let running = model.session.isRunning
+        // While connecting, the steps take the place of the overview.
+        let connecting = model.session.phase?.connectionStep != nil
+        return VStack(spacing: 14) {
+            header(profile)
+            if !connecting {
+                ConnectionOverview(profile: profile, readiness: readiness)
+            }
+            VStack(spacing: 10) {
                 if profile.gateway == nil {
                     MissingGatewayView(profile: profile)
                 }
-                ReadinessView()
                 SessionStatusView(phase: model.session.phase, stopping: model.session.isStopping)
-                connectButton
-                if model.showsDonationOffer && !model.session.isRunning {
-                    DonationOfferView()
-                        .transition(.opacity)
+                if !running {
+                    GatewayStatusView()
+                    CardNoticeView(readiness: readiness)
                 }
             }
+            .animation(.default, value: model.signInCertificate)
+            if model.showsDonationOffer && !running {
+                DonationOfferView()
+                    .transition(.opacity)
+            }
+            ConnectButton()
+                .padding(.top, 4)
         }
-        .padding(.horizontal, 28)
-        .padding(.vertical, 32)
-        .frame(maxWidth: .infinity)
-        .toolbar {
-            if model.profiles.count > 1 {
-                ToolbarItem(placement: .navigation) {
-                    Picker("Connection", selection: Binding(get: { model.selectedID }, set: { model.select($0) })) {
-                        ForEach(model.profiles) { profile in
-                            Text(profile.name).tag(Optional(profile.id))
-                        }
-                    }
-                    // A long name is shortened; otherwise the buttons would move to an overflow menu.
-                    .frame(maxWidth: 220)
-                    .disabled(model.isBusy)
-                }
-                // Keeps the buttons on the right, where the title's space used to put them.
-                if #available(macOS 26, *) {
-                    ToolbarSpacer(.flexible)
-                }
-            }
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button {
-                    if let profile = model.selectedProfile { model.beginEditing(profile) }
-                } label: {
-                    Label("Edit Connection", systemImage: "slider.horizontal.3")
-                }
-                .help("Edit Connection")
-                .accessibilityIdentifier("toolbar.edit")
-                .disabled(model.isBusy)
-
-                Menu {
-                    // A new or imported connection would become the selected one while another runs.
-                    Button("New Connection…") { model.beginNewProfile() }
-                        .disabled(model.isBusy)
-                    Button("Import .rdp File…") { model.isImportingRDP = true }
-                        .disabled(model.isBusy)
-                    Divider()
-                    Button("Keyboard Shortcuts") { openWindow(id: WindowID.shortcuts) }
-                    Button("Connection Log") { openWindow(id: WindowID.log) }
-                } label: {
-                    Label("More", systemImage: "plus")
-                }
-                .help("Add a connection or show the log")
-                .accessibilityIdentifier("toolbar.more")
-            }
-        }
-        // With the connection picker there is no room for the window title (the name is shown below).
-        .toolbar(removing: model.profiles.count > 1 ? .title : nil)
+        .frame(maxWidth: ConnectionDetailWidth.content)
     }
 
-    @ViewBuilder private var connectButton: some View {
+    private func header(_ profile: ConnectionProfile) -> some View {
+        HStack(spacing: 16) {
+            AppIllustration(width: 76)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(profile.name)
+                    .font(.title.weight(.bold))
+                    .accessibilityIdentifier("detail.name")
+                Text(profile.computer.description)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("detail.computer")
+            }
+            .lineLimit(2)
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+private struct ConnectButton: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
         if model.session.isRunning {
             // Until the desktop is shown there is nothing to disconnect: the attempt is cancelled.
             let connected = model.session.phase?.hasDesktop == true
             Button(role: .destructive) {
                 model.session.stop()
             } label: {
-                Text(connected ? "Disconnect" : "Cancel").frame(minWidth: 200)
+                Text(connected ? "Disconnect" : "Cancel").frame(minWidth: 220)
             }
             .controlSize(.extraLarge)
             .disabled(model.session.isStopping)
@@ -115,7 +176,7 @@ struct ConnectView: View {
                         Text("Connect")
                     }
                 }
-                .frame(minWidth: 200)
+                .frame(minWidth: 220)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.extraLarge)
@@ -132,151 +193,33 @@ private struct MissingGatewayView: View {
     let profile: ConnectionProfile
 
     var body: some View {
-        VStack(spacing: 6) {
-            Label("The connection has no gateway", systemImage: "exclamationmark.shield.fill")
-                .foregroundStyle(.orange)
-                .font(.headline)
-            Text("CardGate connects only through an RD Gateway, which protects the connection and your PIN.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+        NoticeView(
+            tone: .warning, systemImage: "exclamationmark.shield.fill", title: Text("The connection has no gateway"),
+            message: Text(
+                "CardGate connects only through an RD Gateway, which protects the connection and your PIN.")
+        ) {
             Button("Edit Connection") { model.beginEditing(profile) }
                 .disabled(model.isBusy)
+                .padding(.top, 4)
                 .accessibilityIdentifier("missingGateway.edit")
         }
-        .frame(maxWidth: 420)
-        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("missingGateway")
     }
 }
 
-/// A problem with the gateway found while idle (nothing is shown while it is fine).
+/// A problem with the gateway found while idle (the chip shows when it is fine).
 private struct GatewayStatusView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        // Not while connecting, nor next to a failure that already says the gateway is unreachable;
-        // after an interrupted connection it shows whether the network is back.
-        if !model.session.isRunning, model.session.phase != .ended(.failed(.gatewayUnreachable)) {
-            if model.gatewayStatus == .unreachable {
-                Label(
-                    "The gateway cannot be reached. Check your internet connection and the gateway address.",
-                    systemImage: "wifi.exclamationmark"
-                )
-                .font(.callout)
-                .foregroundStyle(.orange)
-                .multilineTextAlignment(.center)
-                .padding(.top, 4)
-            }
+        // Not next to a failure that already says the gateway is unreachable; after an interrupted
+        // connection it shows whether the network is back.
+        if model.shownGatewayStatus == .unreachable {
+            NoticeView(
+                tone: .warning, systemImage: "wifi.exclamationmark",
+                title: Text(
+                    "The gateway cannot be reached. Check your internet connection and the gateway address."))
         }
-    }
-}
-
-/// Whether the smart card software is installed and a card with a sign-in certificate is inserted.
-struct ReadinessView: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        Group {
-            if let problem = model.moduleProblem {
-                ModuleProblemView(problem: problem)
-            } else if model.middleware == nil {
-                VStack(spacing: 6) {
-                    Label("No smart card software found", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    if let url = PKCS11ModuleLocator.knownMiddleware.first?.downloadURL {
-                        Link("Download ProID+", destination: url)
-                    }
-                }
-            } else if model.cardNeedsReinsert {
-                VStack(spacing: 4) {
-                    Label("The card is not available to sign in.", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    Text("Remove the card or token and insert it again.")
-                        .foregroundStyle(.secondary)
-                }
-            } else if let certificate = model.signInCertificate {
-                VStack(spacing: 3) {
-                    HStack(spacing: 8) {
-                        Label {
-                            Text("Card ready: \(certificate.holderName)")
-                        } icon: {
-                            Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                        }
-                        if model.cards.isChecking {
-                            ProgressView().controlSize(.small)
-                                .help("Checking the card…")
-                        }
-                    }
-                    if let notAfter = certificate.notAfter {
-                        Text("Certificate valid until \(notAfter.formatted(date: .long, time: .omitted))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let days = CardCertificate.expiryWarning(for: model.cards.certificates, at: Date()) {
-                        ExpiryWarningView(days: days)
-                            .padding(.top, 6)
-                    }
-                }
-            } else if CardCertificate.allLogonCertificatesExpired(model.cards.certificates, at: Date()) {
-                VStack(spacing: 4) {
-                    Label(
-                        "The sign-in certificate on the card has expired.",
-                        systemImage: "calendar.badge.exclamationmark"
-                    )
-                    .foregroundStyle(.orange)
-                    Text("Contact your IT department to renew it.")
-                        .foregroundStyle(.secondary)
-                }
-            } else if model.cards.isReadingCard {
-                Label {
-                    Text("Reading the card…")
-                } icon: {
-                    ProgressView().controlSize(.small)
-                }
-                .foregroundStyle(.secondary)
-            } else if model.cards.certificates.isEmpty {
-                Label("Insert your card or token.", systemImage: "creditcard")
-                    .foregroundStyle(.secondary)
-            } else {
-                Label(
-                    "The inserted card has no certificate for signing in.",
-                    systemImage: "exclamationmark.triangle.fill"
-                )
-                .foregroundStyle(.orange)
-            }
-        }
-        .font(.callout)
-        .multilineTextAlignment(.center)
-        .animation(.default, value: model.signInCertificate)
-    }
-}
-
-/// Notice that the newest sign-in certificate expires soon.
-private struct ExpiryWarningView: View {
-    let days: Int
-
-    var body: some View {
-        VStack(spacing: 2) {
-            Label {
-                if days == 0 {
-                    Text("The sign-in certificate expires today.")
-                } else {
-                    Text("The sign-in certificate expires in \(days) days.")
-                }
-            } icon: {
-                Image(systemName: "calendar.badge.exclamationmark")
-            }
-            .foregroundStyle(.orange)
-            .fontWeight(.medium)
-            Text("Ask your IT department to renew it in time.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -288,40 +231,34 @@ struct SessionStatusView: View {
 
     var body: some View {
         if stopping {
-            progress(phase?.hasDesktop == true ? "Disconnecting…" : "Cancelling…")
-        } else {
-            phaseView
+            NoticeView(
+                tone: .neutral, systemImage: nil,
+                title: phase?.hasDesktop == true ? Text("Disconnecting…") : Text("Cancelling…"), inProgress: true)
+        } else if let phase {
+            switch phase {
+            case .ended(.closedByUser):
+                EmptyView()
+            case .starting, .waitingForPIN, .authenticatingGateway, .connectingComputer:
+                ConnectionStepsView(phase: phase)
+            case .connected:
+                Label {
+                    Text("Connected")
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                }
+                .font(.title3.weight(.semibold))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(StatusTone.success.background, in: Capsule())
+            case .reconnecting:
+                NoticeView(
+                    tone: .info, systemImage: nil, title: Text("The connection was interrupted. Reconnecting…"),
+                    inProgress: true)
+            case .ended(.failed(let failure)):
+                FailureView(failure: failure)
+            }
         }
-    }
-
-    @ViewBuilder private var phaseView: some View {
-        switch phase {
-        case nil, .ended(.closedByUser):
-            EmptyView()
-        case .starting:
-            progress("Connecting…")
-        case .waitingForPIN:
-            progress("Enter the PIN of your card in the dialog.")
-        case .authenticatingGateway:
-            progress("Signing in to the gateway…")
-        case .connectingComputer:
-            progress("Connecting to the computer…")
-        case .connected:
-            Label("Connected", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        case .reconnecting:
-            progress("The connection was interrupted. Reconnecting…")
-        case .ended(.failed(let failure)):
-            FailureView(failure: failure)
-        }
-    }
-
-    private func progress(_ text: LocalizedStringKey) -> some View {
-        HStack(spacing: 8) {
-            ProgressView().controlSize(.small)
-            Text(text)
-        }
-        .foregroundStyle(.secondary)
     }
 }
 
@@ -329,17 +266,21 @@ private struct FailureView: View {
     let failure: SessionFailure
 
     var body: some View {
-        VStack(spacing: 4) {
-            Label(title, systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-                .font(.headline)
-            Text(advice)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+        NoticeView(tone: failure.tone, systemImage: systemImage, title: Text(title), message: Text(advice))
+            .accessibilityIdentifier("failure")
+    }
+
+    private var systemImage: String {
+        switch failure {
+        case .untrustedCertificate, .gatewayCertificateNotPublic, .gatewayCertificateChanged: "xmark.shield.fill"
+        case .gatewayUnreachable, .connectionLost: "wifi.exclamationmark"
+        case .pinTimedOut, .idleTimeout: "clock.badge.exclamationmark"
+        case .wrongPIN, .cardLocked, .cardRefusedLogin, .noCertificate, .multipleCertificates, .unsupportedCardKey:
+            "creditcard.trianglebadge.exclamationmark"
+        case .gatewayDenied, .computerUnreachable, .securityRefused, .sessionTakenOver, .disconnectedByServer,
+            .other:
+            "exclamationmark.triangle.fill"
         }
-        .frame(maxWidth: 420)
     }
 
     private var title: LocalizedStringKey {

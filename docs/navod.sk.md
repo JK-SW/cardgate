@@ -29,6 +29,9 @@ Tento návod otvoríte aj z aplikácie: **Pomocník → Návod na CardGate**.
 3. Voliteľne zvoľte zobrazenie (predvolená je celá obrazovka, alebo okno), počiatočnú veľkosť okna, mierku (veľkosť textu a aplikácií vo Windows; **Automaticky** = 200 % na displeji Retina, inak 100 %), schránku, zvuk a smer posúvania myšou.
    Kliknite na **Uložiť**.
 
+Pripojení môžete mať aj viac: sú v zozname vľavo. Každé upravíte tlačidlom vedľa jeho názvu, nové
+pridáte tlačidlom **Nové pripojenie…** pod zoznamom.
+
 <img src="images/sk/welcome.png" width="360" alt="Uvítacia obrazovka CardGate">
 <img src="images/sk/connection-settings.png" width="390" alt="Nastavenie pripojenia">
 

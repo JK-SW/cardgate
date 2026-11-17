@@ -17,6 +17,22 @@
         }
       }
     },
+    "A renewed certificate is on the card: choose it in the connection settings (section Card).": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na kartě je obnovený certifikát: vyberte ho v nastavení připojení (část Karta)."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na karte je obnovený certifikát: vyberte ho v nastaveniach pripojenia (časť Karta)."
+          }
+        }
+      }
+    },
     "A wrong PIN was entered before. Only a few attempts remain.": {
       "localizations": {
         "cs": {
@@ -45,22 +61,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "O aplikácii CardGate"
-          }
-        }
-      }
-    },
-    "Add a connection or show the log": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Přidat připojení nebo zobrazit log"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pridať pripojenie alebo zobraziť log"
           }
         }
       }
@@ -305,6 +305,86 @@
         }
       }
     },
+    "Card PIN": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN ke kartě"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN ku karte"
+          }
+        }
+      }
+    },
+    "Card module cannot be used": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul karty nelze použít"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul karty nemožno použiť"
+          }
+        }
+      }
+    },
+    "Card module needs approval": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul karty čeká na potvrzení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul karty čaká na potvrdenie"
+          }
+        }
+      }
+    },
+    "Card module not found": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul karty nenalezen"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modul karty sa nenašiel"
+          }
+        }
+      }
+    },
+    "Card ready": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta připravena"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta pripravená"
+          }
+        }
+      }
+    },
     "Card ready: %@": {
       "localizations": {
         "cs": {
@@ -317,6 +397,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Karta pripravená: %@"
+          }
+        }
+      }
+    },
+    "Card software missing": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chybí software ke kartě"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chýba softvér ku karte"
           }
         }
       }
@@ -432,6 +528,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "CardGate sa pripája len cez bránu (RD Gateway), ktorá chráni spojenie aj váš PIN. Doplňte adresu brány v nastavení pripojenia."
+          }
+        }
+      }
+    },
+    "Certificate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát"
+          }
+        }
+      }
+    },
+    "Certificate expired": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát vypršel"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát vypršal"
+          }
+        }
+      }
+    },
+    "Certificate expires soon": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát brzy vyprší"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát čoskoro vyprší"
           }
         }
       }
@@ -756,6 +900,22 @@
         }
       }
     },
+    "Connect to the computer": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení k počítači"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie k počítaču"
+          }
+        }
+      }
+    },
     "Connect to your work computer with your smart card.": {
       "localizations": {
         "cs": {
@@ -788,38 +948,6 @@
         }
       }
     },
-    "Connecting to the computer…": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Připojuji k počítači…"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pripájam k počítaču…"
-          }
-        }
-      }
-    },
-    "Connecting…": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Připojuji…"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pripájam…"
-          }
-        }
-      }
-    },
     "Connection": {
       "localizations": {
         "cs": {
@@ -848,6 +976,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Log pripojenia"
+          }
+        }
+      }
+    },
+    "Connections": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenia"
           }
         }
       }
@@ -1092,6 +1236,22 @@
         }
       }
     },
+    "Done": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotovo"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotovo"
+          }
+        }
+      }
+    },
     "Download ProID+": {
       "localizations": {
         "cs": {
@@ -1220,6 +1380,104 @@
         }
       }
     },
+    "Expires in %lld days": {
+      "localizations": {
+        "cs": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vyprší za %lld dny"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vyprší za %lld dne"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vyprší za %lld den"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vyprší za %lld dní"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Expires in %lld day"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Expires in %lld days"
+                }
+              }
+            }
+          }
+        },
+        "sk": {
+          "variations": {
+            "plural": {
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vyprší o %lld dni"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vyprší o %lld dňa"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vyprší o %lld deň"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vyprší o %lld dní"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Expires today": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyprší dnes"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyprší dnes"
+          }
+        }
+      }
+    },
     "For your safety the connection was not restored with the card. Connect again: CardGate checks the new certificate first.": {
       "localizations": {
         "cs": {
@@ -1300,6 +1558,22 @@
         }
       }
     },
+    "In progress": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probíhá"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prebieha"
+          }
+        }
+      }
+    },
     "In the remote desktop window hold the left ⌃ Control, ⌥ Option and ⇧ Shift keys and press:": {
       "localizations": {
         "cs": {
@@ -1328,6 +1602,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Počiatočná veľkosť okna"
+          }
+        }
+      }
+    },
+    "Insert the card again": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vložte kartu znovu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vložte kartu znova"
           }
         }
       }
@@ -1524,22 +1814,6 @@
         }
       }
     },
-    "More": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Další"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ďalšie"
-          }
-        }
-      }
-    },
     "Mouse": {
       "localizations": {
         "cs": {
@@ -1604,6 +1878,22 @@
         }
       }
     },
+    "No card": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Žádná karta"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Žiadna karta"
+          }
+        }
+      }
+    },
     "No certificate found on the card": {
       "localizations": {
         "cs": {
@@ -1636,6 +1926,22 @@
         }
       }
     },
+    "No sign-in certificate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bez přihlašovacího certifikátu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bez prihlasovacieho certifikátu"
+          }
+        }
+      }
+    },
     "No smart card software found": {
       "localizations": {
         "cs": {
@@ -1648,6 +1954,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Softvér pre čipovú kartu sa nenašiel"
+          }
+        }
+      }
+    },
+    "Not set": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nezadána"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nezadaná"
           }
         }
       }
@@ -1748,6 +2070,22 @@
         }
       }
     },
+    "Reachable": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostupná"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dostupná"
+          }
+        }
+      }
+    },
     "Reading the card…": {
       "localizations": {
         "cs": {
@@ -1760,6 +2098,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Načítavam kartu…"
+          }
+        }
+      }
+    },
+    "Ready": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připravena"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripravená"
           }
         }
       }
@@ -1908,6 +2262,22 @@
         }
       }
     },
+    "Set up the connection": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavte připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavte pripojenie"
+          }
+        }
+      }
+    },
     "Several wrong attempts lock the card.": {
       "localizations": {
         "cs": {
@@ -1936,6 +2306,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zdieľanie"
+          }
+        }
+      }
+    },
+    "Show Connections": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazit připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobraziť pripojenia"
           }
         }
       }
@@ -1972,6 +2358,22 @@
         }
       }
     },
+    "Sign in to the gateway": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlášení k bráně"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlásenie k bráne"
+          }
+        }
+      }
+    },
     "Sign-in certificate": {
       "localizations": {
         "cs": {
@@ -2004,22 +2406,6 @@
         }
       }
     },
-    "Signing in to the gateway…": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Přihlašuji k bráně…"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prihlasujem k bráne…"
-          }
-        }
-      }
-    },
     "Size of text and apps on the remote desktop.": {
       "localizations": {
         "cs": {
@@ -2032,6 +2418,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Veľkosť textu a aplikácií na vzdialenej ploche."
+          }
+        }
+      }
+    },
+    "Smart Card": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čipová karta"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čipová karta"
           }
         }
       }
@@ -2096,6 +2498,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zdrojový kód"
+          }
+        }
+      }
+    },
+    "Start the client": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spuštění klienta"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spustenie klienta"
           }
         }
       }
@@ -3014,6 +3432,22 @@
         }
       }
     },
+    "Unreachable": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedostupná"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedostupná"
+          }
+        }
+      }
+    },
     "Updates are not available in this build.": {
       "localizations": {
         "cs": {
@@ -3074,6 +3508,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Použiť modul od neovereného vydavateľa?"
+          }
+        }
+      }
+    },
+    "Valid until %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platný do %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platný do %@"
           }
         }
       }
@@ -3206,6 +3656,22 @@
         }
       }
     },
+    "Your IT department gives you the addresses of the computer and the gateway.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresu počítače a brány vám dá IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresu počítača a brány vám dá IT oddelenie."
+          }
+        }
+      }
+    },
     "Your card is not allowed to use this gateway. Contact your IT department.": {
       "localizations": {
         "cs": {
@@ -3253,22 +3719,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "rdg.example.com"
-          }
-        }
-      }
-    },
-    "via %@": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "přes %@"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cez %@"
           }
         }
       }

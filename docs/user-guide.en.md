@@ -28,6 +28,9 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 3. Optionally choose the display mode (full screen by default, or a window), initial window size, scale (size of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound and scroll direction.
    Click **Save**.
 
+You can have several connections: they are listed on the left. Edit one with the button next to its
+name; add another with **New Connection…** below the list.
+
 <img src="images/en/welcome.png" width="360" alt="CardGate welcome screen">
 <img src="images/en/connection-settings.png" width="390" alt="Connection settings">
 
