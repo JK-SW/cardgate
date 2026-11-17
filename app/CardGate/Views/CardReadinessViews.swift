@@ -71,7 +71,7 @@ extension CardReadiness {
         }
     }
 
-    fileprivate var notice: NoticeView<EmptyView> {
+    @MainActor fileprivate var notice: NoticeView<EmptyView> {
         NoticeView(tone: tone, systemImage: systemImage, title: title, message: advice)
     }
 }
