@@ -78,6 +78,24 @@ enum PINPrompt {
         _exit(code)
     }
 
+    /// A floating window without title or buttons, moved by its background.
+    private static func makeWindow(_ view: PINPromptView) -> NSWindow {
+        let window = NSWindow(
+            contentRect: .zero, styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
+        window.level = .floating
+        for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
+            window.standardWindowButton(button)?.isHidden = true
+        }
+        let controller = NSHostingController(rootView: view)
+        // The title bar has no buttons: the content need not leave room for it.
+        controller.safeAreaRegions = []
+        window.contentViewController = controller
+        return window
+    }
+
     /// - Parameter arguments: the arguments after `--askpass`.
     static func run(arguments: [String]) -> Never {
         var arguments = arguments
@@ -96,14 +114,8 @@ enum PINPrompt {
 
         let model = PINPromptModel(host: AskPassCommand.host(fromPrompt: prompt))
         var pin: String?
-        let window = NSWindow(
-            contentRect: .zero, styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
-        window.isMovableByWindowBackground = true
-        window.level = .floating
-        window.contentViewController = NSHostingController(
-            rootView: PINPromptView(model: model) { result in
+        let window = makeWindow(
+            PINPromptView(model: model) { result in
                 pin = result
                 app.stopModal()
             })
@@ -255,7 +267,7 @@ private struct PINPromptView: View {
             .controlSize(.large)
         }
         .padding(.horizontal, 28)
-        .padding(.top, 8)
+        .padding(.top, 22)
         .padding(.bottom, 22)
         .frame(width: 320)
         .onAppear { focused = true }

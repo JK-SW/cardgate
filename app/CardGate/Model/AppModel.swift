@@ -142,9 +142,30 @@ final class AppModel {
 
     /// Everything needed to connect is in place.
     /// Connect is possible while the card check still runs; connecting then waits for its result.
+    /// One rule with what the window shows: Connect works exactly while the card reads as ready.
     var isReadyToConnect: Bool {
-        middleware != nil && signInCertificate != nil && !isBusy
-            && !cardNeedsReinsert && selectedProfile?.gateway != nil
+        guard case .ready = cardReadiness else { return false }
+        return !isBusy && selectedProfile?.gateway != nil
+    }
+
+    /// The gateway check to show: none during a session (it would be stale) or after an attempt
+    /// that failed because the gateway did not answer (the failure says so).
+    var shownGatewayStatus: GatewayReachability? {
+        guard !session.isRunning, session.phase != .ended(.failed(.gatewayUnreachable)) else { return nil }
+        return gatewayStatus
+    }
+
+    /// The card is being read or checked (a spinner next to its state).
+    var isCardActive: Bool {
+        cards.isReadingCard || cards.isChecking
+    }
+
+    var cardReadiness: CardReadiness {
+        CardReadiness.evaluate(
+            moduleProblem: moduleProblem, hasMiddleware: middleware != nil,
+            cards: InsertedCards(
+                certificates: cards.certificates, isReading: cards.isReadingCard, needsReinsert: cardNeedsReinsert),
+            signInCertificate: signInCertificate, at: Date())
     }
 
     /// A connection is starting (Connect waits for the card check) or running: the selected
@@ -188,7 +209,8 @@ final class AppModel {
 
     /// The user picked another connection.
     func select(_ id: UUID?) {
-        guard id != selectedID else { return }
+        // The running connection stays the selected one.
+        guard id != selectedID, !isBusy else { return }
         selectedID = id
         selectionChanged()
     }
@@ -213,11 +235,14 @@ final class AppModel {
         }
     }
 
+    /// A new or edited connection would change the selected one while a connection starts or runs.
     func beginNewProfile() {
+        guard !isBusy else { return }
         editing = ProfileEditorModel(profile: nil, defaultName: String(localized: "My Computer"))
     }
 
     func beginEditing(_ profile: ConnectionProfile) {
+        guard !isBusy else { return }
         editing = ProfileEditorModel(profile: profile, defaultName: profile.name)
     }
 

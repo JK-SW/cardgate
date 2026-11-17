@@ -30,7 +30,8 @@ Tento návod otevřete i z aplikace: **Nápověda → Návod k CardGate**.
    (velikost textu a aplikací ve Windows; **Automaticky** = 200 % na displeji Retina, jinak 100 %),
    schránku, zvuk a směr posouvání myší. Klikněte na **Uložit**.
 
-Připojení můžete mít i více – přepínáte je v horní liště okna.
+Připojení můžete mít i více: jsou v seznamu vlevo. Každé upravíte tlačítkem vedle jeho názvu, nové
+přidáte tlačítkem **Nové připojení…** pod seznamem.
 
 <img src="images/cs/welcome.png" width="360" alt="Uvítací obrazovka CardGate">
 <img src="images/cs/connection-settings.png" width="390" alt="Nastavení připojení">

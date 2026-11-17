@@ -55,7 +55,7 @@ final class ScreenshotTests: XCTestCase {
         ]
         app.launch()
 
-        let setUp = app.buttons.element(boundBy: 0)
+        let setUp = app.buttons["welcome.setUp"]
         XCTAssertTrue(setUp.waitForExistence(timeout: 10))
         capture("welcome")
 

@@ -46,12 +46,15 @@ struct CardGateApp: App {
             ContentView()
                 .environment(model)
                 .onAppear { delegate.model = model }
-                .frame(width: 440)
-                .fixedSize(horizontal: false, vertical: true)
+                // The window's default is also its smallest size (the toolbar adds 52 points): it fits
+                // the usual content; when several long notices show together, it scrolls.
+                .frame(minWidth: 760, minHeight: 428)
         }
-        // The window always fits its content; there is nothing to gain from a bigger one.
-        .windowResizability(.contentSize)
+        .defaultSize(width: 760, height: 480)
+        .windowResizability(.contentMinSize)
         .commands {
+            // Shows the connections again after the sidebar was dragged closed.
+            SidebarCommands()
             CommandGroup(replacing: .appInfo) {
                 OpenWindowButton(title: "About CardGate", id: WindowID.about)
                 if updater.isAvailable {

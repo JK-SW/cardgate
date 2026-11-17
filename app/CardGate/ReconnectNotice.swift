@@ -111,7 +111,16 @@ private struct ReconnectNoticeView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            SessionStatusView(phase: session.phase, stopping: session.isStopping)
+            // A line that keeps its size: the panel is measured once.
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                if session.isStopping {
+                    Text("Disconnecting…")
+                } else {
+                    Text("The connection was interrupted. Reconnecting…")
+                }
+            }
+            .font(.headline)
             Text("The remote desktop does not respond until the connection is restored.")
                 .font(.callout)
                 .foregroundStyle(.secondary)

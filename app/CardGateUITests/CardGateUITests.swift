@@ -27,7 +27,7 @@ final class CardGateUITests: XCTestCase {
 
         addConnection(app, name: "Office", computer: "pc01.example.com", gateway: "rdg.example.com")
         XCTAssertTrue(app.staticTexts["pc01.example.com"].exists)
-        XCTAssertTrue(app.staticTexts["via rdg.example.com"].exists)
+        XCTAssertTrue(app.staticTexts["rdg.example.com"].exists)
         XCTAssertFalse(app.staticTexts["Welcome to CardGate"].exists)
     }
 
@@ -44,9 +44,9 @@ final class CardGateUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Welcome to CardGate"].waitForExistence(timeout: 5))
     }
 
-    /// Two connections: the picker replaces the title and both toolbar buttons stay visible
-    /// (they once moved into an overflow menu).
-    func testSeveralConnectionsKeepTheToolbarUsable() {
+    /// Two connections: both are listed in the sidebar, each with its own Edit button, and picking
+    /// one shows it in the detail.
+    func testSeveralConnectionsAreListedInTheSidebar() {
         let app = launch()
         XCTAssertTrue(app.buttons["Set Up Connection"].waitForExistence(timeout: 10))
         app.buttons["Set Up Connection"].click()
@@ -54,14 +54,26 @@ final class CardGateUITests: XCTestCase {
         app.typeKey("n", modifierFlags: .command)
         addConnection(app, name: "A connection with a rather long name", computer: "pc02.example.com")
 
-        let picker = app.popUpButtons["Connection"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["toolbar.edit"].isHittable)
-        XCTAssertTrue(app.menuButtons["toolbar.more"].isHittable)
+        let computer = app.staticTexts["detail.computer"]
+        // The new connection is selected once the editor has closed.
+        let second = NSPredicate(format: "value == 'pc02.example.com'")
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: second, evaluatedWith: computer)], timeout: 5), .completed)
+        XCTAssertEqual(app.buttons.matching(identifier: "connection.edit").count, 2)
+        XCTAssertTrue(app.buttons["toolbar.log"].isHittable)
+        XCTAssertTrue(app.buttons["toolbar.shortcuts"].isHittable)
 
-        picker.click()
-        app.menuItems["Office"].click()
-        XCTAssertTrue(app.staticTexts["pc01.example.com"].waitForExistence(timeout: 5))
+        app.outlines.staticTexts["Office"].click()
+        let first = NSPredicate(format: "value == 'pc01.example.com'")
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation(for: first, evaluatedWith: computer)], timeout: 5), .completed)
+
+        // A hidden sidebar comes back with the button in the toolbar.
+        let showSidebar = app.buttons["toolbar.showSidebar"]
+        XCTAssertFalse(showSidebar.exists)
+        app.typeKey("s", modifierFlags: [.control, .command])  // View › Hide Sidebar
+        XCTAssertTrue(showSidebar.waitForExistence(timeout: 5))
+        showSidebar.click()
+        XCTAssertTrue(app.buttons["sidebar.new"].waitForExistence(timeout: 5))
+        XCTAssertFalse(showSidebar.exists)
     }
 
     func testEditsAndDeletesAConnection() {
@@ -70,7 +82,7 @@ final class CardGateUITests: XCTestCase {
         app.buttons["Set Up Connection"].click()
         addConnection(app, name: "Office", computer: "pc01.example.com")
 
-        app.buttons["toolbar.edit"].click()
+        app.buttons["connection.edit"].click()
         let name = app.textFields["profile.name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.click()
@@ -79,7 +91,7 @@ final class CardGateUITests: XCTestCase {
         app.buttons["Save"].click()
         XCTAssertTrue(app.staticTexts["Home Office"].waitForExistence(timeout: 5))
 
-        app.buttons["toolbar.edit"].click()
+        app.buttons["connection.edit"].click()
         XCTAssertTrue(app.buttons["Delete Connection…"].waitForExistence(timeout: 5))
         app.buttons["Delete Connection…"].click()
         // Only in the app's windows: CI runners also show the button on a virtual Touch Bar.
@@ -176,7 +188,7 @@ final class CardGateUITests: XCTestCase {
         app.menuItems.matching(NSPredicate(format: "title BEGINSWITH '150'")).firstMatch.click()
         addConnection(app, name: "Office", computer: "pc01.example.com")
 
-        app.buttons["toolbar.edit"].click()
+        app.buttons["connection.edit"].click()
         XCTAssertTrue(scale.waitForExistence(timeout: 5))
         XCTAssertTrue((scale.value as? String)?.hasPrefix("150") == true)
     }
@@ -215,7 +227,7 @@ final class CardGateUITests: XCTestCase {
         XCTAssertEqual(audio.value as? Int, 0)
         addConnection(app, name: "Office", computer: "pc01.example.com")
 
-        app.buttons["toolbar.edit"].click()
+        app.buttons["connection.edit"].click()
         XCTAssertTrue(clipboard.waitForExistence(timeout: 5))
         XCTAssertEqual(clipboard.value as? Int, 0)
         XCTAssertEqual(audio.value as? Int, 0)
@@ -225,7 +237,7 @@ final class CardGateUITests: XCTestCase {
         let app = launch()
         openNewConnection(app)
         addConnection(app, name: "Office", computer: "pc01.example.com")
-        app.buttons["toolbar.edit"].click()
+        app.buttons["connection.edit"].click()
         let computer = app.textFields["profile.computer"]
         XCTAssertTrue(computer.waitForExistence(timeout: 5))
         computer.click()
@@ -244,7 +256,7 @@ final class CardGateUITests: XCTestCase {
         let connect = app.buttons["connect"]
         XCTAssertTrue(connect.waitForExistence(timeout: 5))
         // The card check runs in the background; give it time to settle.
-        let cardReady = app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Card ready: '")).firstMatch
+        let cardReady = app.staticTexts["overview.cardReady"]
         _ = cardReady.waitForExistence(timeout: 10)
         XCTAssertEqual(connect.isEnabled, cardReady.exists)
     }
@@ -300,7 +312,7 @@ final class CardGateUITests: XCTestCase {
         gateway.click()
         gateway.typeText("rdg.example.com")
         app.buttons["Save"].click()
-        XCTAssertTrue(app.staticTexts["via rdg.example.com"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["rdg.example.com"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["The connection has no gateway"].exists)
     }
 
@@ -323,12 +335,14 @@ final class CardGateUITests: XCTestCase {
         XCTAssertTrue(file.menuItems["Import .rdp File…"].isEnabled)
         app.typeKey(.escape, modifierFlags: [])
 
-        let more = app.menuButtons["toolbar.more"]
-        more.click()
-        for item in ["New Connection…", "Import .rdp File…", "Keyboard Shortcuts", "Connection Log"] {
-            XCTAssertTrue(app.menuItems[item].firstMatch.exists, "More menu offers \(item)")
+        for button in ["sidebar.new", "sidebar.import", "toolbar.log", "toolbar.shortcuts"] {
+            XCTAssertTrue(app.buttons[button].isHittable, button)
         }
-        app.typeKey(.escape, modifierFlags: [])
+        app.buttons["toolbar.log"].click()
+        XCTAssertTrue(app.windows["Connection Log"].waitForExistence(timeout: 5))
+        app.typeKey("w", modifierFlags: .command)
+        app.buttons["toolbar.shortcuts"].click()
+        XCTAssertTrue(app.windows["Keyboard Shortcuts"].waitForExistence(timeout: 5))
     }
 
     /// Without a connection nothing needs confirming: the app quits right away.
