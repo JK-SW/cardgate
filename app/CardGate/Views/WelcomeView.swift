@@ -14,8 +14,9 @@ struct WelcomeView: View {
     }
 
     private var content: some View {
-        VStack(spacing: 20) {
-            AppIllustration(width: 132)
+        // Fits the smallest window without scrolling (unless a card module problem is shown).
+        VStack(spacing: 16) {
+            AppIllustration(width: 96)
             VStack(spacing: 8) {
                 Text("Welcome to CardGate")
                     .font(.largeTitle.weight(.bold))
@@ -67,8 +68,8 @@ struct WelcomeView: View {
             }
         }
         .padding(.horizontal, 32)
-        .padding(.top, 8)
-        .padding(.bottom, 32)
+        .padding(.top, 4)
+        .padding(.bottom, 20)
     }
 }
 

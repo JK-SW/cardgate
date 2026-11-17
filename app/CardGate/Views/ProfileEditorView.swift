@@ -134,7 +134,8 @@ struct ProfileEditorView: View {
             .padding()
         }
         .frame(width: 480)
-        .frame(minHeight: 600)
+        // Within the main window's smallest size (the form scrolls).
+        .frame(height: 420)
         .confirmationDialog("Delete this connection?", isPresented: $confirmDelete) {
             Button("Delete", role: .destructive) {
                 if let profile = model.profiles.first(where: { $0.id == editor.id }) { model.delete(profile) }
