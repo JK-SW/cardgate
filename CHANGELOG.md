@@ -5,6 +5,12 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-17
+
+Nový vzhled hlavního okna se seznamem připojení a přehledem karty a brány, připojení, které se samo
+udrží a po krátkém výpadku sítě obnoví bez nového PINu, dotaz před odpojením a řada oprav
+a bezpečnostních vylepšení.
+
 ### Přidáno
 - **Udržování a obnovení připojení** (Nastavení, výchozí zapnuto): CardGate posílá bráně udržovací
   zprávy, takže připojení v klidu už po několika minutách nespadne, a po krátkém výpadku sítě se

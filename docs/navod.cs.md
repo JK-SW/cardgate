@@ -33,8 +33,8 @@ Tento návod otevřete i z aplikace: **Nápověda → Návod k CardGate**.
 Připojení můžete mít i více: jsou v seznamu vlevo. Každé upravíte tlačítkem vedle jeho názvu, nové
 přidáte tlačítkem **Nové připojení…** pod seznamem.
 
-<img src="images/cs/welcome.png" width="360" alt="Uvítací obrazovka CardGate">
-<img src="images/cs/connection-settings.png" width="390" alt="Nastavení připojení">
+<img src="images/cs/welcome.png" width="560" alt="Uvítací obrazovka CardGate">
+<img src="images/cs/connection-settings.png" width="560" alt="Nastavení připojení">
 
 ## Připojení
 
@@ -55,7 +55,7 @@ V **CardGate → Nastavení…** (⌘,) jsou tři volby, všechny výchozí zapn
 - **Ptát se před odpojením** – zavření okna vzdálené plochy (nebo ⌘Q v něm) se nejdřív zeptá.
   **Odpojit** v CardGate nebo v Docku se neptá.
 
-<img src="images/cs/main-window.png" width="400" alt="Hlavní okno s připravenou kartou">
+<img src="images/cs/main-window.png" width="560" alt="Hlavní okno s připravenou kartou">
 <img src="images/cs/pin.png" width="290" alt="Okno pro zadání PINu">
 
 Klávesové zkratky klienta (celá obrazovka, odpojení…) se používají s klávesami

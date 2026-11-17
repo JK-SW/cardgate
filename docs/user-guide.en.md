@@ -31,8 +31,8 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 You can have several connections: they are listed on the left. Edit one with the button next to its
 name; add another with **New Connection…** below the list.
 
-<img src="images/en/welcome.png" width="360" alt="CardGate welcome screen">
-<img src="images/en/connection-settings.png" width="390" alt="Connection settings">
+<img src="images/en/welcome.png" width="560" alt="CardGate welcome screen">
+<img src="images/en/connection-settings.png" width="560" alt="Connection settings">
 
 ## Connecting
 
@@ -54,7 +54,7 @@ name; add another with **New Connection…** below the list.
 - **Ask before disconnecting** – closing the remote desktop window (or ⌘Q in it) asks first.
   **Disconnect** in CardGate or in the Dock does not ask.
 
-<img src="images/en/main-window.png" width="400" alt="Main window with a ready card">
+<img src="images/en/main-window.png" width="560" alt="Main window with a ready card">
 <img src="images/en/pin.png" width="290" alt="PIN dialog">
 
 Client hotkeys use **left Control + left Option + left Shift** plus a key (e.g. **Return** = full screen).
