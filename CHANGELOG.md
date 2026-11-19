@@ -5,6 +5,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Změněno
+- Hlavní okno: ikona s názvem a adresou počítače je vystředěná nad přehledem, srdíčko v nabídce
+  podpory je větší a svisle vystředěné.
+
 ## [0.6.0] - 2026-11-17
 
 Nový vzhled hlavního okna se seznamem připojení a přehledem karty a brány, připojení, které se samo

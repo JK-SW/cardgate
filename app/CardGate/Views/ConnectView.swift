@@ -145,8 +145,9 @@ private struct ConnectionDetail: View {
                     .accessibilityIdentifier("detail.computer")
             }
             .lineLimit(2)
-            Spacer(minLength: 0)
         }
+        // Centered like the overview card and the button below it.
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -384,8 +385,10 @@ private struct DonationOfferView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        // The heart is centered next to the message; the close button sits in the corner.
+        HStack(spacing: 12) {
             Image(systemName: "heart.fill")
+                .font(.title)
                 .foregroundStyle(.pink)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
@@ -394,6 +397,12 @@ private struct DonationOfferView: View {
                 Button("Support on Ko-fi") { model.finishDonationOffer(openingPage: true) }
                     .buttonStyle(.link)
             }
+        }
+        .padding(.trailing, 22)
+        .font(.callout)
+        .padding(12)
+        .frame(maxWidth: 380)
+        .overlay(alignment: .topTrailing) {
             Button {
                 model.finishDonationOffer(openingPage: false)
             } label: {
@@ -402,10 +411,8 @@ private struct DonationOfferView: View {
             .buttonStyle(.borderless)
             .help("Close and do not show again")
             .accessibilityLabel(Text("Close and do not show again"))
+            .padding(12)
         }
-        .font(.callout)
-        .padding(12)
-        .frame(maxWidth: 380)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
     }
 }
