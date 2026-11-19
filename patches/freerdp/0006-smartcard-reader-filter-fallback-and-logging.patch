@@ -1,6 +1,6 @@
 --- a/libfreerdp/utils/smartcard_call.c
 +++ b/libfreerdp/utils/smartcard_call.c
-@@ -553,6 +553,23 @@
+@@ -554,6 +554,23 @@
  	return FALSE;
  }
  
@@ -24,7 +24,7 @@
  WINPR_ATTR_NODISCARD
  static DWORD filter_device_by_name_a(wLinkedList* list, LPSTR* mszReaders, DWORD cchReaders)
  {
-@@ -562,6 +579,17 @@
+@@ -563,6 +580,17 @@
  	if (*mszReaders == nullptr || LinkedList_Count(list) < 1)
  		return cchReaders;
  
@@ -42,7 +42,7 @@
  	do
  	{
  		LPCSTR rreader = &(*mszReaders)[rpos];
-@@ -647,7 +675,9 @@
+@@ -648,7 +676,9 @@
  	}
  
  	void* original = mszReaders;
@@ -52,7 +52,7 @@
  	ret.msz = (BYTE*)mszReaders;
  	ret.cBytes = cchReaders;
  
-@@ -706,7 +736,22 @@
+@@ -707,7 +737,22 @@
  	}
  
  	void* original = mszReaders.pb;

@@ -19,7 +19,8 @@ struct HelperIntegrationTests {
         .enabled(if: helper != nil),
         arguments: [
             "NSApplicationDidBecomeActiveNotification",  // 0008: restores a minimized window
-            "desktop scale when connecting",  // 0009: the display's scale at the sign-in screen
+            "desktop scale when connecting",  // 0009: the session log shows the sign-in scale
+            "monitor attributes sent when connecting",  // 0009: the scale of each monitor
             "the user name is the UPN of the certificate",  // 0010: the sign-in screen offers the UPN
         ])
     func clientContainsPatch(_ text: String) throws {

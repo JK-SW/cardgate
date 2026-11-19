@@ -1,6 +1,6 @@
 --- a/client/SDL/SDL3/sdl_context.cpp
 +++ b/client/SDL/SDL3/sdl_context.cpp
-@@ -1964,9 +1964,18 @@
+@@ -2013,9 +2013,18 @@
  	if (suppress && freerdp_settings_get_bool(context()->settings, FreeRDP_RemoteApplicationMode))
  		return true;
  
@@ -22,7 +22,7 @@
  void SdlContext::setConnected(bool val)
 --- a/client/SDL/SDL3/sdl_freerdp.cpp
 +++ b/client/SDL/SDL3/sdl_freerdp.cpp
-@@ -328,6 +328,10 @@
+@@ -329,6 +329,10 @@
  	{
  		WLog_Print(sdl->getWLog(), WLOG_ERROR, "[exception] %s", msg.what());
  		rc = msg.rc();

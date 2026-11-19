@@ -8,6 +8,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 ### Změněno
 - Hlavní okno: ikona s názvem a adresou počítače je vystředěná nad přehledem, srdíčko v nabídce
   podpory je větší a svisle vystředěné.
+- Přibalená knihovna SDL aktualizována na 3.4.20.
+
+### Zabezpečení
+- Přibalený FreeRDP aktualizován na 3.33.1 (opravy 11 bezpečnostních chyb).
 
 ## [0.6.0] - 2026-11-17
 

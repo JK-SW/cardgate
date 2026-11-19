@@ -1,6 +1,6 @@
 --- a/client/SDL/SDL3/CMakeLists.txt
 +++ b/client/SDL/SDL3/CMakeLists.txt
-@@ -160,6 +160,8 @@
+@@ -161,6 +161,8 @@
    # Restores minimized windows when the app is activated (sdl_freerdp.cpp).
    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
    list(APPEND LIBS ${COREFOUNDATION_FRAMEWORK})
@@ -24,10 +24,10 @@
  class SdlContext
  {
    public:
-@@ -64,6 +70,15 @@
- 
+@@ -65,6 +71,15 @@
  	void setConnected(bool val);
  	[[nodiscard]] bool isConnected() const;
+ 	[[nodiscard]] bool abortConnect() const;
 +
 +	/* Asks before the user ends a running session (window closed, Cmd+Q); see the definition. */
 +	[[nodiscard]] bool confirmDisconnect(SDL_WindowID windowID);
@@ -40,12 +40,12 @@
  	void cleanup();
  
  	[[nodiscard]] bool resizeable() const;
-@@ -214,6 +229,10 @@
+@@ -216,6 +231,10 @@
  	wLog* _log = nullptr;
  
  	std::atomic<bool> _connected = false;
 +	std::atomic<bool> _quitBySignal = false;
-+	std::atomic<bool> _disconnectRequested = false;
++	mutable std::atomic<bool> _disconnectRequested = false; /* set by abortConnect() */
 +	std::atomic<bool> _confirmingDisconnect = false;
 +	bool _swallowQuitKeyUp = false; /* the Q of Cmd+Q never reaches the session */
  	bool _cursor_visible = true;
@@ -73,7 +73,7 @@
  
  static constexpr auto sdl_allow_screensaver = "sdl-allow-screensaver";
  static constexpr auto sdl_connection_dialog = "sdl-connection-dialog";
-@@ -802,6 +815,9 @@
+@@ -835,6 +848,9 @@
  		{
  			if (client_auto_reconnect(instance))
  			{
@@ -83,19 +83,19 @@
  				// Retry was successful, discard dialog
  				getDialog().show(false);
  				continue;
-@@ -1392,8 +1408,10 @@
+@@ -1435,8 +1451,10 @@
  		break;
  		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
  		{
 +			if (!confirmDisconnect(ev.windowID))
 +				break;
  			SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Window closed, terminating RDP session...");
--			freerdp_abort_connect_context(context());
+-			std::ignore = abortConnect();
 +			disconnectRequested();
  		}
  		break;
  		default:
-@@ -1711,6 +1729,32 @@
+@@ -1759,6 +1777,32 @@
  		case SDL_EVENT_KEY_UP:
  		{
  			const auto& cev = ev.key;
@@ -128,8 +128,15 @@
  			return getInputChannelContext().handleEvent(cev);
  		}
  		default:
-@@ -1935,6 +1979,147 @@
- 	return _connected;
+@@ -1988,10 +2032,151 @@
+  * otherwise an auto reconnect ignores the stop. */
+ bool SdlContext::abortConnect() const
+ {
++	/* A reconnection attempt may reset the last error (rdg_connect): this flag stays and stops
++	 * reconnecting (isDisconnectRequested). */
++	_disconnectRequested = true;
+ 	freerdp_set_last_error(context(), FREERDP_ERROR_CONNECT_CANCELLED);
+ 	return freerdp_abort_connect_context(context());
  }
  
 +#if defined(__APPLE__)
@@ -253,14 +260,11 @@
 +	return disconnect;
 +}
 +
-+/* While reconnecting another error may already be set and freerdp_abort_connect_context keeps it;
-+ * the cancel replaces it, so the reconnection loop stops (client_auto_reconnect_do). */
++/* The window was closed, Cmd+Q or the system asked to quit: the same stop as the disconnect
++ * hotkey (abortConnect), it also ends a reconnection. */
 +void SdlContext::disconnectRequested()
 +{
-+	/* A reconnection attempt may reset the last error (rdg_connect): this flag stays. */
-+	_disconnectRequested = true;
-+	freerdp_set_last_error_log(context(), FREERDP_ERROR_CONNECT_CANCELLED);
-+	std::ignore = freerdp_abort_connect_context(context());
++	std::ignore = abortConnect();
 +}
 +
 +bool SdlContext::isDisconnectRequested() const
@@ -291,18 +295,18 @@
  	std::ignore = sdl_push_quit();
  }
  
-@@ -201,7 +204,9 @@
+@@ -202,7 +205,9 @@
  				switch (windowEvent.type)
  				{
  					case SDL_EVENT_QUIT:
--						std::ignore = freerdp_abort_connect_context(sdl->context());
+-						std::ignore = sdl->abortConnect();
 +						/* A signal or the system (logout, restart): never asked (Cmd+Q is a key).
 +						 */
 +						sdl->disconnectRequested();
  						break;
  					case SDL_EVENT_USER_CERT_DIALOG:
  					{
-@@ -691,6 +696,10 @@
+@@ -695,6 +700,10 @@
  		return -1;
  	if (!SDL_SetHint(SDL_HINT_SCREENSAVER_INHIBIT_ACTIVITY_NAME, "RDP session running"))
  		return -1;
@@ -313,10 +317,10 @@
  #if SDL_VERSION_ATLEAST(3, 4, 0)
  	if (!SDL_SetHint(SDL_HINT_MOUSE_DPI_SCALE_CURSORS, "1"))
  		return -1;
-@@ -710,6 +719,9 @@
- 	/* Basic SDL initialization */
- 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
+@@ -717,6 +726,9 @@
+ 		WLog_Print(sdl->getWLog(), WLOG_ERROR, "SDL_Init failed: %s", SDL_GetError());
  		return -1;
+ 	}
 +#if defined(__APPLE__)
 +	sdl_macos_remove_quit_shortcut();
 +#endif
