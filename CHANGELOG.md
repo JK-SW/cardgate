@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-19
+
+Bezpečnostní aktualizace přibaleného FreeRDP a oprava, kvůli které se Windows ve vzdálené ploše
+občas po napsání písmene L uzamkl.
+
 ### Změněno
 - Hlavní okno: ikona s názvem a adresou počítače je vystředěná nad přehledem, srdíčko v nabídce
   podpory je větší a svisle vystředěné.
