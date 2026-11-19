@@ -136,7 +136,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
 
         // The remote desktop follows the size and scale of the window or display while connected
         // (moved to another display, full screen toggled, displays added or removed). When
-        // connecting the client sends the scale of the display it opens on (patch 0009).
+        // connecting the client sends the scale of the display it opens on (FreeRDP); patch 0009
+        // adds the scale of each monitor and logs the scale sent.
         args.append("/dynamic-resolution")
         if let scale = profile.display.validScale {
             // Replaces the display's scale, when connecting and while connected.

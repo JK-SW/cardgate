@@ -1,6 +1,6 @@
 --- a/client/SDL/SDL3/sdl_window.cpp
 +++ b/client/SDL/SDL3/sdl_window.cpp
-@@ -821,9 +821,21 @@
+@@ -857,9 +857,21 @@
  	return window;
  }
  
@@ -23,7 +23,7 @@
  		return queryDisplay(id, forceAsPrimary);
  
  	std::unique_ptr<SDL_Window, void (*)(SDL_Window*)> window(createDummy(id), SDL_DestroyWindow);
-@@ -845,6 +857,10 @@
+@@ -881,6 +893,10 @@
  
  SDL_Rect SdlWindow::rect(SDL_DisplayID id, bool forceAsPrimary)
  {

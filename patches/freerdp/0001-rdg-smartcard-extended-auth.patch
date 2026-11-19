@@ -1106,7 +1106,7 @@
 +#endif /* FREERDP_LIB_CORE_GATEWAY_RDG_SC_H */
 --- a/client/common/cmdline.c
 +++ b/client/common/cmdline.c
-@@ -4573,6 +4573,22 @@
+@@ -4588,6 +4588,22 @@
  				allowHttpOpts = FALSE;
  			}
  
@@ -1131,7 +1131,7 @@
  			{
 --- a/client/common/cmdline.h
 +++ b/client/common/cmdline.h
-@@ -195,7 +195,8 @@
+@@ -197,7 +197,8 @@
  	  "g:<gateway>[:<port>],u:<user>,d:<domain>,p:<password>,usage-method:["
  	  "direct|detect],access-token:<"
  	  "token>,type:[rpc|http[,no-websockets][,extauth-sspi-ntlm]|auto[,no-websockets][,extauth-"
@@ -1143,7 +1143,7 @@
  	{ "g", COMMAND_LINE_VALUE_REQUIRED, "<gateway>[:<port>]", nullptr, nullptr, -1, nullptr,
 --- a/libfreerdp/core/rdp.c
 +++ b/libfreerdp/core/rdp.c
-@@ -2642,6 +2642,7 @@
+@@ -2657,6 +2657,7 @@
  	if (rdp)
  	{
  		freerdp_timer_free(rdp->timer);
