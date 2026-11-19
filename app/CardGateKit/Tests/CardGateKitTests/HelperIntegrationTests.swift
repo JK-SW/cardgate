@@ -22,6 +22,10 @@ struct HelperIntegrationTests {
             "desktop scale when connecting",  // 0009: the session log shows the sign-in scale
             "monitor attributes sent when connecting",  // 0009: the scale of each monitor
             "the user name is the UPN of the certificate",  // 0010: the sign-in screen offers the UPN
+            "its release did not arrive",  // 0014: a stuck Windows key (Cmd) would lock the session
+            "connected: releasing the modifier keys",  // 0014: keys a disconnected session kept
+            "signed in: releasing the modifier keys",  // 0014: the same once the session is back
+            "released the modifier keys before disconnecting",  // 0014: Cmd+Q leaves no Windows key
         ])
     func clientContainsPatch(_ text: String) throws {
         #expect(try Self.clientContains(text), "the client lacks the patch with '\(text)'")
