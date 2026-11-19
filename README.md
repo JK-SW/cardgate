@@ -21,6 +21,7 @@ způsob přihlášení k bráně neumí. CardGate ano, včetně přihlášení k
 3. Přetáhněte **CardGate** do složky **Aplikace**.
 4. Při prvním spuštění macOS aplikaci zablokuje, protože není notarizovaná Applem. Otevřete
    **Nastavení systému → Soukromí a zabezpečení** a klikněte na **Přesto otevřít**.
+   (Proč a jak to změnit: [Podpora](#podpora).)
 
 Podrobný návod: [čeština](docs/navod.cs.md) · [slovenčina](docs/navod.sk.md) ·
 [English](docs/user-guide.en.md). Změny v jednotlivých verzích: [CHANGELOG](CHANGELOG.md).
@@ -30,8 +31,12 @@ s modulem PKCS#11.
 
 ## Podpora
 
-CardGate je zdarma. Pokud vám pomáhá, můžete autora podpořit na
+CardGate je zdarma a takový zůstane. Pokud vám pomáhá, můžete autora podpořit na
 [Ko-fi](https://ko-fi.com/jirikubinek).
+
+Příspěvky půjdou nejdřív na **podpis aplikace od Applu** (Apple Developer Program, 99 USD ročně).
+S ním macOS aplikaci při prvním spuštění neblokuje, odpadne krok **Přesto otevřít** a instalace
+bude jednodušší pro všechny.
 
 ## Nahlášení problému
 
