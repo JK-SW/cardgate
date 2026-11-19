@@ -12,6 +12,8 @@ connection profiles, `.rdp` import, a guarded PIN dialog, card and certificate c
 error messages.
 
 Download the latest build from [Releases](https://github.com/JK-SW/cardgate/releases/latest).
+The app is not notarized yet, so macOS blocks its first launch until you click **Open Anyway** in
+System Settings → Privacy & Security (why, and how that changes: [Support](#support)).
 User guide: [English](docs/user-guide.en.md), [čeština](docs/navod.cs.md),
 [slovenčina](docs/navod.sk.md).
 
@@ -48,8 +50,12 @@ notes from `CHANGELOG.md` (written in Czech for the app's users).
 
 ## Support
 
-CardGate is free. If it helps you, you can support the author on
+CardGate is free and will stay free. If it helps you, you can support the author on
 [Ko-fi](https://ko-fi.com/jirikubinek).
+
+Donations go first towards **signing the app with Apple** (Apple Developer Program, USD 99 a year).
+Once signed, macOS no longer blocks the app on first launch, the **Open Anyway** step goes away
+and installation gets simpler for everyone.
 
 ## Reporting a problem
 
