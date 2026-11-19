@@ -6,7 +6,11 @@ CARDGATE_VERSION="$(tr -d '[:space:]' <"$ROOT/VERSION")"
 CARDGATE_BUILD="$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 1)"
 # Public half of the EdDSA key that signs updates (the private key is a GitHub Actions secret).
 CARDGATE_SPARKLE_PUBLIC_KEY="$(tr -d '[:space:]' <"$ROOT/app/sparkle-public-key.txt" 2>/dev/null || true)"
-export CARDGATE_VERSION CARDGATE_BUILD CARDGATE_SPARKLE_PUBLIC_KEY
+# The app embeds the helper; without it Xcode stops at the build phase with a less helpful error.
+[[ -x "$HELPER/$CLIENT" ]] ||
+  die "FreeRDP helper not found in $HELPER – run scripts/build-deps.sh and scripts/assemble-helper.sh"
+CARDGATE_HELPER_DIR="$HELPER"
+export CARDGATE_VERSION CARDGATE_BUILD CARDGATE_SPARKLE_PUBLIC_KEY CARDGATE_HELPER_DIR
 [[ "$CARDGATE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "VERSION must be X.Y.Z, got '$CARDGATE_VERSION'"
 xcodegen generate --quiet --spec "$ROOT/app/project.yml" --project "$ROOT/app"
 log "Generated app/CardGate.xcodeproj (version $CARDGATE_VERSION, build $CARDGATE_BUILD)"

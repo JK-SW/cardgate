@@ -19,6 +19,8 @@ settings:
     SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: YES
     MARKETING_VERSION: ${CARDGATE_VERSION}
     CURRENT_PROJECT_VERSION: ${CARDGATE_BUILD}
+    # The helper the app embeds (scripts/assemble-helper.sh; scripts/generate-project.sh sets it).
+    CARDGATE_HELPER_DIR: ${CARDGATE_HELPER_DIR}
     ARCHS: arm64
     ONLY_ACTIVE_ARCH: NO
     # No Apple Developer certificate: ad-hoc signature ("Sign to Run Locally").
@@ -70,7 +72,15 @@ targets:
     postBuildScripts:
       - name: Embed FreeRDP helper
         script: '"${SRCROOT}/../scripts/embed-helper.sh"'
-        basedOnDependencyAnalysis: false
+        # Runs when scripts/assemble-helper.sh rebuilt the helper (it recreates it) or the script
+        # changed. The declared output makes Xcode sign the app again after the helper changed in it.
+        inputFiles:
+          - $(CARDGATE_HELPER_DIR)/Helpers/CardGateSession.app/Contents/MacOS/sdl-freerdp
+          - $(CARDGATE_HELPER_DIR)/ThirdPartyNotices.txt
+          - $(SRCROOT)/../scripts/embed-helper.sh
+          - $(SRCROOT)/../scripts/common.sh
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/CardGateSession.app/Contents/MacOS/sdl-freerdp
   CardGateUITests:
     type: bundle.ui-testing
     platform: macOS

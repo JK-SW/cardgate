@@ -20,6 +20,8 @@ log "App build"
 "$ROOT/scripts/generate-project.sh"
 xcodebuild -project app/CardGate.xcodeproj -scheme CardGate -configuration Debug \
   -destination "platform=macOS,arch=arm64" -derivedDataPath "$BUILD/DerivedData" -quiet build
+# The helper embedded by the build phase must be inside the app's signature (UI tests use this app).
+codesign --verify --deep --strict "$BUILD/DerivedData/Build/Products/Debug/CardGate.app"
 
 "$ROOT/scripts/test-release-scripts.sh"
 "$ROOT/scripts/check-localization.sh"
