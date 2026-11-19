@@ -1,0 +1,300 @@
+--- a/client/SDL/SDL3/sdl_context.cpp
++++ b/client/SDL/SDL3/sdl_context.cpp
+@@ -36,6 +36,7 @@
+ #include "dialogs/sdl_dialogs.hpp"
+ #include <freerdp/client/aad_helper.h>
+ #include <freerdp/scancode.h>
++#include <freerdp/session.h>
+ 
+ #if defined(__APPLE__)
+ #include <CoreFoundation/CoreFoundation.h>
+@@ -303,6 +304,23 @@
+ 	return TRUE;
+ }
+ 
++/* The sign-in finished (the logon info, not the extended info that follows it). A disconnected
++ * session the user returns to still has the keys that were pressed when it was disconnected; the
++ * release when connecting went to the sign-in screen. Best effort: the info is handled anyway. */
++[[nodiscard]] static BOOL sdl_save_session_info(rdpContext* context, UINT32 type, const void* data)
++{
++	if (!client_common_save_session_info(context, type, data))
++		return FALSE;
++	if (type != INFO_TYPE_LOGON_EXTENDED_INF)
++	{
++		auto sdl = get_context(context);
++		WINPR_ASSERT(sdl);
++		WLog_Print(sdl->getWLog(), WLOG_INFO, "signed in: releasing the modifier keys not held");
++		std::ignore = sdl_push_user_event(SDL_EVENT_USER_RELEASE_MODIFIERS);
++	}
++	return TRUE;
++}
++
+ /* Called after a RDP connection was successfully established.
+  * Settings might have changed during negotiation of client / server feature
+  * support.
+@@ -358,6 +376,7 @@
+ 	context->update->DesktopResize = desktopResize;
+ 	context->update->SetKeyboardIndicators = sdlInput::keyboard_set_indicators;
+ 	context->update->SetKeyboardImeStatus = sdlInput::keyboard_set_ime_status;
++	context->update->SaveSessionInfo = sdl_save_session_info;
+ 
+ 	if (!sdl->setResizeable(false))
+ 		return FALSE;
+@@ -822,6 +841,10 @@
+ 			WINPR_ASSERT(ctx);
+ 
+ 			auto& input = ctx->getInputChannelContext();
++			/* SDL's keyboard state is read on the main thread (keyboard_release_modifiers). */
++			WLog_Print(getWLog(), WLOG_INFO, "connected: releasing the modifier keys not held");
++			if (!sdl_push_user_event(SDL_EVENT_USER_RELEASE_MODIFIERS))
++				break;
+ 			if (!input.keyboard_focus_in())
+ 				break;
+ 			if (!input.keyboard_focus_in())
+@@ -1794,7 +1817,11 @@
+ 				std::ignore = freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE,
+ 				                                                   RDP_SCANCODE_LCONTROL);
+ 				if (confirmDisconnect(cev.windowID))
++				{
++					/* Cmd is still down: the session would keep the Windows key pressed. */
++					std::ignore = getInputChannelContext().keyboard_release_sent();
+ 					disconnectRequested();
++				}
+ 				return true;
+ 			}
+ 			if ((cev.type == SDL_EVENT_KEY_UP) && (cev.key == SDLK_Q) && _swallowQuitKeyUp)
+--- a/client/SDL/SDL3/sdl_freerdp.cpp
++++ b/client/SDL/SDL3/sdl_freerdp.cpp
+@@ -286,6 +286,9 @@
+ 					case SDL_EVENT_USER_WINDOW_RESTORE:
+ 						sdl->restoreMinimizedWindows();
+ 						break;
++					case SDL_EVENT_USER_RELEASE_MODIFIERS:
++						std::ignore = sdl->getInputChannelContext().keyboard_release_modifiers();
++						break;
+ 					case SDL_EVENT_USER_POINTER_NULL:
+ 						if (!sdl->setCursor(SdlContext::CURSOR_NULL))
+ 							throw ErrorMsg{ -1, windowEvent.type, "sdl->setCursor" };
+--- a/client/SDL/SDL3/sdl_utils.hpp
++++ b/client/SDL/SDL3/sdl_utils.hpp
+@@ -42,6 +42,7 @@
+ 	SDL_EVENT_USER_WINDOW_FULLSCREEN,
+ 	SDL_EVENT_USER_WINDOW_MINIMIZE,
+ 	SDL_EVENT_USER_WINDOW_RESTORE,
++	SDL_EVENT_USER_RELEASE_MODIFIERS,
+ 	SDL_EVENT_USER_POINTER_NULL,
+ 	SDL_EVENT_USER_POINTER_DEFAULT,
+ 	SDL_EVENT_USER_POINTER_POSITION,
+--- a/client/SDL/SDL3/sdl_utils.cpp
++++ b/client/SDL/SDL3/sdl_utils.cpp
+@@ -156,6 +156,7 @@
+ 			break;
+ 		case SDL_EVENT_USER_WINDOW_MINIMIZE:
+ 		case SDL_EVENT_USER_WINDOW_RESTORE:
++		case SDL_EVENT_USER_RELEASE_MODIFIERS:
+ 		case SDL_EVENT_USER_QUIT:
+ 		case SDL_EVENT_USER_POINTER_NULL:
+ 		case SDL_EVENT_USER_POINTER_DEFAULT:
+--- a/client/SDL/SDL3/sdl_input.hpp
++++ b/client/SDL/SDL3/sdl_input.hpp
+@@ -21,6 +21,7 @@
+ 
+ #include <string>
+ #include <map>
++#include <vector>
+ #include <list>
+ #include <atomic>
+ 
+@@ -46,6 +47,8 @@
+ 
+ 	[[nodiscard]] bool keyboard_sync_state();
+ 	[[nodiscard]] bool keyboard_focus_in();
++	[[nodiscard]] bool keyboard_release_modifiers();
++	[[nodiscard]] bool keyboard_release_sent();
+ 
+ 	[[nodiscard]] bool handleEvent(const SDL_KeyboardEvent& ev);
+ 
+@@ -68,6 +71,9 @@
+ 	[[nodiscard]] static bool extract(const std::string& token, uint32_t& key, uint32_t& value);
+ 
+ 	[[nodiscard]] UINT32 scancode_to_rdp(Uint32 scancode);
++	[[nodiscard]] bool releaseStuckModifiers(SDL_Keymod held);
++	[[nodiscard]] bool sendModifierReleases(const std::vector<UINT32>& scancodes, bool tapCtrl);
++	void trackModifier(const SDL_KeyboardEvent& ev, UINT32 scancode);
+ 
+ 	SdlContext* _sdl = nullptr;
+ 	Uint32 _lastWindowID = 0;
+@@ -81,4 +87,6 @@
+ 	uint32_t _hotkeyDisconnect = 0;
+ 	uint32_t _hotkeyMinimize = 0;
+ 	FREERDP_REMAP_TABLE* _remapTable = nullptr;
++	/* The modifier keys sent as pressed (SDL scancode -> RDP scancode sent); main thread only. */
++	std::map<SDL_Scancode, UINT32> _sentModifiers;
+ };
+--- a/client/SDL/SDL3/sdl_input.cpp
++++ b/client/SDL/SDL3/sdl_input.cpp
+@@ -26,6 +26,7 @@
+ 
+ #include <SDL3/SDL_oldnames.h>
+ 
++#include <algorithm>
+ #include <array>
+ #include <map>
+ #include <tuple>
+@@ -328,6 +329,130 @@
+ 	return freerdp_input_send_synchronize_event(_sdl->context()->input, syncFlags);
+ }
+ 
++/* The modifier keys and their state bits. */
++static const std::array<std::pair<SDL_Scancode, SDL_Keymod>, 8> sdl_modifier_keys = {
++	{ { SDL_SCANCODE_LSHIFT, SDL_KMOD_LSHIFT },
++	  { SDL_SCANCODE_RSHIFT, SDL_KMOD_RSHIFT },
++	  { SDL_SCANCODE_LCTRL, SDL_KMOD_LCTRL },
++	  { SDL_SCANCODE_RCTRL, SDL_KMOD_RCTRL },
++	  { SDL_SCANCODE_LALT, SDL_KMOD_LALT },
++	  { SDL_SCANCODE_RALT, SDL_KMOD_RALT },
++	  { SDL_SCANCODE_LGUI, SDL_KMOD_LGUI },
++	  { SDL_SCANCODE_RGUI, SDL_KMOD_RGUI } }
++};
++
++/* A key counts as held when the modifier state of the event says so or the key state does:
++ * keyboard_set_indicators replaces the modifier state, and the key state is already the one after
++ * every queued event. Main thread only (SDL's keyboard state). */
++[[nodiscard]] static bool sdl_key_held(SDL_Scancode code, SDL_Keymod mod, SDL_Keymod held,
++                                       const bool* keys)
++{
++	return ((held & mod) != 0) || (keys && keys[code]);
++}
++
++[[nodiscard]] static bool sdl_any_modifier_held(SDL_Keymod held, const bool* keys)
++{
++	for (const auto& [code, mod] : sdl_modifier_keys)
++	{
++		if (sdl_key_held(code, mod, held, keys))
++			return true;
++	}
++	return false;
++}
++
++void sdlInput::trackModifier(const SDL_KeyboardEvent& ev, UINT32 scancode)
++{
++	for (const auto& [code, mod] : sdl_modifier_keys)
++	{
++		if (code != ev.scancode)
++			continue;
++		if (ev.type == SDL_EVENT_KEY_DOWN)
++			_sentModifiers[code] = scancode;
++		else
++			_sentModifiers.erase(code);
++	}
++}
++
++/* Releasing the Windows key or Alt alone opens the Start menu or activates the menu bar; one
++ * Ctrl tap before keeps them closed. It is left out while a modifier is held: that key already
++ * came in between, and Ctrl with Shift may switch the keyboard layout. */
++bool sdlInput::sendModifierReleases(const std::vector<UINT32>& scancodes, bool tapCtrl)
++{
++	auto input = _sdl->context()->input;
++	WINPR_ASSERT(input);
++	const bool menuKey =
++	    std::any_of(scancodes.cbegin(), scancodes.cend(),
++		            [](UINT32 scancode)
++		            {
++		                return (scancode == RDP_SCANCODE_LWIN) || (scancode == RDP_SCANCODE_RWIN) ||
++						       (scancode == RDP_SCANCODE_LMENU) || (scancode == RDP_SCANCODE_RMENU);
++	                });
++	if (tapCtrl && menuKey)
++	{
++		if (!freerdp_input_send_keyboard_event_ex(input, TRUE, FALSE, RDP_SCANCODE_LCONTROL) ||
++		    !freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE, RDP_SCANCODE_LCONTROL))
++			return false;
++	}
++	for (const auto scancode : scancodes)
++	{
++		if (!freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE, scancode))
++			return false;
++	}
++	return true;
++}
++
++/* A modifier sent as pressed whose release never reached the session stays pressed there: the
++ * Windows key (Cmd) turns a typed L into Win+L, which locks the session. Release the modifiers
++ * that are no longer held before the next key. */
++bool sdlInput::releaseStuckModifiers(SDL_Keymod held)
++{
++	const bool* keys = SDL_GetKeyboardState(nullptr);
++	std::vector<UINT32> stuck;
++	for (const auto& [code, mod] : sdl_modifier_keys)
++	{
++		const auto it = _sentModifiers.find(code);
++		if ((it == _sentModifiers.end()) || sdl_key_held(code, mod, held, keys))
++			continue;
++		WLog_Print(_sdl->getWLog(), WLOG_WARN, "releasing %s, its release did not arrive",
++		           SDL_GetScancodeName(code));
++		stuck.push_back(it->second);
++		_sentModifiers.erase(it);
++	}
++	if (stuck.empty())
++		return true;
++	return sendModifierReleases(stuck, !sdl_any_modifier_held(held, keys));
++}
++
++/* The session keeps the keys that were pressed when it was disconnected (Cmd+Q in an older
++ * version sent Cmd, the Windows key, and disconnected): release the modifiers not held
++ * (SDL_EVENT_USER_RELEASE_MODIFIERS, pushed when connected and signed in). */
++bool sdlInput::keyboard_release_modifiers()
++{
++	const bool* keys = SDL_GetKeyboardState(nullptr);
++	const SDL_Keymod held = SDL_GetModState();
++	std::vector<UINT32> released;
++	for (const auto& [code, mod] : sdl_modifier_keys)
++	{
++		if (sdl_key_held(code, mod, held, keys))
++			continue;
++		_sentModifiers.erase(code);
++		released.push_back(freerdp_keyboard_remap_key(_remapTable, scancode_to_rdp(code)));
++	}
++	return sendModifierReleases(released, !sdl_any_modifier_held(held, keys));
++}
++
++/* Releases the modifiers sent as pressed before the user disconnects (Cmd+Q, the disconnect
++ * hotkey): the session would keep them. Without the Ctrl tap: it ends the session anyway. */
++bool sdlInput::keyboard_release_sent()
++{
++	std::vector<UINT32> sent;
++	for (const auto& [code, scancode] : _sentModifiers)
++		sent.push_back(scancode);
++	_sentModifiers.clear();
++	WLog_Print(_sdl->getWLog(), WLOG_INFO, "released the modifier keys before disconnecting");
++	return sendModifierReleases(sent, false);
++}
++
+ bool sdlInput::keyboard_focus_in()
+ {
+ 	auto input = _sdl->context()->input;
+@@ -585,6 +710,9 @@
+ 	 * event already queued, so a hotkey could be missed, or fire on a plain key typed just
+ 	 * before a modifier. */
+ 	const SDL_Keymod mods = ev.mod;
++	/* Before the hotkeys: a modifier left pressed in the session would join this key there. */
++	if ((ev.type == SDL_EVENT_KEY_DOWN) && !releaseStuckModifiers(mods))
++		return false;
+ 
+ 	if (_hotkeysEnabled && (mods & _hotkeyModmask) == _hotkeyModmask)
+ 	{
+@@ -621,6 +749,7 @@
+ 				           masktostr(_hotkeyModmask).c_str(), sdl_scancode_name(_hotkeyDisconnect));
+ 				if (!keyboard_sync_state())
+ 					return false;
++				std::ignore = keyboard_release_sent();
+ 				std::ignore = _sdl->abortConnect();
+ 				return true;
+ 			}
+@@ -656,6 +785,7 @@
+ 		           ev.scancode, scancode, sc, ex ? " extended" : "");
+ 	}
+ #endif
++	trackModifier(ev, scancode);
+ 	if (freerdp_settings_get_bool(_sdl->context()->settings, FreeRDP_UnicodeInput))
+ 	{
+ 		/* With key_event false the keycode follows the layout, also for non-Latin ones, where key
