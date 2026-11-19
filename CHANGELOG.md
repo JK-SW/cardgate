@@ -10,6 +10,12 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
   podpory je větší a svisle vystředěné.
 - Přibalená knihovna SDL aktualizována na 3.4.20.
 
+### Opraveno
+- Ve vzdálené ploše se Windows občas po napsání písmene L uzamkl: klávesa ⌘ (ve Windows klávesa
+  Win) zůstala ve Windows „stisknutá“, typicky po odpojení zkratkou ⌘Q, takže L se při dalším
+  připojení vyhodnotilo jako Win+L. CardGate teď klávesy před odpojením uvolní, při připojení
+  srovná jejich stav a uvolní i klávesu, jejíž uvolnění se cestou ztratilo.
+
 ### Zabezpečení
 - Přibalený FreeRDP aktualizován na 3.33.1 (opravy 11 bezpečnostních chyb).
 
