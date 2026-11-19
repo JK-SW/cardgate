@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Tests of the release and maintenance scripts (part of scripts/test.sh):
 #  - check-dependency-updates.sh with a fake `gh` and made-up upstream releases;
+#  - report-dependency-updates.sh with a fake `gh` and made-up issues;
 #  - make-appcast.sh with a throwaway signing key (never the real one) and made-up published feeds,
 #    on a PATH with only the system tools, as in the release workflow's publish job.
 source "$(dirname "$0")/common.sh"
@@ -72,6 +73,87 @@ if PATH="$TMP/bin:$PATH" FAKE_API="$TMP/api" DEPS_LOCK="$TMP/unknown.lock" \
   "$ROOT/scripts/check-dependency-updates.sh" >/dev/null 2>&1; then
   fail "check-dependency-updates.sh accepted an unknown dependency"
 fi
+
+# --- report-dependency-updates.sh --------------------------------------------------------------
+
+mkdir -p "$TMP/bin-issues"
+# A `gh issue list|create|close` on the issues in $FAKE_ISSUES; changes are logged to $FAKE_LOG.
+cat >"$TMP/bin-issues/gh" <<'GH'
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "$1" == issue ]] || exit 64
+case "$2" in
+  list) cat "$FAKE_ISSUES" ;;
+  create)
+    [[ "$3" == --title ]] || exit 64
+    number="$(jq 'map(.number) | max + 1' "$FAKE_ISSUES")"
+    jq --arg title "$4" --argjson number "$number" '. + [{number: $number, title: $title, state: "OPEN"}]' \
+      "$FAKE_ISSUES" >"$FAKE_ISSUES.new" && mv "$FAKE_ISSUES.new" "$FAKE_ISSUES"
+    echo "created #$number $4" >>"$FAKE_LOG"
+    echo "https://github.com/example/repo/issues/$number" ;;
+  close)
+    [[ "$4" == --comment ]] || exit 64
+    jq --argjson number "$3" 'map(if .number == $number then .state = "CLOSED" else . end)' \
+      "$FAKE_ISSUES" >"$FAKE_ISSUES.new" && mv "$FAKE_ISSUES.new" "$FAKE_ISSUES"
+    echo "closed #$3: $5" >>"$FAKE_LOG" ;;
+  *) exit 64 ;;
+esac
+GH
+chmod +x "$TMP/bin-issues/gh"
+cat >"$TMP/issues.json" <<'JSON'
+[
+  {"number": 1, "title": "Dependency update: sdl3 3.4.20", "state": "OPEN"},
+  {"number": 2, "title": "Dependency update: sdl3_ttf 3.2.4", "state": "OPEN"},
+  {"number": 3, "title": "Dependency update: openssl 4.1.1", "state": "OPEN"},
+  {"number": 4, "title": "Dependency update: freerdp 3.33.1", "state": "OPEN"},
+  {"number": 5, "title": "Dependency update: openssl 4.2.0", "state": "CLOSED"},
+  {"number": 6, "title": "Dependency update: cjson 1.7.19", "state": "OPEN"},
+  {"number": 7, "title": "Dependency update: freetype 2.15.0", "state": "OPEN"},
+  {"number": 8, "title": "Dependency update: sparkle 2.10.10", "state": "OPEN"}
+]
+JSON
+cat >"$TMP/report.lock" <<'LOCK'
+# test
+openssl   4.1.0   0  https://example.com/{v}
+cjson     1.7.20  0  https://example.com/{v}
+freetype  2.15.0  0  https://example.com/{v}
+sdl3      3.4.18  0  https://example.com/{v}
+sdl3_ttf  3.2.2   0  https://example.com/{v}
+freerdp   3.33.0  0  https://example.com/{v}
+sparkle   2.10.9  0  https://example.com/{v}
+LOCK
+cat >"$TMP/updates.txt" <<'UPDATES'
+sdl3 3.4.18 3.4.22 https://example.com/sdl3
+openssl 4.1.0 4.1.2 https://example.com/openssl-4.1.2
+openssl 4.1.0 4.2.0 https://example.com/openssl-4.2.0
+freerdp 3.33.0 3.33.1 https://example.com/freerdp
+UPDATES
+# New versions open issues (openssl 4.2.0 was closed: not again) and close the ones they replace,
+# naming the issues of both openssl lines; versions deps.lock pins (cjson older, freetype the same)
+# close; sdl3_ttf and sparkle report nothing now (a failed check?) and stay open, as does the
+# reported freerdp.
+expected="created #9 Dependency update: sdl3 3.4.22
+created #10 Dependency update: openssl 4.1.2
+closed #1: Superseded by sdl3 3.4.22 (#9).
+closed #3: Superseded by openssl 4.1.2 (#10), openssl 4.2.0 (#5).
+closed #6: scripts/deps.lock already pins cjson 1.7.20.
+closed #7: scripts/deps.lock already pins freetype 2.15.0."
+report() {
+  : >"$TMP/issues.log"
+  PATH="$TMP/bin-issues:$PATH" FAKE_ISSUES="$TMP/issues.json" FAKE_LOG="$TMP/issues.log" \
+    DEPS_LOCK="$TMP/report.lock" "$ROOT/scripts/report-dependency-updates.sh" "$TMP/updates.txt" >/dev/null \
+    || fail "report-dependency-updates.sh failed"
+}
+log "report-dependency-updates.sh"
+report
+got="$(cat "$TMP/issues.log")"
+[[ "$got" == "$expected" ]] || fail "report-dependency-updates.sh did:
+$got
+expected:
+$expected"
+# A second run changes nothing.
+report
+[[ ! -s "$TMP/issues.log" ]] || fail "report-dependency-updates.sh changed issues again: $(cat "$TMP/issues.log")"
 
 # --- make-appcast.sh ---------------------------------------------------------------------------
 
