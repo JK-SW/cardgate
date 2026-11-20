@@ -1,6 +1,6 @@
 --- a/libfreerdp/core/smartcardlogon.c
 +++ b/libfreerdp/core/smartcardlogon.c
-@@ -1049,6 +1049,33 @@
+@@ -1049,6 +1049,35 @@
  
  	free((void*)cert_list);
  
@@ -9,13 +9,15 @@
 +	 * then offer suffix\user for a password. Unless user or domain were given, use the whole UPN
 +	 * as the user name and no domain: Windows accepts it for a smart card and a password, and
 +	 * the certificate filter above matches it on a later call. Not for an e-mail address taken
-+	 * when the certificate has no UPN. */
++	 * when the certificate has no UPN. A later call (network level authentication after the
++	 * gateway, a reconnect) finds the UPN already set and keeps it that way: the domain stays
++	 * empty, else it would become the suffix again. */
 +	const char* givenUser = freerdp_settings_get_string(settings, username_setting);
 +	const char* givenDomain = freerdp_settings_get_string(settings, domain_setting);
-+	if ((!givenUser || !*givenUser) && (!givenDomain || !*givenDomain))
++	if (!givenDomain || !*givenDomain)
 +	{
 +		char* upn = freerdp_certificate_get_upn((*cert)->certificate);
-+		if (upn && strchr(upn, '@'))
++		if (upn && strchr(upn, '@') && (!givenUser || !*givenUser || (strcmp(givenUser, upn) == 0)))
 +		{
 +			const BOOL rc = freerdp_settings_set_string(settings, username_setting, upn) &&
 +			                freerdp_settings_set_string(settings, domain_setting, nullptr);

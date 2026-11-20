@@ -73,7 +73,8 @@ Never include a PIN, a certificate or real gateway and computer addresses; repla
 
 Apache License 2.0, see [LICENSE](LICENSE). Bundled third-party components keep
 their own licenses (FreeRDP – Apache 2.0, OpenSSL – Apache 2.0, SDL and
-SDL_ttf – zlib, FreeType – FreeType License, cJSON and Sparkle – MIT).
+SDL_ttf – zlib, FreeType – FreeType License, cJSON and Sparkle – MIT, MIT Kerberos –
+MIT and similar permissive licenses, see its NOTICE).
 
 ## AI assistance
 

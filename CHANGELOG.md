@@ -6,6 +6,8 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 ## [Unreleased]
 
 ### Změněno
+- Aplikace obsahuje klientské knihovny MIT Kerberos (příprava přihlášení k počítači s ověřením na úrovni
+  sítě, NLA). Používá jen vlastní nastavení Kerberosu, nastavení Kerberosu na Macu ani jeho lístky neovlivní.
 - Okno O aplikaci: tlačítko s licencemi přibalených knihoven se jmenuje krátce „Licence komponent“
   (dřív se název nevešel celý).
 

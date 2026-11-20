@@ -51,6 +51,8 @@ struct FreeRDPCommandTests {
         #expect(
             command.environment == [
                 "XDG_CONFIG_HOME": "/Users/test/Library/Application Support/CardGate/FreeRDP",
+                "KRB5_CONFIG": "/Users/test/Library/Application Support/CardGate/FreeRDP/krb5.conf",
+                "KRB5CCNAME": "MEMORY:cardgate",
                 "SDL_MAC_BACKGROUND_APP": "1",
             ])
     }
@@ -249,6 +251,7 @@ struct FreeRDPCommandTests {
             "SSL_CERT_FILE": "/tmp/ca.pem", "SSL_CERT_DIR": "/tmp/certs",
             "DYLD_INSERT_LIBRARIES": "/tmp/x.dylib", "XDG_CONFIG_HOME": "/tmp/other",
             "FREERDP_SMARTCARD_CERT_SHA1": "00", "https_proxy": "http://proxy.example.com:3128",
+            "KRB5_CONFIG": "/etc/krb5.conf", "KRB5CCNAME": "FILE:/tmp/krb5cc_501", "KRB5_TRACE": "/tmp/trace",
             "NO_PROXY": "intranet.example.com",
         ])
         #expect(environment["https_proxy"] == "http://proxy.example.com:3128", "the gateway may need a proxy")
@@ -260,6 +263,9 @@ struct FreeRDPCommandTests {
         #expect(!environment.keys.contains { $0.hasPrefix("WLOG_") || $0.hasPrefix("SSL_") || $0.hasPrefix("DYLD_") })
         #expect(environment["FREERDP_SMARTCARD_CERT_SHA1"] == nil, "only CardGate chooses the certificate")
         #expect(environment["XDG_CONFIG_HOME"] == config.directory.path(percentEncoded: false))
+        #expect(environment["KRB5_CONFIG"] == config.kerberosConfigURL.path(percentEncoded: false))
+        #expect(environment["KRB5CCNAME"] == "MEMORY:cardgate", "tickets never in the Mac's ticket cache")
+        #expect(environment["KRB5_TRACE"] == nil)
         #expect(environment["FREERDP_ASKPASS"] == command.environment["FREERDP_ASKPASS"])
         #expect(environment["SDL_MAC_BACKGROUND_APP"] == "1")
     }

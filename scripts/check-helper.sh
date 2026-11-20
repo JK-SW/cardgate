@@ -34,6 +34,23 @@ syms="$(nm "$HELPER"/Frameworks/libcrypto.*.dylib 2>/dev/null)"
 grep -q ' _ossl_legacy_provider_init$' <<<"$syms" \
   || err "OpenSSL legacy provider (RC4/MD4) is not built into libcrypto"
 
+# Network level authentication with the card: Kerberos in WinPR and its PKINIT plugin.
+otool -L "$HELPER"/Frameworks/libwinpr3.*.dylib | grep -q '@rpath/libkrb5\.' \
+  || err "WinPR is not built with Kerberos (libkrb5)"
+for plugin in preauth/pkinit.so tls/k5tls.so; do
+  [[ -f "$HELPER/PlugIns/krb5/$plugin" ]] || err "Kerberos plugin $plugin missing"
+done
+# libkrb5 reads files and loads plugins from its compiled-in prefix: never the build directory.
+krb5_files=()
+for f in "$HELPER"/Frameworks/{libkrb5,libk5crypto,libcom_err,libkrb5support}.*.dylib "$HELPER"/PlugIns/krb5/*/*.so; do
+  [[ -f "$f" ]] && krb5_files+=("$f")
+done
+[[ ${#krb5_files[@]} -ge 6 ]] || err "Kerberos libraries or plugins missing (found ${#krb5_files[@]} of 6)"
+for f in ${krb5_files[@]+"${krb5_files[@]}"}; do
+  text="$(strings "$f")"   # not piped into grep -q: with pipefail, its early exit would hide a match
+  [[ "$text" != *"$BUILD"* ]] || err "$(basename "$f") refers to the build directory"
+done
+
 codesign --verify --strict "$HELPER/$SESSION_APP" 2>/dev/null || err "$SESSION_APP: invalid signature"
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :LSUIElement' "$HELPER/$SESSION_APP/Contents/Info.plist")" == true ]] \
   || err "$SESSION_APP is not an agent app (LSUIElement)"

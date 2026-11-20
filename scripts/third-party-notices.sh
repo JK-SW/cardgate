@@ -15,11 +15,13 @@ section() { # name title url license-file...
 cat <<'HEAD'
 CardGate includes the following third-party software. Each component is distributed under
 its own license, reproduced below. CardGate applies its own patches to FreeRDP; they are
-published in the CardGate source repository.
+published in the CardGate source repository. Of MIT Kerberos only the client libraries and
+plugins are included.
 
 HEAD
 section freerdp  "FreeRDP" "https://www.freerdp.com" LICENSE
 section openssl  "OpenSSL" "https://www.openssl.org" LICENSE.txt
+section krb5     "MIT Kerberos" "https://web.mit.edu/kerberos/" NOTICE
 section sdl3     "SDL" "https://www.libsdl.org" LICENSE.txt
 section sdl3_ttf "SDL_ttf" "https://github.com/libsdl-org/SDL_ttf" LICENSE.txt
 section freetype "FreeType" "https://freetype.org" LICENSE.TXT FTL.TXT

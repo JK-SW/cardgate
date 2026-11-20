@@ -4,7 +4,8 @@ public import Foundation
 ///
 /// FreeRDP reads `$XDG_CONFIG_HOME/freerdp/sdl-freerdp.json` and keeps its certificate store
 /// there. CardGate points `XDG_CONFIG_HOME` to its own directory so the user's own FreeRDP
-/// setup is neither used nor modified.
+/// setup is neither used nor modified. The client's Kerberos configuration (`krb5.conf`,
+/// `KRB5_CONFIG`) is there too, so that of the Mac is not used either.
 public struct FreeRDPClientConfig: Sendable {
     /// Value for `XDG_CONFIG_HOME`.
     public let directory: URL
@@ -20,6 +21,42 @@ public struct FreeRDPClientConfig: Sendable {
 
     public var sdlConfigURL: URL { directory.appending(path: "freerdp/sdl-freerdp.json") }
 
+    /// The client's Kerberos configuration (`KRB5_CONFIG`).
+    public var kerberosConfigURL: URL { directory.appending(path: "krb5.conf") }
+
+    /// A link to the app's Kerberos plugins. `krb5.conf` names the link, not the app: libkrb5
+    /// expands `%{…}` in the plugin path and has no escape for it, and the app may be anywhere.
+    public var kerberosPluginsLink: URL { directory.appending(path: "krb5-plugins") }
+
+    public enum InstallError: Error, Equatable {
+        /// The configuration directory contains `%{`, which libkrb5 would expand.
+        case unusableDirectory
+    }
+
+    /// Contents of `krb5.conf`: the plugins come from the app (libkrb5 would look in the
+    /// directory it was built for), nothing is looked up in DNS.
+    static func kerberosConfig(plugins: URL) -> String {
+        """
+        # Written by CardGate for its remote desktop client; not the Kerberos setup of this Mac.
+        [libdefaults]
+          plugin_base_dir = \(profileString(plugins.path(percentEncoded: false)))
+          dns_lookup_kdc = false
+          dns_lookup_realm = false
+          dns_canonicalize_hostname = false
+          rdns = false
+
+        """
+    }
+
+    /// A value in the krb5 profile syntax: quoted, with backslash, quote and line breaks escaped.
+    static func profileString(_ value: String) -> String {
+        let escaped = value.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\t", with: "\\t")
+        return "\"" + escaped + "\""
+    }
+
     /// Contents of `sdl-freerdp.json`.
     struct SDLConfig: Codable, Equatable {
         /// Client hotkeys (fullscreen, disconnect, …) need Left Control + Left Option + Left Shift.
@@ -34,13 +71,26 @@ public struct FreeRDPClientConfig: Sendable {
         }
     }
 
-    /// Writes the client configuration for the next connection (the file is owned by CardGate).
-    public func install(for profile: ConnectionProfile) throws {
+    /// Writes the client configuration for the next connection (the files are owned by CardGate).
+    /// - Parameter kerberosPlugins: the app's Kerberos plugins (`FreeRDPCommand.kerberosPlugins(in:)`).
+    public func install(for profile: ConnectionProfile, kerberosPlugins: URL) throws {
+        guard !kerberosPluginsLink.path(percentEncoded: false).contains("%{") else {
+            throw InstallError.unusableDirectory
+        }
         let config = SDLConfig(useLocalMouseScrollDirection: profile.input.scrollLikeThisMac)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try FileManager.default.createDirectory(
             at: sdlConfigURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try encoder.encode(config).write(to: sdlConfigURL, options: .atomic)
+        // The link points to this copy of the app, wherever it is now.
+        let fileManager = FileManager.default
+        if (try? fileManager.destinationOfSymbolicLink(atPath: kerberosPluginsLink.path(percentEncoded: false))) != nil
+            || fileManager.fileExists(atPath: kerberosPluginsLink.path(percentEncoded: false))
+        {
+            try fileManager.removeItem(at: kerberosPluginsLink)
+        }
+        try fileManager.createSymbolicLink(at: kerberosPluginsLink, withDestinationURL: kerberosPlugins)
+        try Data(Self.kerberosConfig(plugins: kerberosPluginsLink).utf8).write(to: kerberosConfigURL, options: .atomic)
     }
 }
