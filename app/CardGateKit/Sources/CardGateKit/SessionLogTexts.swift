@@ -50,6 +50,8 @@ extension SessionLogParser {
             "changed since it was first trusted",
             "new fingerprint %s",
             "FREERDP_ACCEPT_CHANGED_CERTIFICATE",
+            "verified by Kerberos",
+            "Kerberos did not verify the computer",
             "Early User Auth active: FAILURE",
             "com.winpr.sspi.Kerberos",
         ] + gatewayProxyCodes

@@ -1,0 +1,298 @@
+--- a/libfreerdp/core/smartcardlogon.c
++++ b/libfreerdp/core/smartcardlogon.c
+@@ -17,6 +17,9 @@
+  * limitations under the License.
+  */
+ #include <string.h>
++#ifndef _WIN32
++#include <pthread.h>
++#endif
+ 
+ #include <winpr/error.h>
+ #include <winpr/ncrypt.h>
+@@ -24,6 +27,7 @@
+ #include <winpr/wlog.h>
+ #include <winpr/crypto.h>
+ #include <winpr/path.h>
++#include <winpr/sysinfo.h>
+ 
+ #include <freerdp/log.h>
+ #include <freerdp/freerdp.h>
+@@ -161,6 +165,98 @@
+ 	return TRUE;
+ }
+ 
++#ifndef _WIN32
++/* The certificates read from the card for the RD Gateway serve the network level authentication
++ * that follows in the same connection attempt: a slow PKCS#11 module took seconds to list them
++ * again. Kept only for that one use, for the same module and reader and for at most
++ * CARD_CACHE_LIFETIME_MS; a later gateway authentication (another attempt, a reconnect) reads the
++ * card again. */
++#define CARD_CACHE_LIFETIME_MS (5ULL * 60ULL * 1000ULL)
++
++typedef struct
++{
++	SmartcardCertInfo* key; /* what was read about the key, not the parsed certificate */
++	BYTE* der;
++	DWORD derLength;
++} CachedCardKey;
++
++static pthread_mutex_t card_cache_lock = PTHREAD_MUTEX_INITIALIZER;
++static CachedCardKey* card_cache_keys = nullptr;
++static size_t card_cache_count = 0;
++static char* card_cache_module = nullptr;
++static char* card_cache_reader = nullptr;
++static UINT64 card_cache_time = 0;
++
++/* Copies what list_provider_keys reads about a key from the card (both ways: into the cache and
++ * back for the network level authentication). */
++WINPR_ATTR_NODISCARD
++static SmartcardCertInfo* card_key_copy(const SmartcardCertInfo* src)
++{
++	SmartcardCertInfo* dst = calloc(1, sizeof(SmartcardCertInfo));
++	if (!dst)
++		return nullptr;
++
++	dst->slotId = src->slotId;
++	dst->keyName = src->keyName ? _strdup(src->keyName) : nullptr;
++	dst->csp = src->csp ? _wcsdup(src->csp) : nullptr;
++	dst->reader = src->reader ? _wcsdup(src->reader) : nullptr;
++	dst->containerName = src->containerName ? _wcsdup(src->containerName) : nullptr;
++	dst->pkinitArgs = src->pkinitArgs ? _strdup(src->pkinitArgs) : nullptr;
++	if ((src->keyName && !dst->keyName) || (src->csp && !dst->csp) ||
++	    (src->reader && !dst->reader) || (src->containerName && !dst->containerName) ||
++	    (src->pkinitArgs && !dst->pkinitArgs))
++	{
++		smartcardCertInfo_Free(dst);
++		return nullptr;
++	}
++	return dst;
++}
++
++static void card_cache_clear(void)
++{
++	for (size_t i = 0; card_cache_keys && (i < card_cache_count); i++)
++	{
++		smartcardCertInfo_Free(card_cache_keys[i].key);
++		free(card_cache_keys[i].der);
++	}
++	free(card_cache_keys);
++	card_cache_keys = nullptr;
++	card_cache_count = 0;
++	free(card_cache_module);
++	card_cache_module = nullptr;
++	free(card_cache_reader);
++	card_cache_reader = nullptr;
++}
++
++static BOOL card_cache_same(const char* a, const char* b)
++{
++	if (!a || !b)
++		return a == b;
++	return strcmp(a, b) == 0;
++}
++
++/* Records a key with its certificate as read from the card (before any filter). */
++WINPR_ATTR_NODISCARD
++static BOOL card_cache_add(const SmartcardCertInfo* cert, const BYTE* der, DWORD derLength)
++{
++	CachedCardKey entry = { card_key_copy(cert), malloc(derLength), derLength };
++	CachedCardKey* keys = nullptr;
++	if (entry.key && entry.der)
++		keys = realloc(card_cache_keys, sizeof(CachedCardKey) * (card_cache_count + 1));
++	if (!keys)
++	{
++		smartcardCertInfo_Free(entry.key);
++		free(entry.der);
++		return FALSE;
++	}
++
++	memcpy(entry.der, der, derLength);
++	card_cache_keys = keys;
++	card_cache_keys[card_cache_count++] = entry;
++	return TRUE;
++}
++#endif /* _WIN32 */
++
+ WINPR_ATTR_NODISCARD
+ static BOOL treat_sc_cert(SmartcardCertInfo* scCert)
+ {
+@@ -442,7 +538,8 @@
+ static BOOL list_provider_keys(WINPR_ATTR_UNUSED const rdpSettings* settings,
+                                NCRYPT_PROV_HANDLE provider, LPCWSTR csp, LPCWSTR scope,
+                                const char* userFilter, const char* domainFilter,
+-                               SmartcardCertInfo*** pcerts, size_t* pcount)
++                               WINPR_ATTR_UNUSED BOOL record, SmartcardCertInfo*** pcerts,
++                               size_t* pcount)
+ {
+ 	BOOL ret = FALSE;
+ 	NCryptKeyName* keyName = nullptr;
+@@ -573,16 +670,25 @@
+ 			goto endofloop;
+ 		}
+ 
+-		if (!set_info_certificate(cert, certBytes, cbOutput, userFilter, domainFilter))
+-			goto endofloop;
+-
+ #ifndef _WIN32
+ 		if (!build_pkinit_args(provider, cert))
+ 		{
+ 			WLog_ERR(TAG, "error build pkinit args");
+ 			goto endofloop;
+ 		}
++
++		/* Only a speed-up: when it fails, the card is read again for the authentication. */
++		if (record && !card_cache_add(cert, certBytes, cbOutput))
++		{
++			WLog_WARN(TAG, "unable to keep the certificates read for the gateway");
++			card_cache_clear();
++			record = FALSE;
++		}
+ #endif
++
++		if (!set_info_certificate(cert, certBytes, cbOutput, userFilter, domainFilter))
++			goto endofloop;
++
+ 		haveError = FALSE;
+ 
+ 	endofloop:
+@@ -617,11 +723,57 @@
+ 	return ret;
+ }
+ 
++#ifndef _WIN32
++/* The certificates kept for the network level authentication after the gateway, filtered as if
++ * read from the card again; the cache is used once. Caller holds card_cache_lock. */
++WINPR_ATTR_NODISCARD
++static BOOL card_cache_take(const char* userFilter, const char* domainFilter,
++                            SmartcardCertInfo*** pcerts, size_t* pcount)
++{
++	BOOL ret = FALSE;
++	SmartcardCertInfo** cert_list = nullptr;
++	size_t count = 0;
++
++	for (size_t i = 0; card_cache_keys && (i < card_cache_count); i++)
++	{
++		const CachedCardKey* key = &card_cache_keys[i];
++		SmartcardCertInfo* cert = card_key_copy(key->key);
++		if (!cert)
++			goto out;
++
++		if (!set_info_certificate(cert, key->der, key->derLength, userFilter, domainFilter))
++		{
++			smartcardCertInfo_Free(cert);
++			continue;
++		}
++
++		if (!add_cert_to_list(&cert_list, &count, cert))
++		{
++			smartcardCertInfo_Free(cert);
++			goto out;
++		}
++	}
++
++	WLog_INFO(TAG,
++	          "smart card certificates read for the gateway reused, not read again (%" PRIuz
++	          " of %" PRIuz " usable)",
++	          count, card_cache_count);
++	*pcerts = cert_list;
++	*pcount = count;
++	ret = TRUE;
++out:
++	if (!ret)
++		smartcardCertList_Free(cert_list, count);
++	card_cache_clear();
++	return ret;
++}
++#endif /* _WIN32 */
++
+ WINPR_ATTR_NODISCARD
+ static BOOL smartcard_hw_enumerateCerts(const rdpSettings* settings, LPCWSTR csp,
+                                         const char* reader, const char* userFilter,
+-                                        const char* domainFilter, SmartcardCertInfo*** scCerts,
+-                                        size_t* retCount)
++                                        const char* domainFilter, BOOL gateway,
++                                        SmartcardCertInfo*** scCerts, size_t* retCount)
+ {
+ 	BOOL ret = FALSE;
+ 	LPWSTR scope = nullptr;
+@@ -657,16 +809,48 @@
+ 		if (!csp)
+ 			csp = MS_SMART_CARD_KEY_STORAGE_PROVIDER;
+ 
++		BOOL record = FALSE;
++#ifndef _WIN32
++		pthread_mutex_lock(&card_cache_lock);
++		if (!gateway && card_cache_keys && card_cache_same(card_cache_module, Pkcs11Module) &&
++		    card_cache_same(card_cache_reader, reader) &&
++		    (GetTickCount64() - card_cache_time <= CARD_CACHE_LIFETIME_MS))
++		{
++			const BOOL taken = card_cache_take(userFilter, domainFilter, &cert_list, &count);
++			pthread_mutex_unlock(&card_cache_lock);
++			if (!taken)
++				goto out;
++			goto done;
++		}
++		card_cache_clear();
++		if (gateway)
++		{
++			card_cache_module = _strdup(Pkcs11Module);
++			card_cache_reader = reader ? _strdup(reader) : nullptr;
++			record = card_cache_module && (!reader || card_cache_reader);
++			card_cache_time = GetTickCount64();
++		}
++#endif
++
+ 		status = winpr_NCryptOpenStorageProviderEx(&provider, csp, 0, paths);
+ 		if (status != ERROR_SUCCESS)
+ 		{
++#ifndef _WIN32
++			card_cache_clear();
++			pthread_mutex_unlock(&card_cache_lock);
++#endif
+ 			WLog_ERR(TAG, "unable to open provider given by pkcs11 module");
+ 			goto out;
+ 		}
+ 
+ 		status = list_provider_keys(settings, provider, csp, scope, userFilter, domainFilter,
+-		                            &cert_list, &count);
++		                            record, &cert_list, &count);
+ 		NCryptFreeObject((NCRYPT_HANDLE)provider);
++#ifndef _WIN32
++		if (!status)
++			card_cache_clear();
++		pthread_mutex_unlock(&card_cache_lock);
++#endif
+ 		if (!status)
+ 		{
+ 			WLog_ERR(TAG, "error listing keys from CSP loaded from %s", Pkcs11Module);
+@@ -745,7 +929,7 @@
+ 				continue;
+ 
+ 			if (!list_provider_keys(settings, provider, name->pszName, scope, userFilter,
+-			                        domainFilter, &cert_list, &count))
++			                        domainFilter, FALSE, &cert_list, &count))
+ 				WLog_INFO(TAG, "error when retrieving keys in CSP '%s'", providerNameStr);
+ 
+ 			NCryptFreeObject((NCRYPT_HANDLE)provider);
+@@ -754,6 +938,9 @@
+ 		NCryptFreeBuffer(names);
+ 	}
+ 
++#ifndef _WIN32
++done:
++#endif
+ 	*scCerts = cert_list;
+ 	*retCount = count;
+ 	ret = TRUE;
+@@ -955,8 +1142,8 @@
+ 		return FALSE;
+ 	}
+ 
+-	ret =
+-	    smartcard_hw_enumerateCerts(settings, csp, ReaderName, Username, Domain, scCerts, retCount);
++	ret = smartcard_hw_enumerateCerts(settings, csp, ReaderName, Username, Domain, gateway, scCerts,
++	                                  retCount);
+ 	free(csp);
+ 	return ret;
+ }

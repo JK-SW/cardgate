@@ -152,6 +152,11 @@ public struct FreeRDPCommand: Equatable, Sendable {
             // session.
             "/smartcard-logon",
             "/kerberos:pkcs11-module:\(pkcs11Module)",
+            // NLA only with Kerberos: the client gives NTLM the PIN as the password, and an NTLM
+            // response (sent when Kerberos fails or the computer asks for NTLM) reveals it offline.
+            // Without user-to-user Kerberos (not used by remote desktop): Negotiate gets a ticket
+            // with the card for each mechanism, ~17 s each with a slow card module.
+            "/auth-pkg-list:!ntlm,!u2u",
         ]
         args += security.arguments
         // The computer's certificate (TLS, NLA) is trusted on first use and must not change then;

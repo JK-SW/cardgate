@@ -97,6 +97,8 @@ z GitHubu a nič o vás neodosiela.
 - Certifikát počítača si CardGate zapamätá pri prvom pripojení. Keď sa neskôr zmení, pripojenie
   zastaví (**Certifikát počítača sa zmenil**). Tlačidlom **Dôverovať novému certifikátu** ho prijmite,
   len keď správca počítača potvrdí, že bol obnovený, a jeho odtlačok SHA-256 súhlasí s odtlačkom v hlásení.
+  S NLA prijme CardGate obnovený certifikát sám: počítač pri prihlásení kartou (Kerberos) preukáže, že je
+  to stále on, ešte predtým, ako mu CardGate pošle vaše prihlasovacie údaje.
 - Automatické zabezpečenie nikdy potichu neprejde na slabšie. Keď počítač predtým prijímal TLS alebo NLA
   a teraz ponúka len slabšie zabezpečenie, CardGate sa nepripojí, kým nekliknete na **Pripojiť sa
   slabším zabezpečením**; bez potvrdenia správcu to nerobte.

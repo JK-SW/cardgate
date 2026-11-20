@@ -97,7 +97,9 @@ GitHub and sends nothing about you.
 - CardGate remembers the computer's certificate on the first connection. If it changes later, the
   connection is stopped (**The computer's certificate changed**). Accept it with **Trust the New
   Certificate** only if the computer's administrator confirms it was renewed and its SHA-256
-  fingerprint matches the one in the message.
+  fingerprint matches the one in the message. With NLA, CardGate accepts a renewed certificate by
+  itself: when you sign in with the card (Kerberos), the computer proves it is still the same one
+  before CardGate sends it your sign-in credentials.
 - Automatic security never silently switches to weaker security. If the computer used to accept TLS or
   NLA and now offers only weaker security, CardGate does not connect until you click **Connect with
   Weaker Security**; do not do that without the administrator's confirmation.

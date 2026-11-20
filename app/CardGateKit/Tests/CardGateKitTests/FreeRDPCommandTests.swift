@@ -36,6 +36,7 @@ struct FreeRDPCommandTests {
                 "/gateway:g:rdg.example.com,type:http,usage-method:direct,auth:smartcard",
                 "/smartcard-logon",
                 "/kerberos:pkcs11-module:\(module)",
+                "/auth-pkg-list:!ntlm,!u2u",
                 "/sec:rdp",
                 "/cert:tofu",
                 "/dynamic-resolution",
@@ -116,6 +117,18 @@ struct FreeRDPCommandTests {
             let all = try FreeRDPCommand(
                 executable: client, profile: profile(), pkcs11Module: module, config: config, smartCardReader: unusable)
             #expect(all.arguments.filter { $0.hasPrefix("/smartcard") } == ["/smartcard-logon"])
+        }
+    }
+
+    /// NTLM would get the PIN as the password: NLA never falls back to it, whatever the security.
+    @Test func neverOffersNTLM() throws {
+        for choice in ConnectionSecurity.allCases {
+            let plan = try #require(
+                SecurityPlan.make(choice, remembered: nil, nlaFailed: false, kerberos: .ready, at: Date()))
+            let arguments = try FreeRDPCommand(
+                executable: client, profile: profile(), pkcs11Module: module, config: config, security: plan
+            ).arguments
+            #expect(arguments.filter { $0.hasPrefix("/auth-pkg-list") } == ["/auth-pkg-list:!ntlm,!u2u"])
         }
     }
 

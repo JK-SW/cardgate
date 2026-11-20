@@ -1,0 +1,192 @@
+--- a/libfreerdp/core/nla.c
++++ b/libfreerdp/core/nla.c
+@@ -582,6 +582,27 @@
+ 	return 1;
+ }
+ 
++/* The security package that authenticated the connection is Kerberos (in Negotiate). */
++WINPR_ATTR_NODISCARD
++static BOOL nla_authenticated_by_kerberos(rdpNla* nla)
++{
++	SecurityFunctionTable* table = nullptr;
++	CtxtHandle context = WINPR_C_ARRAY_INIT;
++	SecPkgContext_PackageInfo info = WINPR_C_ARRAY_INIT;
++
++	credssp_auth_tableAndContext(nla->auth, &table, &context);
++	if (!table || !table->QueryContextAttributes || !table->FreeContextBuffer)
++		return FALSE;
++	if (table->QueryContextAttributes(&context, SECPKG_ATTR_PACKAGE_INFO, &info) != SEC_E_OK ||
++	    !info.PackageInfo)
++		return FALSE;
++
++	const BOOL kerberos =
++	    info.PackageInfo->Name && (_tcscmp(info.PackageInfo->Name, KERBEROS_SSP_NAME) == 0);
++	table->FreeContextBuffer(info.PackageInfo);
++	return kerberos;
++}
++
+ WINPR_ATTR_NODISCARD
+ static int nla_client_recv_pub_key_auth(rdpNla* nla)
+ {
+@@ -600,6 +621,21 @@
+ 	if (!rc)
+ 		return -1;
+ 
++	/* A changed certificate of the computer was accepted until now (tls.c): the key of this TLS
++	 * connection is now proven by the authentication package. Only Kerberos proves the computer
++	 * (NTLM only that the other side knows the user's secret); else no credentials are sent. */
++	rdpTls* tls = transport_get_tls(nla->transport);
++	if (freerdp_tls_has_pending_certificate(tls))
++	{
++		if (!nla_authenticated_by_kerberos(nla))
++		{
++			WLog_ERR(TAG, "certificate of the computer changed since it was first trusted and "
++			              "Kerberos did not verify the computer, denying.");
++			return -1;
++		}
++		freerdp_tls_save_pending_certificate(tls);
++	}
++
+ 	/* Send encrypted credentials */
+ 	rc = nla_encrypt_ts_credentials(nla);
+ 	if (!rc)
+--- a/libfreerdp/core/rdp.c
++++ b/libfreerdp/core/rdp.c
+@@ -37,6 +37,7 @@
+ #include "utils.h"
+ #include "mcs.h"
+ #include "redirection.h"
++#include "../crypto/tls.h"
+ 
+ #include <freerdp/codec/bulk.h>
+ #include <freerdp/crypto/per.h>
+@@ -2100,7 +2101,16 @@
+ 			break;
+ 
+ 		case CONNECTION_STATE_MCS_CREATE_REQUEST:
+-			if (!mcs_client_begin(rdp->mcs))
++			/* A changed certificate of the computer accepted until Kerberos verifies the
++			 * computer (tls.c, nla.c) that was not verified: nothing more goes to it. */
++			if (freerdp_tls_has_pending_certificate(transport_get_tls(rdp->transport)))
++			{
++				WLog_Print(rdp->log, WLOG_ERROR,
++				           "certificate of the computer changed since it was first trusted and "
++				           "Kerberos did not verify the computer, denying.");
++				status = STATE_RUN_FAILED;
++			}
++			else if (!mcs_client_begin(rdp->mcs))
+ 			{
+ 				WLog_Print(rdp->log, WLOG_ERROR, "%s - mcs_client_begin() fail",
+ 				           rdp_get_state_string(rdp));
+--- a/libfreerdp/crypto/tls.c
++++ b/libfreerdp/crypto/tls.c
+@@ -45,6 +45,7 @@
+ #include "../crypto/tls.h"
+ #include "../crypto/x509_utils.h"
+ #include "../core/tcp.h"
++#include "../core/nego.h"
+ 
+ #include "opensslcompat.h"
+ #include "certificate.h"
+@@ -880,6 +881,8 @@
+ 	free_tls_public_key(tls);
+ 	free_tls_bindings(tls->Bindings);
+ 	tls->Bindings = nullptr;
++	freerdp_certificate_data_free(tls->pendingCertificate);
++	tls->pendingCertificate = nullptr;
+ }
+ 
+ #if OPENSSL_VERSION_NUMBER >= 0x010000000L
+@@ -2019,6 +2022,24 @@
+ 						          hostname, port);
+ 						accept_certificate = 1;
+ 					}
++					/* Windows renews its self-signed certificate for remote desktop (new key).
++					 * With network level authentication by Kerberos the computer proves who it
++					 * is (it knows the key of its account) and binds that to the key of this
++					 * certificate (pubKeyAuth) before any credentials are sent: accepted for
++					 * now, stored only when that succeeded (nla.c). */
++					else if (efp && !tls->pendingCertificate &&
++					         (freerdp_settings_get_uint32(settings, FreeRDP_SelectedProtocol) &
++					          (PROTOCOL_HYBRID | PROTOCOL_HYBRID_EX)))
++					{
++						WLog_WARN(TAG,
++						          "certificate of %s:%" PRIu16
++						          " changed since it was first trusted, accepted until Kerberos"
++						          " verifies the computer (new fingerprint %s).",
++						          hostname, port, efp);
++						tls->pendingCertificate = certificate_data;
++						certificate_data = nullptr;
++						accept_certificate = 2;
++					}
+ 					else
+ 					{
+ 						WLog_ERR(TAG,
+@@ -2258,6 +2279,34 @@
+ 	return nullptr;
+ }
+ 
++BOOL freerdp_tls_has_pending_certificate(const rdpTls* tls)
++{
++	return tls && tls->pendingCertificate;
++}
++
++void freerdp_tls_save_pending_certificate(rdpTls* tls)
++{
++	WINPR_ASSERT(tls);
++	if (!tls->pendingCertificate)
++		return;
++
++	/* The computer is verified either way: when the store fails, the next connection verifies
++	 * the certificate again. */
++	if (freerdp_certificate_store_save_data(tls->certificate_store, tls->pendingCertificate))
++		WLog_INFO(TAG,
++		          "changed certificate of %s:%" PRIu16
++		          " verified by Kerberos, replacing the stored one.",
++		          freerdp_certificate_data_get_host(tls->pendingCertificate),
++		          freerdp_certificate_data_get_port(tls->pendingCertificate));
++	else
++		WLog_WARN(TAG, "changed certificate of %s:%" PRIu16
++		               " verified by Kerberos, unable to store it.",
++		          freerdp_certificate_data_get_host(tls->pendingCertificate),
++		          freerdp_certificate_data_get_port(tls->pendingCertificate));
++	freerdp_certificate_data_free(tls->pendingCertificate);
++	tls->pendingCertificate = nullptr;
++}
++
+ void freerdp_tls_free(rdpTls* tls)
+ {
+ 	if (!tls)
+--- a/libfreerdp/crypto/tls.h
++++ b/libfreerdp/crypto/tls.h
+@@ -29,6 +29,7 @@
+ #include <freerdp/api.h>
+ #include <freerdp/types.h>
+ #include <freerdp/crypto/certificate_store.h>
++#include <freerdp/crypto/certificate_data.h>
+ 
+ #include <winpr/stream.h>
+ 
+@@ -82,6 +83,9 @@
+ 	int alertDescription;
+ 	BOOL isGatewayTransport;
+ 	BOOL isClientMode;
++	/* A changed certificate of the computer accepted only until network level authentication
++	 * with Kerberos verifies the computer (CardGate, freerdp_tls_*_pending_certificate). */
++	rdpCertificateData* pendingCertificate;
+ };
+ 
+ /** @brief result of a handshake operation */
+@@ -132,6 +136,12 @@
+ 	WINPR_ATTR_NODISCARD
+ 	FREERDP_LOCAL rdpTls* freerdp_tls_new(rdpContext* context);
+ 
++	/** @brief whether a changed certificate waits for Kerberos to verify the computer */
++	FREERDP_LOCAL BOOL freerdp_tls_has_pending_certificate(const rdpTls* tls);
++
++	/** @brief stores the changed certificate Kerberos verified (replaces the trusted one) */
++	FREERDP_LOCAL void freerdp_tls_save_pending_certificate(rdpTls* tls);
++
+ #ifdef __cplusplus
+ }
+ #endif
