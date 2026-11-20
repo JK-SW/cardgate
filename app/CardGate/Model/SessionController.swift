@@ -31,6 +31,12 @@ final class SessionController {
     private var pinSession: String?
 
     var isRunning: Bool { process != nil || preflight != nil }
+    /// The security the client negotiated with the computer in the current or last session.
+    var negotiatedSecurity: SecurityMethod? { parser.negotiatedSecurity }
+    /// The computer whose certificate changed (`SessionFailure.computerCertificateChanged`).
+    var changedCertificateFingerprint: String? { parser.changedCertificateFingerprint }
+    var computerOffers: SecurityMethod? { parser.computerOffers }
+    var computerRequires: SecurityMethod? { parser.computerRequires }
     /// Cancel or Disconnect was chosen; the client is quitting (see `ClientStop`).
     private(set) var isStopping = false
 

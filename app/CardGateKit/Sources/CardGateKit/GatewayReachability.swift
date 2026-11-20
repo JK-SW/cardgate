@@ -38,24 +38,10 @@ public enum GatewayReachability: Equatable, Sendable {
                     }
                 }
                 connection.start(queue: queue)
-                let seconds = Double(timeout.components.seconds) + Double(timeout.components.attoseconds) / 1e18
-                queue.asyncAfter(deadline: .now() + seconds) { finish(.unreachable) }
+                queue.asyncAfter(deadline: .now() + timeout.timeInterval) { finish(.unreachable) }
             }
         } onCancel: {
             connection.cancel()  // a superseded check closes its connection at once
-        }
-    }
-}
-
-/// Lets exactly one of several racing callbacks finish.
-private final class Once: @unchecked Sendable {
-    private let lock = NSLock()
-    private var done = false
-
-    func claim() -> Bool {
-        lock.withLock {
-            defer { done = true }
-            return !done
         }
     }
 }

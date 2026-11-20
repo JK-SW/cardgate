@@ -228,7 +228,7 @@ final class CardMonitor {
                 tokenID: tokenID, holderName: name, sha1: sha1,
                 extendedKeyUsages: extendedKeyUsages(in: values),
                 notBefore: date(in: values, key: kSecOIDX509V1ValidityNotBefore),
-                notAfter: date(in: values, key: kSecOIDX509V1ValidityNotAfter))
+                notAfter: date(in: values, key: kSecOIDX509V1ValidityNotAfter), der: der)
         }
         .sorted { $0.holderName < $1.holderName }
     }

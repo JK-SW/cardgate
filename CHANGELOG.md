@@ -5,11 +5,33 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Připojení i k počítačům, které vyžadují TLS nebo ověření na úrovni sítě (NLA). V nastavení připojení je
+  nová volba Zabezpečení: Automaticky (výchozí) použije nejsilnější zabezpečení, které počítač přijme, zapamatuje
+  si ho a zhruba po měsíci zkusí, zda počítač nepřijme silnější; v závorce ukazuje, co se právě používá. Lze
+  zvolit i NLA, TLS nebo Zabezpečení RDP.
+- S NLA stačí jeden PIN: přihlásí vás k bráně, k počítači (Kerberos přes KDC proxy brány) i do Windows.
+- Srozumitelné hlášky: účet nemá oprávnění k počítači, přihlášení kartou k počítači (NLA) se nepovedlo,
+  počítač nabízí jen slabší zabezpečení, certifikát počítače se změnil. Dřív nevysvětlené ukončení spojení
+  bránou (např. „exit status 131“) se hlásí srozumitelně: počítač nepřijímá Zabezpečení RDP, nebo je nedostupný.
+- Když automatické zabezpečení narazí na NLA, které s kartou nejde (např. brána nemá KDC proxy), další
+  připojení po dobu týdne proběhnou bez NLA jako dosud. Počítač, který NLA vyžaduje, nabídne „Zkusit znovu s NLA“.
+- Kořenová certifikační autorita karty (pro NLA) se stáhne podle adres v certifikátu karty a uloží, takže NLA
+  funguje i tam, kde ji stáhnout nejde (např. mimo síť organizace).
+
 ### Změněno
-- Aplikace obsahuje klientské knihovny MIT Kerberos (příprava přihlášení k počítači s ověřením na úrovni
-  sítě, NLA). Používá jen vlastní nastavení Kerberosu, nastavení Kerberosu na Macu ani jeho lístky neovlivní.
+- Aplikace obsahuje klientské knihovny MIT Kerberos. Používá jen vlastní nastavení Kerberosu, nastavení
+  Kerberosu na Macu ani jeho lístky neovlivní.
 - Okno O aplikaci: tlačítko s licencemi přibalených knihoven se jmenuje krátce „Licence komponent“
   (dřív se název nevešel celý).
+
+### Zabezpečení
+- Spojení mezi bránou a počítačem je u TLS a NLA šifrované TLS místo RC4 (RDP Security); NLA navíc ověří
+  počítač i uživatele přes Kerberos. Certifikát počítače se při prvním připojení zapamatuje a jeho změna
+  připojení zastaví. Nový certifikát lze přijmout tlačítkem „Důvěřovat novému certifikátu“ – přijme se jen
+  certifikát s otiskem SHA-256 uvedeným v hlášce. Certifikát brány musí být jako dosud důvěryhodný.
+- Automatické zabezpečení nikdy potichu nepřejde na slabší: když počítač dřív přijímal TLS nebo NLA a teď
+  nabízí jen slabší zabezpečení, CardGate se zeptá.
 
 ## [0.6.1] - 2026-11-19
 

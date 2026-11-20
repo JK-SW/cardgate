@@ -12,12 +12,14 @@ public struct CardCertificate: Equatable, Sendable, Identifiable {
     public let extendedKeyUsages: [Data]
     public let notBefore: Date?
     public let notAfter: Date?
+    /// The certificate itself (DER), to find the certification authority that issued it.
+    public let der: Data?
 
     public var id: String { sha1 }
 
     public init(
         tokenID: String, holderName: String, sha1: String, extendedKeyUsages: [Data],
-        notBefore: Date? = nil, notAfter: Date? = nil
+        notBefore: Date? = nil, notAfter: Date? = nil, der: Data? = nil
     ) {
         self.tokenID = tokenID
         self.holderName = holderName
@@ -25,6 +27,7 @@ public struct CardCertificate: Equatable, Sendable, Identifiable {
         self.extendedKeyUsages = extendedKeyUsages
         self.notBefore = notBefore
         self.notAfter = notAfter
+        self.der = der
     }
 
     /// Microsoft Smart Card Logon, 1.3.6.1.4.1.311.20.2.2

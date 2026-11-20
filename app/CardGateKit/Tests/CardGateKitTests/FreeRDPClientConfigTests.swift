@@ -15,6 +15,12 @@ struct FreeRDPClientConfigTests {
     }
 
     static let plugins = URL(filePath: "/Applications/CardGate.app/Contents/PlugIns/krb5")
+    static func computer() throws -> HostAddress { try HostAddress(parsing: "pc.corp.example") }
+    static func kerberos(plugins: URL = plugins, gateway: HostAddress? = nil, anchor: Data? = nil) throws
+        -> KerberosSetup
+    {
+        KerberosSetup(plugins: plugins, computer: try computer(), gateway: gateway, anchor: anchor)
+    }
 
     func install(scrollLikeThisMac: Bool) throws -> Written {
         let directory = FileManager.default.temporaryDirectory.appending(path: "cardgate-config-\(UUID().uuidString)")
@@ -22,8 +28,8 @@ struct FreeRDPClientConfigTests {
         let config = FreeRDPClientConfig(directory: directory)
         var profile = ConnectionProfile(name: "x", computer: try HostAddress(parsing: "pc.example.com"))
         profile.input.scrollLikeThisMac = scrollLikeThisMac
-        try config.install(for: profile, kerberosPlugins: Self.plugins)
-        try config.install(for: profile, kerberosPlugins: Self.plugins)  // overwrites
+        try config.install(for: profile, kerberos: try Self.kerberos())
+        try config.install(for: profile, kerberos: try Self.kerberos())  // overwrites
         #expect(config.sdlConfigURL == directory.appending(path: "freerdp/sdl-freerdp.json"))
         return try JSONDecoder().decode(Written.self, from: Data(contentsOf: config.sdlConfigURL))
     }
@@ -39,7 +45,7 @@ struct FreeRDPClientConfigTests {
         let config = FreeRDPClientConfig(directory: directory)
         try config.install(
             for: ConnectionProfile(name: "x", computer: try HostAddress(parsing: "pc.example.com")),
-            kerberosPlugins: Self.plugins)
+            kerberos: try Self.kerberos())
         #expect(config.kerberosConfigURL == directory.appending(path: "krb5.conf"))
         let written = try String(contentsOf: config.kerberosConfigURL, encoding: .utf8)
         let lines = written.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
@@ -59,16 +65,53 @@ struct FreeRDPClientConfigTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let config = FreeRDPClientConfig(directory: directory)
         let profile = ConnectionProfile(name: "x", computer: try HostAddress(parsing: "pc.example.com"))
-        try config.install(for: profile, kerberosPlugins: Self.plugins)
+        try config.install(for: profile, kerberos: try Self.kerberos())
         let moved = URL(filePath: "/Users/test/Apps/%{TEMP}/CardGate.app/Contents/PlugIns/krb5")
-        try config.install(for: profile, kerberosPlugins: moved)
+        try config.install(for: profile, kerberos: try Self.kerberos(plugins: moved))
         let link = config.kerberosPluginsLink.path(percentEncoded: false)
         #expect(try FileManager.default.destinationOfSymbolicLink(atPath: link) == moved.path(percentEncoded: false))
 
         let odd = FreeRDPClientConfig(directory: directory.appending(path: "%{TEMP}"))
         #expect(throws: FreeRDPClientConfig.InstallError.unusableDirectory) {
-            try odd.install(for: profile, kerberosPlugins: Self.plugins)
+            try odd.install(for: profile, kerberos: try Self.kerberos())
         }
+    }
+
+    /// With a realm: its KDC is the gateway's KDC proxy, PKINIT trusts only the card's root CA and
+    /// accepts the domain controller of the domain.
+    @Test func kerberosRealmThroughTheGateway() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "cardgate-config-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let config = FreeRDPClientConfig(directory: directory)
+        let anchor = Data([0x30, 0x03, 0x02, 0x01, 0x01])
+        let setup = try Self.kerberos(gateway: try HostAddress(parsing: "gw.example.com"), anchor: anchor)
+        #expect(setup.isUsable)
+        try config.install(for: ConnectionProfile(name: "x", computer: try Self.computer()), kerberos: setup)
+        let written = try String(contentsOf: config.kerberosConfigURL, encoding: .utf8)
+        let lines = written.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+        #expect(lines.contains("default_realm = CORP.EXAMPLE"))
+        #expect(lines.contains("CORP.EXAMPLE = {"))
+        #expect(lines.contains(#"kdc = "https://gw.example.com/KdcProxy""#))
+        #expect(lines.contains("pkinit_anchors = \"FILE:\(config.kerberosAnchorURL.path(percentEncoded: false))\""))
+        #expect(lines.contains("pkinit_kdc_hostname = corp.example"))
+        #expect(lines.contains("pkinit_eku_checking = kpServerAuth"))
+        // The default realm belongs to [libdefaults], before the other sections.
+        let realmLine = try #require(lines.firstIndex(of: "default_realm = CORP.EXAMPLE"))
+        let libdefaults = try #require(lines.firstIndex(of: "[libdefaults]"))
+        let realms = try #require(lines.firstIndex(of: "[realms]"))
+        #expect(libdefaults < realmLine && realmLine < realms)
+        #expect(lines.contains(".corp.example = CORP.EXAMPLE"))
+        let pem = try String(contentsOf: config.kerberosAnchorURL, encoding: .utf8)
+        #expect(pem == PKINITAnchor.pem(anchor))
+
+        // Without the root CA no realm (NLA is not offered) and no stale anchor file.
+        let without = try Self.kerberos(gateway: try HostAddress(parsing: "gw.example.com"))
+        #expect(!without.isUsable && without.waitsForAnchor)
+        #expect(!(try Self.kerberos()).waitsForAnchor, "no gateway, no KDC proxy")
+        try config.install(for: ConnectionProfile(name: "x", computer: try Self.computer()), kerberos: without)
+        #expect(!FileManager.default.fileExists(atPath: config.kerberosAnchorURL.path(percentEncoded: false)))
+        let plain = try String(contentsOf: config.kerberosConfigURL, encoding: .utf8)
+        #expect(!plain.contains("[realms]") && !plain.contains("default_realm") && plain.contains("plugin_base_dir"))
     }
 
     /// A folder with a quote, backslash or line break in its name still gives one value.

@@ -32,6 +32,11 @@ Tento návod otvoríte aj z aplikácie: **Pomocník → Návod na CardGate**.
 Pripojení môžete mať aj viac: sú v zozname vľavo. Každé upravíte tlačidlom vedľa jeho názvu, nové
 pridáte tlačidlom **Nové pripojenie…** pod zoznamom.
 
+V časti **Pripojenie k počítaču** je voľba **Zabezpečenie**. Nechajte ju na **Automaticky**: CardGate použije
+najsilnejšie zabezpečenie, ktoré počítač prijme (NLA, TLS, alebo Zabezpečenie RDP), zapamätá si ho a približne
+po mesiaci skúsi, či počítač neprijme silnejšie. V zátvorke je vidieť, čo sa práve používa, napr.
+**Automaticky (NLA)**. NLA, TLS alebo Zabezpečenie RDP voľte len na pokyn IT oddelenia.
+
 <img src="images/sk/welcome.png" width="560" alt="Uvítacia obrazovka CardGate">
 <img src="images/sk/connection-settings.png" width="560" alt="Nastavenie pripojenia">
 
@@ -40,6 +45,8 @@ pridáte tlačidlom **Nové pripojenie…** pod zoznamom.
 1. Vložte kartu alebo token.
 2. Kliknite na **Pripojiť**. Kým sa plocha neotvorí, môžete pokus ukončiť tlačidlom **Zrušiť**.
 3. Zadajte **PIN** ku karte. Pozor: po niekoľkých chybných pokusoch sa karta zablokuje.
+   S NLA vás tento PIN prihlási aj do Windows. Bez NLA si Windows na prihlasovacej obrazovke vypýta PIN
+   ešte raz (ak ponúkne heslo, zvoľte prihlásenie čipovou kartou).
 4. Otvorí sa okno so vzdialenou plochou a okno CardGate sa skryje. V Docku je stále len ikona
    CardGate: kliknutím na ňu (alebo cez ⌘Tab) sa vrátite k vzdialenej ploche. Zelené tlačidlo
    v záhlaví okna prepína celú obrazovku. Pravým tlačidlom na ikone v Docku zvolíte **Odpojiť**.
@@ -84,6 +91,15 @@ z GitHubu a nič o vás neodosiela.
 - Certifikát brány musí vydať verejne dôveryhodná certifikačná autorita. Certifikát internej
   (firemnej) autority aplikácia neprijme, aj keď mu Mac dôveruje (napr. v Kľúčenke alebo cez
   správu zariadení) – ohlási, že certifikát brány nie je verejne dôveryhodný.
+- Spojenie medzi bránou a počítačom je pri NLA a TLS šifrované protokolom TLS. Zabezpečenie RDP používa
+  staršiu šifru RC4; automatika ho použije len pri počítači, ktorý nič iné neprijme. S NLA navyše
+  počítač overí vašu kartu ešte pred zobrazením prihlasovacej obrazovky.
+- Certifikát počítača si CardGate zapamätá pri prvom pripojení. Keď sa neskôr zmení, pripojenie
+  zastaví (**Certifikát počítača sa zmenil**). Tlačidlom **Dôverovať novému certifikátu** ho prijmite,
+  len keď správca počítača potvrdí, že bol obnovený, a jeho odtlačok SHA-256 súhlasí s odtlačkom v hlásení.
+- Automatické zabezpečenie nikdy potichu neprejde na slabšie. Keď počítač predtým prijímal TLS alebo NLA
+  a teraz ponúka len slabšie zabezpečenie, CardGate sa nepripojí, kým nekliknete na **Pripojiť sa
+  slabším zabezpečením**; bez potvrdenia správcu to nerobte.
 
 ## Keď niečo nefunguje
 
@@ -99,6 +115,12 @@ z GitHubu a nič o vás neodosiela.
 | Spojenie bolo prerušené | Sieť vypadla a obnovenie sa nepodarilo (alebo je v Nastaveniach vypnuté). Skontrolujte pripojenie k internetu a pripojte sa znova. |
 | Modul čipovej karty nie je od overeného vydavateľa | Modul ku karte nepochádza od overeného výrobcu. Použite ho (**Použiť tento modul…**), len ak viete, odkiaľ je (napr. od IT oddelenia). |
 | Modul čipovej karty nastavený pre toto pripojenie sa nenašiel | Opravte cestu v **Upraviť pripojenie** (časť Karta), alebo ju nechajte prázdnu. |
+| Počítač vyžaduje silnejšie zabezpečenie pripojenia | V nastaveniach pripojenia zvoľte **Zabezpečenie: Automaticky**. Ak už je zvolené, počítač vyžaduje NLA, ktoré sa nepodarilo použiť – postupujte podľa hlásenia, prípadne sa obráťte na IT oddelenie. |
+| Počítač ponúka len slabšie zabezpečenie pripojenia | Ak to správca počítača zmenil zámerne, kliknite na **Pripojiť sa slabším zabezpečením**. Inak sa nepripájajte a obráťte sa na IT oddelenie. |
+| Certifikát počítača sa zmenil | Novému certifikátu dôverujte, len keď správca potvrdí jeho obnovenie a odtlačok (pozri Bezpečnosť). |
+| Váš účet sa k tomuto počítaču nesmie pripojiť | Požiadajte správcu počítača o pridanie do skupiny Používatelia vzdialenej pracovnej plochy. |
+| Prihlásenie k počítaču kartou sa nepodarilo | Pripojte sa znova, CardGate sa potom pripojí bez NLA. Ak počítač NLA vyžaduje, obráťte sa na IT oddelenie (brána potrebuje KDC proxy). |
+| Pri tomto pripojení nemožno použiť NLA | Zadajte celé meno počítača s doménou (napr. `pc01.example.com`) a skontrolujte pripojenie k internetu, prípadne k sieti organizácie (kvôli stiahnutiu certifikačnej autority karty). |
 
 Podrobnosti nájdete v menu **Okno → Log pripojenia**; tlačidlom **Kopírovať log** ho môžete
 poslať IT oddeleniu. Log neobsahuje PIN.
@@ -118,3 +140,19 @@ defaults write io.github.jk-sw.cardgate DonationPromptDisabled -bool true
 ```
 
 (alebo konfiguračným profilom pre doménu `io.github.jk-sw.cardgate`).
+
+**Zabezpečenie pripojenia k počítaču.** CardGate podporuje NLA, TLS aj Zabezpečenie RDP; automatika použije
+najsilnejšie, ktoré počítač prijme. Odporúčame NLA (jeden PIN, počítač overí kartu pred prihlásením).
+NLA s kartou potrebuje:
+- na bráne RD Gateway zverejnenú službu KDC proxy (`https://<brána>/KdcProxy`), cez ktorú CardGate
+  overí kartu u radiča domény (Kerberos PKINIT),
+- meno počítača v DNS doméne Active Directory: realm je prípona mena veľkými písmenami
+  (`pc01.example.com` → `EXAMPLE.COM`); pri počítači v inej DNS zóne NLA zlyhá a CardGate sa pripojí bez neho,
+- certifikáty radičov domény vydané pod rovnakou koreňovou certifikačnou autoritou ako certifikáty kariet
+  (CardGate ju stiahne podľa adries v certifikáte karty a uloží),
+- používateľa s oprávnením prihlásiť sa cez Vzdialenú pracovnú plochu.
+
+Na počítači sa zabezpečenie nastavuje politikami skupiny v **Konfigurácia počítača → Šablóny na správu →
+Súčasti systému Windows → Služby vzdialenej pracovnej plochy → Hostiteľ relácie vzdialenej pracovnej plochy →
+Zabezpečenie**: „Require use of specific security layer for remote (RDP) connections“ = **SSL** a „Require
+user authentication for remote connections by using Network Level Authentication“ = **Povolené**.

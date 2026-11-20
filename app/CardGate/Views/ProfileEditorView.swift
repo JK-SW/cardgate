@@ -96,6 +96,30 @@ struct ProfileEditorView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section {
+                    Picker("Security", selection: $editor.security) {
+                        if let remembered = model.rememberedSecurity(for: editor.id) {
+                            Text("Automatic (\(remembered.shortName))").tag(ConnectionSecurity.automatic)
+                        } else {
+                            Text("Automatic").tag(ConnectionSecurity.automatic)
+                        }
+                        Text("NLA").tag(ConnectionSecurity.nla)
+                        Text("TLS").tag(ConnectionSecurity.tls)
+                        Text("RDP Security").tag(ConnectionSecurity.rdp)
+                    }
+                    .accessibilityIdentifier("profile.security")
+                } header: {
+                    Text("Connection to the Computer")
+                } footer: {
+                    Text(
+                        """
+                        Automatic uses the strongest security the computer accepts and remembers it. With NLA you \
+                        do not enter the PIN a second time when signing in to Windows.
+                        """
+                    )
+                    .foregroundStyle(.secondary)
+                }
+
                 Section("Mouse") {
                     Toggle("Scroll in the same direction as on this Mac", isOn: $editor.scrollLikeThisMac)
                 }

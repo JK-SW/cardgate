@@ -37,7 +37,7 @@ struct FreeRDPCommandTests {
                 "/smartcard-logon",
                 "/kerberos:pkcs11-module:\(module)",
                 "/sec:rdp",
-                "/cert:deny",
+                "/cert:tofu",
                 "/dynamic-resolution",
                 "+clipboard",
                 "/sound:sys:mac",
@@ -46,7 +46,7 @@ struct FreeRDPCommandTests {
                 "/log-level:INFO",
                 "/log-filters:com.freerdp.client.sdl.disp:DEBUG,com.freerdp.channels.disp.client:DEBUG,"
                     + "com.freerdp.utils.smartcard.ops:DEBUG,"
-                    + "com.freerdp.utils.smartcard.call:TRACE",
+                    + "com.freerdp.utils.smartcard.call:TRACE,com.freerdp.core.nego:DEBUG",
             ])
         #expect(
             command.environment == [
@@ -237,6 +237,20 @@ struct FreeRDPCommandTests {
         let bad = try FreeRDPCommand(
             executable: client, profile: profile(), pkcs11Module: module, config: config, certificateSHA1: "x;rm")
         #expect(bad.environment["FREERDP_SMARTCARD_CERT_SHA1"] == nil)
+    }
+
+    /// The changed computer certificate the user trusts, by fingerprint (patch 0016).
+    @Test func passesConfirmedCertificate() throws {
+        let fingerprint = Array(repeating: "0f", count: 32).joined(separator: ":")
+        let command = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config,
+            confirmedCertificate: fingerprint)
+        #expect(command.environment[FreeRDPCommand.confirmedCertificateVariable] == fingerprint)
+        let bad = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config, confirmedCertificate: "x")
+        #expect(bad.environment[FreeRDPCommand.confirmedCertificateVariable] == nil)
+        let none = try FreeRDPCommand(executable: client, profile: profile(), pkcs11Module: module, config: config)
+        #expect(none.environment[FreeRDPCommand.confirmedCertificateVariable] == nil)
     }
 
     /// The client gets only the variables it needs: WinPR log settings could log the PIN, OpenSSL

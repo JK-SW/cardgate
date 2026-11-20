@@ -16,6 +16,9 @@ public enum AppAlert: Identifiable, Hashable, Sendable {
     case clientSettingsNotSaved
     case modulePathUnusable
     case gatewayMissing
+    /// The connection is set to NLA, but Kerberos cannot be used for it (no domain in the
+    /// computer's name, or the certification authority of the card is not known).
+    case nlaUnavailable
 
     public var id: Self { self }
 

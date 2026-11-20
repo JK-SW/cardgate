@@ -225,6 +225,22 @@
         }
       }
     },
+    "Automatic (%@)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky (%@)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky (%@)"
+          }
+        }
+      }
+    },
     "Automatic (newest valid)": {
       "localizations": {
         "cs": {
@@ -237,6 +253,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Automaticky (najnovší platný)"
+          }
+        }
+      }
+    },
+    "Automatic uses the strongest security the computer accepts and remembers it. With NLA you do not enter the PIN a second time when signing in to Windows.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky použije nejsilnější zabezpečení, které počítač přijme, a zapamatuje si ho. S NLA nemusíte PIN při přihlášení do Windows zadávat podruhé."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky použije najsilnejšie zabezpečenie, ktoré počítač prijme, a zapamätá si ho. S NLA nemusíte PIN pri prihlásení do Windows zadávať druhýkrát."
           }
         }
       }
@@ -948,6 +980,22 @@
         }
       }
     },
+    "Connect with Weaker Security": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojit se slabším zabezpečením"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojiť sa slabším zabezpečením"
+          }
+        }
+      }
+    },
     "Connected": {
       "localizations": {
         "cs": {
@@ -992,6 +1040,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Log pripojenia"
+          }
+        }
+      }
+    },
+    "Connection to the Computer": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení k počítači"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie k počítaču"
           }
         }
       }
@@ -1670,6 +1734,22 @@
         }
       }
     },
+    "It accepts only weaker security than the one set for this connection. Choose Security: Automatic in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přijímá jen slabší zabezpečení, než je nastavené pro toto připojení. Zvolte v nastavení připojení Zabezpečení: Automaticky."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prijíma len slabšie zabezpečenie, než je nastavené pre toto pripojenie. Zvoľte v nastaveniach pripojenia Zabezpečenie: Automaticky."
+          }
+        }
+      }
+    },
     "It gets your PIN and access to the card. Use it only if you got it from your IT department.": {
       "localizations": {
         "cs": {
@@ -1714,6 +1794,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nebude načítaný. Nainštalujte softvér ku karte znova alebo sa obráťte na IT oddelenie."
+          }
+        }
+      }
+    },
+    "It is not the certificate the computer had when you first connected, so the connection was stopped for your safety. Trust the new certificate only if the computer's administrator confirms it was renewed and its SHA-256 fingerprint is %@; otherwise contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Není to certifikát, který počítač měl při prvním připojení, proto bylo připojení pro vaši bezpečnost zastaveno. Novému certifikátu důvěřujte, jen pokud správce počítače potvrdí, že byl obnoven a jeho otisk SHA-256 je %@; jinak se obraťte na IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie je to certifikát, ktorý mal počítač pri prvom pripojení, preto bolo pripojenie pre vašu bezpečnosť zastavené. Novému certifikátu dôverujte, len ak správca počítača potvrdí, že bol obnovený a jeho odtlačok SHA-256 je %@; inak sa obráťte na IT oddelenie."
+          }
+        }
+      }
+    },
+    "It is not the certificate the computer had when you first connected, so the connection was stopped for your safety. Trust the new certificate only if the computer's administrator confirms it was renewed; otherwise contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Není to certifikát, který měl počítač při prvním připojení, proto bylo připojení pro vaši bezpečnost zastaveno. Novému certifikátu důvěřujte, jen pokud správce počítače potvrdí, že ho obnovil; jinak kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie je to certifikát, ktorý mal počítač pri prvom pripojení, preto bolo pripojenie pre vašu bezpečnosť zastavené. Novému certifikátu dôverujte, len ak správca počítača potvrdí, že ho obnovil; inak kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "It requires TLS or NLA. If Security is set to RDP Security, choose Automatic in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje TLS nebo NLA. Pokud je Zabezpečení nastavené na Zabezpečení RDP, zvolte v nastavení připojení Automaticky."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje TLS alebo NLA. Ak je Zabezpečenie nastavené na Zabezpečenie RDP, zvoľte v nastaveniach pripojenia Automaticky."
+          }
+        }
+      }
+    },
+    "It requires TLS, not RDP security. Choose Security: Automatic in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje TLS, ne Zabezpečení RDP. V nastavení připojení zvolte Zabezpečení: Automaticky."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje TLS, nie Zabezpečenie RDP. V nastaveniach pripojenia zvoľte Zabezpečenie: Automaticky."
+          }
+        }
+      }
+    },
+    "It requires network level authentication (NLA), and the certification authority that issued your card could not be downloaded yet. Connect to your organization's network (or VPN) or the internet and connect again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje ověřování na úrovni sítě (NLA) a certifikační autoritu, která vydala vaši kartu, se zatím nepodařilo stáhnout. Připojte se k síti organizace (nebo VPN) či k internetu a připojte se znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje overovanie na úrovni siete (NLA) a certifikačnú autoritu, ktorá vydala vašu kartu, sa zatiaľ nepodarilo stiahnuť. Pripojte sa k sieti organizácie (alebo VPN) či k internetu a pripojte sa znova."
+          }
+        }
+      }
+    },
+    "It requires network level authentication (NLA), and the sign-in with the card through the gateway failed with it last time, so CardGate did not offer it. Contact your IT department (NLA needs a gateway with a KDC proxy); try NLA again once it is fixed.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje ověřování na úrovni sítě (NLA) a přihlášení kartou přes bránu s ním minule selhalo, proto ho CardGate nenabídl. Obraťte se na IT oddělení (NLA potřebuje bránu s KDC proxy); po opravě zkuste znovu s NLA."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje overovanie na úrovni siete (NLA) a prihlásenie kartou cez bránu s ním minule zlyhalo, preto ho CardGate neponúkol. Obráťte sa na IT oddelenie (NLA potrebuje bránu s KDC proxy); po oprave skúste znova s NLA."
+          }
+        }
+      }
+    },
+    "It requires network level authentication (NLA). Choose Security: Automatic (or NLA) in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje ověřování na úrovni sítě (NLA). V nastavení připojení zvolte Zabezpečení: Automaticky (nebo NLA)."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyžaduje overovanie na úrovni siete (NLA). V nastaveniach pripojenia zvoľte Zabezpečenie: Automaticky (alebo NLA)."
+          }
+        }
+      }
+    },
+    "It used to accept stronger security than it offers now. If its administrator changed this on purpose, connect with weaker security. Otherwise the connection may be intercepted: do not connect and contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dříve přijímal silnější zabezpečení, než nabízí teď. Pokud to jeho správce změnil záměrně, připojte se se slabším zabezpečením. Jinak může jít o odposlech spojení: nepřipojujte se a obraťte se na IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predtým prijímal silnejšie zabezpečenie, než ponúka teraz. Ak to jeho správca zmenil zámerne, pripojte sa so slabším zabezpečením. Inak môže ísť o odpočúvanie spojenia: nepripájajte sa a obráťte sa na IT oddelenie."
           }
         }
       }
@@ -1858,6 +2066,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Môj počítač"
+          }
+        }
+      }
+    },
+    "NLA": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NLA"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NLA"
+          }
+        }
+      }
+    },
+    "NLA cannot be used for this connection": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "U tohoto připojení nelze použít NLA"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pri tomto pripojení nemožno použiť NLA"
+          }
+        }
+      }
+    },
+    "NLA is set for this connection, or the computer accepted it before. It needs the computer's full name with its domain (for example pc.corp.example) and the certification authority that issued your card, which is downloaded from the internet: check your connection and try again. If the computer no longer requires NLA, choose another Security in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NLA je nastavené pro toto připojení, nebo ho počítač dříve přijal. Potřebuje celé jméno počítače s doménou (například pc.corp.example) a certifikační autoritu, která vydala vaši kartu; ta se stahuje z internetu: zkontrolujte připojení a zkuste to znovu. Pokud počítač NLA už nevyžaduje, zvolte v nastavení připojení jiné Zabezpečení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NLA je nastavené pre toto pripojenie, alebo ho počítač predtým prijal. Potrebuje celé meno počítača s doménou (napríklad pc.corp.example) a certifikačnú autoritu, ktorá vydala vašu kartu; tá sa sťahuje z internetu: skontrolujte pripojenie a skúste to znova. Ak počítač NLA už nevyžaduje, zvoľte v nastaveniach pripojenia iné Zabezpečenie."
           }
         }
       }
@@ -2086,6 +2342,22 @@
         }
       }
     },
+    "RDP Security": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zabezpečení RDP"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zabezpečenie RDP"
+          }
+        }
+      }
+    },
     "Reachable": {
       "localizations": {
         "cs": {
@@ -2262,6 +2534,22 @@
         }
       }
     },
+    "Security": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zabezpečení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zabezpečenie"
+          }
+        }
+      }
+    },
     "Set Up Connection": {
       "localizations": {
         "cs": {
@@ -2422,6 +2710,22 @@
         }
       }
     },
+    "Signing in to the computer with the card failed": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlášení k počítači kartou se nepovedlo"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlásenie k počítaču kartou sa nepodarilo"
+          }
+        }
+      }
+    },
     "Size of text and apps on the remote desktop.": {
       "localizations": {
         "cs": {
@@ -2578,6 +2882,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prepnúť medzi oknom a celou obrazovkou"
+          }
+        }
+      }
+    },
+    "TLS": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TLS"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TLS"
           }
         }
       }
@@ -2774,18 +3094,18 @@
         }
       }
     },
-    "The computer does not accept the connection security CardGate uses (it requires TLS or NLA). Contact your IT department.": {
+    "The computer chose network level authentication (NLA), and the sign-in with the card through the gateway failed. Connect again: CardGate now connects without NLA. Details are in the connection log.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač nepřijímá zabezpečení připojení, které CardGate používá (vyžaduje TLS nebo NLA). Kontaktujte IT oddělení."
+            "value": "Počítač zvolil ověření na úrovni sítě (NLA) a přihlášení kartou přes bránu se nepovedlo. Připojte se znovu: CardGate se teď připojí bez NLA. Podrobnosti jsou v záznamu připojení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač neprijíma zabezpečenie pripojenia, ktoré CardGate používa (vyžaduje TLS alebo NLA). Kontaktujte IT oddelenie."
+            "value": "Počítač zvolil overenie na úrovni siete (NLA) a prihlásenie kartou cez bránu sa nepodarilo. Pripojte sa znova: CardGate sa teraz pripojí bez NLA. Podrobnosti sú v zázname pripojenia."
           }
         }
       }
@@ -2822,18 +3142,82 @@
         }
       }
     },
-    "The computer requires a different connection security": {
+    "The computer offers only weaker connection security": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač vyžaduje jiné zabezpečení připojení"
+            "value": "Počítač nabízí jen slabší zabezpečení připojení"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač vyžaduje iné zabezpečenie pripojenia"
+            "value": "Počítač ponúka len slabšie zabezpečenie pripojenia"
+          }
+        }
+      }
+    },
+    "The computer requires network level authentication (NLA), and the sign-in with the card through the gateway failed. Details are in the connection log. Contact your IT department; if the computer allows it, choose Security: TLS in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vyžaduje ověření na úrovni sítě (NLA) a přihlášení kartou přes bránu se nepovedlo. Podrobnosti jsou v záznamu připojení. Kontaktujte IT oddělení; pokud to počítač dovoluje, zvolte v nastavení připojení Zabezpečení: TLS."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vyžaduje overenie na úrovni siete (NLA) a prihlásenie kartou cez bránu sa nepodarilo. Podrobnosti sú v zázname pripojenia. Kontaktujte IT oddelenie; ak to počítač dovoľuje, zvoľte v nastaveniach pripojenia Zabezpečenie: TLS."
+          }
+        }
+      }
+    },
+    "The computer requires stronger connection security": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vyžaduje silnější zabezpečení připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vyžaduje silnejšie zabezpečenie pripojenia"
+          }
+        }
+      }
+    },
+    "The computer verified your card, but your account is not allowed to connect to it remotely. Ask the computer's administrator to add you to the Remote Desktop Users.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vaši kartu ověřil, ale váš účet se k němu nesmí vzdáleně připojit. Požádejte správce počítače, ať vás přidá mezi Uživatele vzdálené plochy."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vašu kartu overil, ale váš účet sa k nemu nesmie vzdialene pripojiť. Požiadajte správcu počítača, aby vás pridal medzi Používateľov vzdialenej pracovnej plochy."
+          }
+        }
+      }
+    },
+    "The computer's certificate changed": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát počítače se změnil"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát počítača sa zmenil"
           }
         }
       }
@@ -3026,6 +3410,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brána sa k nemu nedokázala pripojiť. Skontrolujte v nastavení pripojenia, či v názve počítača nie je preklep a či je počítač zapnutý. Ak problémy pretrvávajú, kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "The gateway could not reach it. The computer may be turned off, or it now requires stronger connection security: connect again, CardGate then tries it.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána se k němu nepřipojila. Počítač je možná vypnutý, nebo nově vyžaduje silnější zabezpečení připojení: připojte se znovu, CardGate ho zkusí."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána sa k nemu nepripojila. Počítač je možno vypnutý, alebo novo vyžaduje silnejšie zabezpečenie pripojenia: pripojte sa znova, CardGate ho skúsi."
           }
         }
       }
@@ -3432,6 +3832,38 @@
         }
       }
     },
+    "Trust the New Certificate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Důvěřovat novému certifikátu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dôverovať novému certifikátu"
+          }
+        }
+      }
+    },
+    "Try NLA Again": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkusit znovu s NLA"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skúsiť znova s NLA"
+          }
+        }
+      }
+    },
     "Unreachable": {
       "localizations": {
         "cs": {
@@ -3668,6 +4100,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adresu počítača a brány vám dá IT oddelenie."
+          }
+        }
+      }
+    },
+    "Your account may not connect to this computer": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet se k tomuto počítači nesmí připojit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet sa k tomuto počítaču nesmie pripojiť"
           }
         }
       }
