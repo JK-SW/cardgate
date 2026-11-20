@@ -1,0 +1,64 @@
+--- a/libfreerdp/crypto/tls.c
++++ b/libfreerdp/crypto/tls.c
+@@ -1887,6 +1887,12 @@
+ 			match =
+ 			    freerdp_certificate_store_contains_data(tls->certificate_store, certificate_data);
+ 
++			/* The gateway's certificate must be trusted (CardGate): with trust on first use a
++			 * stored one never counts for it, whatever put it there. */
++			if (tls->isGatewayTransport &&
++			    freerdp_settings_get_bool(settings, FreeRDP_AutoAcceptCertificate))
++				match = 1;
++
+ 			if (match == 1)
+ 			{
+ 				/* no entry was found in known_hosts file, prompt user for manual verification
+@@ -1916,8 +1922,14 @@
+ 				WINPR_PRAGMA_DIAG_IGNORED_DEPRECATED_DECL
+ #endif
+ 
+-				/* Automatically accept certificate on first use */
+-				if (settings->AutoAcceptCertificate)
++				/* Automatically accept certificate on first use. Never the gateway's: it must be
++				 * trusted (CardGate), as with /cert:deny. */
++				if (settings->AutoAcceptCertificate && tls->isGatewayTransport)
++				{
++					WLog_INFO(TAG, "No certificate stored, automatically denying.");
++					accept_certificate = 0;
++				}
++				else if (settings->AutoAcceptCertificate)
+ 				{
+ 					WLog_INFO(TAG, "No certificate stored, automatically accepting.");
+ 					accept_certificate = 1;
+@@ -1992,6 +2004,31 @@
+ 					WLog_INFO(TAG, "No certificate stored, automatically denying.");
+ 					accept_certificate = 0;
+ 				}
++				/* Trust on first use trusts the first certificate only: a changed one is denied
++				 * (CardGate), not left to a prompt; only the one the user confirmed by its
++				 * fingerprint (FREERDP_ACCEPT_CHANGED_CERTIFICATE) replaces it. */
++				else if (settings->AutoAcceptCertificate)
++				{
++					char* efp = freerdp_certificate_get_fingerprint(cert);
++					const char* confirmed = getenv("FREERDP_ACCEPT_CHANGED_CERTIFICATE");
++					if (efp && confirmed && (strcmp(efp, confirmed) == 0))
++					{
++						WLog_INFO(TAG,
++						          "changed certificate of %s:%" PRIu16
++						          " confirmed by its fingerprint, replacing the stored one.",
++						          hostname, port);
++						accept_certificate = 1;
++					}
++					else
++					{
++						WLog_ERR(TAG,
++						         "certificate of %s:%" PRIu16
++						         " changed since it was first trusted, denying (new fingerprint %s).",
++						         hostname, port, efp ? efp : "unknown");
++						accept_certificate = 0;
++					}
++					free(efp);
++				}
+ 				else if (instance->VerifyX509Certificate)
+ 				{
+ 					const int rc =

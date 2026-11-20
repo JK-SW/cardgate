@@ -22,6 +22,12 @@ final class AppModel {
     let session = SessionController()
     let cards = CardMonitor()
     private let donation = DonationPrompt()
+    /// What automatic connection security remembered per connection.
+    let securityMemory = SecurityMemory.standard()
+    /// The connection being made or last made and its security, for what follows its outcome.
+    private(set) var lastAttempt: (profile: ConnectionProfile, security: SecurityPlan)?
+    /// Card certificates (SHA-1) whose root CA was not found on this network (`pkinitAnchor`).
+    var pkinitLookupFailed: Set<String> = []
     /// The one-time offer to support the author is shown (after a disconnect, see `DonationPrompt`).
     private(set) var showsDonationOffer = false
     private var sessionReachedDesktop = false
@@ -44,7 +50,7 @@ final class AppModel {
     private let clientConfig: FreeRDPClientConfig?
     private let locator = PKCS11ModuleLocator()
     @ObservationIgnored private var moduleChecker = ModuleTrustChecker()
-    private let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "app")
+    let logger = Logger(subsystem: "io.github.jk-sw.cardgate", category: "app")
 
     init() {
         store = try? ProfileStore.standard()
@@ -63,12 +69,14 @@ final class AppModel {
             self?.gatewayCheck?.cancel()  // a result from before the connection is outdated
             self?.gatewayStatus = .reachable  // the connection just proved it
             self?.donation.recordSuccessfulConnection()
+            self?.rememberNegotiatedSecurity()
             self?.onDesktopShown?()
         }
         session.onEnded = { [weak self] end in
             guard let self else { return }
             defer { sessionReachedDesktop = false }
             onClientEnded?()
+            securityOutcome(end)
             // Only after a normal disconnect from a working session, never after an error.
             if sessionReachedDesktop, end == .closedByUser, donation.isDue() { showsDonationOffer = true }
             // After an error the gateway may be the reason; a normal end needs no check. Not after
@@ -93,6 +101,7 @@ final class AppModel {
     private func networkChanged(_ signature: String) {
         defer { networkSignature = signature }
         guard let previous = networkSignature, previous != signature else { return }
+        pkinitLookupFailed = []  // the card's root CA may be downloadable now
         networkSettling?.cancel()
         networkSettling = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1))
@@ -202,7 +211,10 @@ final class AppModel {
         profiles = loaded.profiles
         selectedID = loaded.selectedID
         profilesReadOnly = !loaded.canSave
-        guard let problem = loaded.problem else { return }
+        guard let problem = loaded.problem else {
+            securityMemory.keepOnly(profiles)  // only after reading every profile
+            return
+        }
         logger.error("Loading profiles: \(String(describing: problem), privacy: .public)")
         alert = AppAlert(problem)
     }
@@ -260,6 +272,8 @@ final class AppModel {
 
     func delete(_ profile: ConnectionProfile) {
         profiles.removeAll { $0.id == profile.id }
+        securityMemory.forget(for: profile)
+        if profiles.isEmpty { securityMemory.forgetAnchors() }
         editing = nil
         if selectedID == profile.id {
             selectedID = profiles.first?.id
@@ -313,7 +327,9 @@ final class AppModel {
         refreshMiddleware()
     }
 
-    func connect() {
+    /// - Parameter confirmingCertificate: the changed computer certificate the user trusts
+    ///   (`trustNewComputerCertificate`), for this attempt only.
+    func connect(confirmingCertificate: String? = nil) {
         guard let profile = selectedProfile, !isPreparingConnection else { return }
         refreshMiddleware()
         guard profile.gateway != nil else {
@@ -339,9 +355,13 @@ final class AppModel {
             let card = await cards.currentState()
             if card?.state == .noToken { return }
             guard let certificate = signInCertificate else { return }
+            let (kerberos, plan) = await connectionSecurity(for: profile, certificate: certificate)
+            guard let security = plan else {
+                alert = .nlaUnavailable  // it could only fail, without saying why, or connect weaker
+                return
+            }
             do {
-                try clientConfig.install(
-                    for: profile, kerberosPlugins: FreeRDPCommand.kerberosPlugins(in: Bundle.main.bundleURL))
+                try clientConfig.install(for: profile, kerberos: kerberos)
             } catch {
                 logger.error("Cannot write the client settings: \(error, privacy: .public)")
                 alert = .clientSettingsNotSaved
@@ -352,7 +372,9 @@ final class AppModel {
                 let command = try FreeRDPCommand(
                     executable: executable, profile: profile, pkcs11Module: module,
                     config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current,
-                    certificateSHA1: certificate.sha1, smartCardReader: card?.reader, options: options)
+                    certificateSHA1: certificate.sha1, smartCardReader: card?.reader, options: options,
+                    security: security, confirmedCertificate: confirmingCertificate)
+                lastAttempt = (profile, security)
                 session.connect(command, gateway: profile.gateway, preventSleep: options.preventSleep)
             } catch {
                 logger.error("Cannot build the client command: \(String(describing: error), privacy: .public)")

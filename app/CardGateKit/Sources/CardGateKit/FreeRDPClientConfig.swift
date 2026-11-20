@@ -28,24 +28,53 @@ public struct FreeRDPClientConfig: Sendable {
     /// expands `%{…}` in the plugin path and has no escape for it, and the app may be anywhere.
     public var kerberosPluginsLink: URL { directory.appending(path: "krb5-plugins") }
 
+    /// The root certification authority Kerberos trusts for the domain controller (`PKINITAnchor`).
+    public var kerberosAnchorURL: URL { directory.appending(path: "pkinit-anchor.pem") }
+
     public enum InstallError: Error, Equatable {
         /// The configuration directory contains `%{`, which libkrb5 would expand.
         case unusableDirectory
     }
 
     /// Contents of `krb5.conf`: the plugins come from the app (libkrb5 would look in the
-    /// directory it was built for), nothing is looked up in DNS.
-    static func kerberosConfig(plugins: URL) -> String {
-        """
-        # Written by CardGate for its remote desktop client; not the Kerberos setup of this Mac.
-        [libdefaults]
-          plugin_base_dir = \(profileString(plugins.path(percentEncoded: false)))
-          dns_lookup_kdc = false
-          dns_lookup_realm = false
-          dns_canonicalize_hostname = false
-          rdns = false
+    /// directory it was built for), nothing is looked up in DNS. With a realm (`KerberosSetup`)
+    /// its KDC is the gateway's KDC proxy and PKINIT trusts only `anchor` for the domain
+    /// controller, whose certificate names the domain (Active Directory's KDC certificates do).
+    static func kerberosConfig(plugins: URL, realm: KerberosSetup.Realm?, anchor: URL) -> String {
+        var text = """
+            # Written by CardGate for its remote desktop client; not the Kerberos setup of this Mac.
+            [libdefaults]
 
-        """
+            """
+        if let realm { text += "  default_realm = \(realm.name)\n" }
+        text += """
+              plugin_base_dir = \(profileString(plugins.path(percentEncoded: false)))
+              dns_lookup_kdc = false
+              dns_lookup_realm = false
+              dns_canonicalize_hostname = false
+              rdns = false
+
+            """
+        if let realm {
+            let domain = realm.name.lowercased()
+            // EKU: Windows domain controller certificates have KDC Authentication, those of older
+            // templates only Server Authentication (MIT's setting for Windows KDCs).
+            text += """
+                [realms]
+                  \(realm.name) = {
+                    kdc = \(profileString("https://\(realm.kdcProxy)/KdcProxy"))
+                    pkinit_anchors = \(profileString("FILE:" + anchor.path(percentEncoded: false)))
+                    pkinit_kdc_hostname = \(domain)
+                    pkinit_eku_checking = kpServerAuth
+                  }
+
+                [domain_realm]
+                  .\(domain) = \(realm.name)
+                  \(domain) = \(realm.name)
+
+                """
+        }
+        return text
     }
 
     /// A value in the krb5 profile syntax: quoted, with backslash, quote and line breaks escaped.
@@ -72,8 +101,7 @@ public struct FreeRDPClientConfig: Sendable {
     }
 
     /// Writes the client configuration for the next connection (the files are owned by CardGate).
-    /// - Parameter kerberosPlugins: the app's Kerberos plugins (`FreeRDPCommand.kerberosPlugins(in:)`).
-    public func install(for profile: ConnectionProfile, kerberosPlugins: URL) throws {
+    public func install(for profile: ConnectionProfile, kerberos: KerberosSetup) throws {
         guard !kerberosPluginsLink.path(percentEncoded: false).contains("%{") else {
             throw InstallError.unusableDirectory
         }
@@ -90,7 +118,52 @@ public struct FreeRDPClientConfig: Sendable {
         {
             try fileManager.removeItem(at: kerberosPluginsLink)
         }
-        try fileManager.createSymbolicLink(at: kerberosPluginsLink, withDestinationURL: kerberosPlugins)
-        try Data(Self.kerberosConfig(plugins: kerberosPluginsLink).utf8).write(to: kerberosConfigURL, options: .atomic)
+        try fileManager.createSymbolicLink(at: kerberosPluginsLink, withDestinationURL: kerberos.plugins)
+        if let anchor = kerberos.anchor {
+            try Data(PKINITAnchor.pem(anchor).utf8).write(to: kerberosAnchorURL, options: .atomic)
+        } else if fileManager.fileExists(atPath: kerberosAnchorURL.path(percentEncoded: false)) {
+            try fileManager.removeItem(at: kerberosAnchorURL)
+        }
+        let kerberosConfig = Self.kerberosConfig(
+            plugins: kerberosPluginsLink, realm: kerberos.realm, anchor: kerberosAnchorURL)
+        try Data(kerberosConfig.utf8).write(to: kerberosConfigURL, options: .atomic)
     }
+}
+
+/// What the client needs for network level authentication with the card: Kerberos with PKINIT
+/// through the gateway's KDC proxy.
+public struct KerberosSetup: Equatable, Sendable {
+    /// The app's Kerberos plugins (`FreeRDPCommand.kerberosPlugins(in:)`).
+    public var plugins: URL
+    /// The root certification authority of the card certificate (`PKINITAnchor`).
+    public var anchor: Data?
+    /// The realm and its KDC; `nil` when NLA is not possible (see `isUsable`).
+    public var realm: Realm?
+    /// NLA would be possible with the root of the card certificate, which was not found (yet: it is
+    /// downloaded, e.g. only on the organization's network).
+    public var waitsForAnchor: Bool
+
+    public struct Realm: Equatable, Sendable {
+        /// The computer's domain in upper case (`kerberosRealm(of:)`).
+        public var name: String
+        /// The gateway; its KDC proxy is `https://<gateway>/KdcProxy` (Windows' KDC proxy server).
+        public var kdcProxy: HostAddress
+    }
+
+    /// - Parameters:
+    ///   - computer: the realm is its domain.
+    ///   - gateway: its KDC proxy reaches the domain controllers.
+    public init(plugins: URL, computer: HostAddress, gateway: HostAddress?, anchor: Data?) {
+        self.plugins = plugins
+        self.anchor = anchor
+        let name = gateway == nil ? nil : kerberosRealm(of: computer)
+        if let gateway, anchor != nil, let name {
+            realm = Realm(name: name, kdcProxy: gateway)
+        }
+        waitsForAnchor = name != nil && anchor == nil
+    }
+
+    /// NLA can be offered: the computer has a domain, there is a gateway and the root of the card
+    /// certificate is known.
+    public var isUsable: Bool { realm != nil }
 }

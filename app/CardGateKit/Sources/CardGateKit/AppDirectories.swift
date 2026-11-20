@@ -10,13 +10,20 @@ public enum AppDirectories {
     /// `~/Library/Application Support/CardGate`, or (Debug builds only) the directory in
     /// `CARDGATE_DATA_DIR`.
     public static func data(environment: [String: String] = ProcessInfo.processInfo.environment) throws -> URL {
-        #if DEBUG
-            if let path = environment[dataDirectoryVariable], path.hasPrefix("/") {
-                return URL(filePath: path, directoryHint: .isDirectory)
-            }
-        #endif
+        if usesTestData(environment: environment), let path = environment[dataDirectoryVariable] {
+            return URL(filePath: path, directoryHint: .isDirectory)
+        }
         let support = try FileManager.default.url(
             for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         return support.appending(path: "CardGate", directoryHint: .isDirectory)
+    }
+
+    /// The data directory is the test one from `CARDGATE_DATA_DIR` (Debug builds only).
+    public static func usesTestData(environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
+        #if DEBUG
+            environment[dataDirectoryVariable]?.hasPrefix("/") == true
+        #else
+            false
+        #endif
     }
 }

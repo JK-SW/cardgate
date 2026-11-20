@@ -61,6 +61,17 @@ public enum SessionFailure: Equatable, Sendable {
     case computerUnreachable
     /// The computer answered but refuses the connection security CardGate uses (needs TLS or NLA).
     case securityRefused
+    /// The computer accepts only weaker security than this connection is limited to (RDP security,
+    /// or TLS when limited to NLA).
+    case computerOffersOnlyWeakerSecurity
+    /// The computer's certificate (TLS) is not the one it had when first connected to: possible
+    /// interception, or the computer got a new certificate.
+    case computerCertificateChanged
+    /// Network level authentication: the account may not sign in to this computer remotely.
+    case notAllowedOnComputer
+    /// Network level authentication: Kerberos with the card failed (domain controller not reached
+    /// through the gateway's KDC proxy, account or computer not found).
+    case kerberosFailed
     /// The connection broke while working (network outage, gateway restart).
     case connectionLost
     /// Someone signed in to the computer, or the user connected to it from another device.
@@ -84,6 +95,31 @@ public struct SessionLogParser: Sendable {
     private var stoppedByApp = false
     /// The computer sent a negotiation failure (e.g. it requires TLS or NLA): it was reached.
     private var negotiationRefused = false
+    /// The negotiation failure said the computer accepts only weaker security than offered.
+    private var onlyWeakerSecurity = false
+    /// The weaker method the computer accepts (`computerOffersOnlyWeakerSecurity`): RDP security,
+    /// or the one it selected although it was not offered.
+    public private(set) var computerOffers: SecurityMethod?
+    /// The stronger method the computer requires (`securityRefused`): NLA or TLS, if it said which.
+    public private(set) var computerRequires: SecurityMethod?
+    /// What the client offered the computer ("Enabling TLS security: TRUE").
+    private var offered: Set<SecurityMethod> = []
+    /// The client sent the computer a request for RDP security only ("RequestedProtocols: [RDP]"):
+    /// the gateway had reached it.
+    private var requestedOnlyRDP = false
+    /// A Kerberos call failed; WinPR may have recovered from it (it retries), so it is the cause
+    /// only when nothing else explains the failure.
+    private var kerberosError = false
+    /// While reconnecting: the gateway accepted the card again, what follows is the computer's.
+    private var reconnectPastGateway = false
+    /// The security the client last negotiated with the computer.
+    public private(set) var negotiatedSecurity: SecurityMethod?
+    /// The computer certificate that changed since it was first trusted (`CertificateFingerprint`);
+    /// trusting it passes it back (`FreeRDPCommand.confirmedCertificateVariable`), so only this
+    /// certificate is accepted. `nil` also when the client did not log it.
+    public private(set) var changedCertificateFingerprint: String?
+    /// The user cancelled while connecting (or CardGate stopped the client): no Kerberos fallback.
+    private var cancelled = false
     /// The PIN dialog was shown: the client had reached the gateway (the sign-in line follows only
     /// after the card login).
     private var pinRequested = false
@@ -145,6 +181,9 @@ public struct SessionLogParser: Sendable {
             phase = .ended(serverEnd)  // e.g. signed out in Windows: the client just exits
         } else if let failure {
             phase = .ended(.failed(failure))
+        } else if kerberosError, !phase.hasDesktop, !cancelled, !crashed, status != 0 {
+            // Nothing else explains why the client gave up (a Kerberos error may be recovered from).
+            phase = .ended(.failed(.kerberosFailed))
         } else if crashed, !Self.quitSignals.contains(status) {
             // A crash is never a normal end, not even after the desktop was shown or while
             // reconnecting (CardGate's own kill after Disconnect is handled above).
@@ -162,42 +201,6 @@ public struct SessionLogParser: Sendable {
 
     /// Signals that ask a process to quit (`killall`, logout, closing a terminal): not a crash.
     static let quitSignals: Set<Int32> = [SIGTERM, SIGINT, SIGHUP]
-
-    /// Texts of the FreeRDP log this parser depends on. A test checks that the bundled client still
-    /// contains them, so a FreeRDP update cannot silently break the status display.
-    public static let logMarkers = [
-        "smart card ready for RD Gateway authentication",
-        "RD Gateway smart card authentication done",
-        "gdi_init_ex",
-        "registered [",
-        "no suitable smartcard certificates",
-        "more than one suitable smartcard certificate",
-        "FREERDP_SMARTCARD_CERT_SHA1",
-        "WRONG PIN",
-        "PIN is LOCKED",
-        "certificate not trusted",
-        "inner TLS certificate differs",
-        "Network disconnect!",
-        "Attempting reconnect (",
-        "Reconnected (attempt",
-        "Autoreconnect aborted by user",
-        "- not retrying",
-        "RD Gateway certificate changed",
-        "client certificate has no RSA key",
-        "Credential prompt cancelled",
-        "ERRCONNECT_CONNECT_CANCELLED",
-        "ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED",
-        "ERRCONNECT_CONNECT_TRANSPORT_FAILED",
-        "ERRINFO_LOGOFF_BY_USER",
-        "ERRINFO_LOGON_TIMEOUT",
-        "nego_process_negotiation_failure",
-        "ERRCONNECT_HYBRID_REQUIRED_BY_SERVER",
-        "ERRINFO_RPC_INITIATED_LOGOFF",
-        "ERRINFO_DISCONNECTED_BY_OTHER_CONNECTION",
-        "ERRINFO_RPC_INITIATED_DISCONNECT_BY_USER",
-        "ERRINFO_IDLE_TIMEOUT",
-        "ERRINFO_RPC_INITIATED_DISCONNECT",
-    ]
 
     private mutating func nextPhase(for line: String) -> SessionPhase? {
         // Reconnecting goes through the connection steps again: they are not shown.
@@ -217,27 +220,111 @@ public struct SessionLogParser: Sendable {
         if line.contains("Credential prompt cancelled") {
             return .ended(.closedByUser)
         }
-        if line.contains("nego_process_negotiation_failure") {
-            negotiationRefused = true
-        }
+        noteNegotiation(line)
+        if noteCancelOrKerberosError(line) { return nil }
         if !stoppedByApp, var failure = Self.failure(in: line) {
             // The gateway accepted the sign-in, then the connection to the computer failed. If the
             // computer answered with a negotiation failure it was reached but refuses the security;
             // otherwise the gateway closed the channel without a reason: it could not reach the
             // computer (name mistyped or unknown, computer off or offline – it does not say which).
-            if phase == .connectingComputer, failure == .other("ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED") {
-                failure = negotiationRefused ? .securityRefused : .computerUnreachable
-            }
+            if phase == .connectingComputer { failure = computerFailure(failure, line: line) }
             // A broken transport (the only source of `computerUnreachable` in the table) is the
             // computer's only after the gateway accepted the sign-in. Before the PIN was asked for,
             // the connection to the gateway could not be set up (e.g. TLS); after, it broke.
             if failure == .computerUnreachable, phase != .connectingComputer {
-                failure = phase == .starting && !pinRequested ? .gatewayUnreachable : .connectionLost
+                if let code = Self.gatewayProxyCodes.first(where: line.contains) {
+                    failure = .other(code)  // an error of the gateway itself, while signing in
+                } else {
+                    failure = phase == .starting && !pinRequested ? .gatewayUnreachable : .connectionLost
+                }
             }
-            self.failure = self.failure ?? refined(failure, line: line)
+            self.failure = self.failure ?? refined(failure, line: line)  // the first failure is the cause
             return nil
         }
         return nil
+    }
+
+    /// Notes a cancel and a Kerberos error (only a possible cause, see `kerberosError`); true for the latter.
+    private mutating func noteCancelOrKerberosError(_ line: String) -> Bool {
+        if line.contains("ERRCONNECT_CONNECT_CANCELLED") { cancelled = true }
+        guard Self.isKerberosError(line) else { return false }
+        kerberosError = true
+        return true
+    }
+
+    /// What the computer said while the security was negotiated.
+    private mutating func noteNegotiation(_ line: String) {
+        if line.contains("[nego_enable_") {
+            for (name, method) in [("RDP", SecurityMethod.rdp), ("TLS", .tls), ("NLA", .nla)]
+            where line.contains("Enabling \(name) security: ") {
+                if line.contains("security: TRUE") { offered.insert(method) } else { offered.remove(method) }
+            }
+        }
+        if line.contains("RequestedProtocols: ") { requestedOnlyRDP = line.contains("RequestedProtocols: [RDP]") }
+        if line.contains("nego_process_negotiation_failure") {
+            negotiationRefused = true
+            // The computer accepts only RDP security; the other failures ask for stronger security.
+            if line.contains("SSL_NOT_ALLOWED_BY_SERVER") {
+                onlyWeakerSecurity = true
+                computerOffers = .rdp
+            } else if line.contains("HYBRID_REQUIRED_BY_SERVER") || line.contains("SSL_WITH_USER_AUTH_REQUIRED") {
+                computerRequires = .nla
+            } else if line.contains("SSL_REQUIRED_BY_SERVER") {
+                computerRequires = .tls
+            }
+        }
+        // The computer chose a method the client did not offer (it does not send a failure then):
+        // a weaker one, e.g. TLS when only NLA was offered.
+        if line.contains("selected_protocol: ["),
+            let range = line.range(of: #"selected_protocol: \[[A-Z_]+\]"#, options: .regularExpression),
+            let method = SecurityMethod(
+                negotiatedProtocol: String(line[range].dropFirst("selected_protocol: [".count).dropLast())),
+            !offered.isEmpty, !offered.contains(method)
+        {
+            negotiationRefused = true
+            onlyWeakerSecurity = true
+            computerOffers = method
+        }
+        noteChangedCertificate(line)
+        if line.contains("Negotiated ["),
+            let range = line.range(of: #"Negotiated \[[A-Z_]+\]"#, options: .regularExpression)
+        {
+            let name = line[range].dropFirst("Negotiated [".count).dropLast()
+            negotiatedSecurity = SecurityMethod(negotiatedProtocol: String(name)) ?? negotiatedSecurity
+        }
+    }
+
+    /// The computer's certificate changed since it was first trusted (patch 0016), also when reconnecting.
+    private mutating func noteChangedCertificate(_ line: String) {
+        if line.contains("changed since it was first trusted"),
+            let found = line.range(of: #"new fingerprint [0-9a-f:]+\)"#, options: .regularExpression)
+        {
+            let fingerprint = String(line[found].dropFirst("new fingerprint ".count).dropLast())
+            changedCertificateFingerprint = CertificateFingerprint.isValid(fingerprint) ? fingerprint : nil
+        }
+    }
+
+    /// A failure after the gateway accepted the card, told apart by what the computer answered.
+    private func computerFailure(_ failure: SessionFailure, line: String) -> SessionFailure {
+        switch failure {
+        case .other("ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED"):
+            // When the client offered RDP security too, it fell back to it itself: that connection failed.
+            if onlyWeakerSecurity {
+                return offered.contains(.rdp) ? .computerUnreachable : .computerOffersOnlyWeakerSecurity
+            }
+            return negotiationRefused ? .securityRefused : .computerUnreachable
+        case .computerUnreachable where requestedOnlyRDP && Self.gatewayProxyCodes.contains(where: line.contains):
+            // The gateway reached the computer and closed the channel right after the request for RDP
+            // security: the computer does not accept it (it says nothing else over the gateway). A
+            // computer that is off or unknown fails before, when the gateway opens the channel.
+            return .securityRefused
+        case .gatewayDenied where negotiatedSecurity == .nla || kerberosError:
+            // With network level authentication, access denied and failed authentication now are
+            // the computer's, not the gateway's.
+            return line.contains("ERRCONNECT_ACCESS_DENIED") ? .notAllowedOnComputer : .kerberosFailed
+        default:
+            return failure
+        }
     }
 
     /// How a session that reached the desktop goes on or ends. Closing the window, Disconnect in the
@@ -269,6 +356,9 @@ public struct SessionLogParser: Sendable {
         if line.contains("Attempting reconnect (") {
             // What ended the connection before is not why reconnecting fails.
             if phase == .connected { serverEnd = nil }
+            reconnectPastGateway = false
+            negotiatedSecurity = nil
+            kerberosError = false
             connectionBroke = true
             return .reconnecting
         }
@@ -279,13 +369,20 @@ public struct SessionLogParser: Sendable {
             serverEnd = nil
             return .connected
         }
-        // The first failure the user has to act on; network errors of the attempts before do not hide it.
-        if phase == .reconnecting, !stoppedByApp, reconnectFailure == nil,
-            let failure = Self.failure(in: line).map({ refined($0, line: line) }).flatMap(Self.reportedWhenReconnecting)
-        {
-            reconnectFailure = failure
-        }
+        if phase == .reconnecting { noteReconnectFailure(line) }
         return nil
+    }
+
+    /// The first failure of reconnecting the user has to act on; network errors of the attempts
+    /// before do not hide it.
+    private mutating func noteReconnectFailure(_ line: String) {
+        if line.contains("RD Gateway smart card authentication done") { reconnectPastGateway = true }
+        noteNegotiation(line)
+        if Self.isKerberosError(line) { kerberosError = true }
+        guard !stoppedByApp, reconnectFailure == nil, var failure = Self.failure(in: line) else { return }
+        // As when connecting: after the gateway accepted the card, a refusal may be the computer's (NLA).
+        if reconnectPastGateway { failure = computerFailure(failure, line: line) }
+        reconnectFailure = Self.reportedWhenReconnecting(refined(failure, line: line))
     }
 
     /// A certificate the system trusts but the client does not is not a sign of interception.
@@ -298,7 +395,8 @@ public struct SessionLogParser: Sendable {
     static func reportedWhenReconnecting(_ failure: SessionFailure) -> SessionFailure? {
         switch failure {
         case .wrongPIN, .cardLocked, .cardRefusedLogin, .noCertificate, .multipleCertificates, .untrustedCertificate,
-            .gatewayCertificateNotPublic, .gatewayCertificateChanged, .gatewayDenied:
+            .gatewayCertificateNotPublic, .gatewayCertificateChanged, .gatewayDenied, .computerCertificateChanged,
+            .notAllowedOnComputer, .kerberosFailed:
             failure
         default:
             nil
@@ -319,34 +417,5 @@ public struct SessionLogParser: Sendable {
             .failed(.disconnectedByServer)
         default: .failed(.other(code))
         }
-    }
-
-    /// Error texts in the order they are checked; the first match wins.
-    private static let knownFailures: [(text: String, failure: SessionFailure)] = [
-        ("no suitable smartcard certificates", .noCertificate),
-        ("WRONG PIN", .wrongPIN),
-        // The card refused the sign-in with another code: the PIN is never offered again (patch 0001).
-        ("- not retrying", .cardRefusedLogin),
-        ("certificate not trusted", .untrustedCertificate),
-        ("RD Gateway certificate changed", .gatewayCertificateChanged),
-        ("inner TLS certificate differs", .untrustedCertificate),
-        ("more than one suitable smartcard certificate", .multipleCertificates),
-        ("PIN is LOCKED", .cardLocked),
-        ("client certificate has no RSA key", .unsupportedCardKey),
-        ("ERRCONNECT_DNS_NAME_NOT_FOUND", .gatewayUnreachable),
-        ("ERRCONNECT_CONNECT_FAILED", .gatewayUnreachable),
-        ("ERRCONNECT_ACCESS_DENIED", .gatewayDenied),
-        ("ERRCONNECT_AUTHENTICATION_FAILED", .gatewayDenied),
-        ("ERRCONNECT_CONNECT_TRANSPORT_FAILED", .computerUnreachable),
-        ("ERRCONNECT_HYBRID_REQUIRED_BY_SERVER", .securityRefused),
-    ]
-
-    static func failure(in line: String) -> SessionFailure? {
-        guard line.contains("[ERROR]"), !line.contains("ERRCONNECT_CONNECT_CANCELLED") else { return nil }
-        if let known = knownFailures.first(where: { line.contains($0.text) }) { return known.failure }
-        if let range = line.range(of: #"ERRCONNECT_[A-Z_]+"#, options: .regularExpression) {
-            return .other(String(line[range]))
-        }
-        return nil
     }
 }

@@ -25,6 +25,7 @@ final class ProfileEditorModel: Identifiable {
     var pkcs11Module: String
     /// `nil` = automatic (newest valid certificate on the card).
     var certificateSHA1: String?
+    var security: ConnectionSecurity
 
     init(profile: ConnectionProfile?, defaultName: String, isNew: Bool? = nil, isImported: Bool = false) {
         id = profile?.id ?? UUID()
@@ -41,6 +42,7 @@ final class ProfileEditorModel: Identifiable {
         scrollLikeThisMac = profile?.input.scrollLikeThisMac ?? true
         pkcs11Module = profile?.pkcs11Module ?? ""
         certificateSHA1 = profile?.certificateSHA1
+        security = profile?.security ?? .automatic
     }
 
     /// Editor for a profile read from an `.rdp` file: new, but pre-filled.
@@ -81,7 +83,8 @@ final class ProfileEditorModel: Identifiable {
             display: .init(
                 mode: displayMode, windowSize: displayMode == .window ? windowSize : nil, scale: scale),
             redirection: .init(clipboard: clipboard, audio: audio),
-            input: .init(scrollLikeThisMac: scrollLikeThisMac))
+            input: .init(scrollLikeThisMac: scrollLikeThisMac),
+            security: security)
     }
 
     private static func validate(_ text: String) -> HostAddress.ParseError? {

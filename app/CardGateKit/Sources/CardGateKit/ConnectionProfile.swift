@@ -16,6 +16,8 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
     public var display: DisplaySettings
     public var redirection: RedirectionSettings
     public var input: InputSettings
+    /// How the connection to the computer is secured.
+    public var security: ConnectionSecurity
 
     public init(
         id: UUID = UUID(),
@@ -26,7 +28,8 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         certificateSHA1: String? = nil,
         display: DisplaySettings = .init(),
         redirection: RedirectionSettings = .init(),
-        input: InputSettings = .init()
+        input: InputSettings = .init(),
+        security: ConnectionSecurity = .automatic
     ) {
         self.id = id
         self.name = name
@@ -37,6 +40,7 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         self.display = display
         self.redirection = redirection
         self.input = input
+        self.security = security
     }
 
     // Settings added in later versions are optional so older saved profiles keep loading.
@@ -51,6 +55,10 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         display = try container.decodeIfPresent(DisplaySettings.self, forKey: .display) ?? .init()
         redirection = try container.decodeIfPresent(RedirectionSettings.self, forKey: .redirection) ?? .init()
         input = try container.decodeIfPresent(InputSettings.self, forKey: .input) ?? .init()
+        // Before 0.7 every connection used RDP security; automatic still finds it where it is all
+        // the computer offers.
+        // A method from a newer version that this one does not know: automatic.
+        security = (try? container.decodeIfPresent(ConnectionSecurity.self, forKey: .security)) ?? .automatic
     }
 }
 

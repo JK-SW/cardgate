@@ -31,6 +31,11 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 You can have several connections: they are listed on the left. Edit one with the button next to its
 name; add another with **New Connection…** below the list.
 
+Under **Connection to the Computer** there is a **Security** option. Leave it at **Automatic**: CardGate
+uses the strongest security the computer accepts (NLA, TLS or RDP Security), remembers it and after about
+a month tries whether the computer accepts stronger security. The parentheses show what is used now,
+e.g. **Automatic (NLA)**. Choose NLA, TLS or RDP Security only if your IT department tells you to.
+
 <img src="images/en/welcome.png" width="560" alt="CardGate welcome screen">
 <img src="images/en/connection-settings.png" width="560" alt="Connection settings">
 
@@ -39,6 +44,8 @@ name; add another with **New Connection…** below the list.
 1. Insert your card or token.
 2. Click **Connect**. Until the desktop opens, **Cancel** stops the attempt.
 3. Enter the **PIN** of your card. Several wrong attempts lock the card.
+   With NLA this PIN signs you in to Windows too. Without NLA, Windows asks for the PIN once more on its
+   sign-in screen (if it offers a password, choose the smart card sign-in).
 4. The remote desktop opens and the CardGate window hides. The Dock still shows only CardGate:
    click it (or use ⌘Tab) to return to the remote desktop. The green button in the window's title
    bar switches full screen. Right-click the Dock icon for **Disconnect**.
@@ -84,6 +91,16 @@ GitHub and sends nothing about you.
   does not accept a certificate of an internal (company) authority, even if the Mac trusts it (for
   example in Keychain or through device management): it reports that the gateway's certificate is
   not publicly trusted.
+- With NLA and TLS the connection between the gateway and the computer is encrypted with TLS. RDP
+  Security uses the older RC4 cipher; Automatic uses it only for a computer that accepts nothing else.
+  With NLA the computer also verifies your card before it shows its sign-in screen.
+- CardGate remembers the computer's certificate on the first connection. If it changes later, the
+  connection is stopped (**The computer's certificate changed**). Accept it with **Trust the New
+  Certificate** only if the computer's administrator confirms it was renewed and its SHA-256
+  fingerprint matches the one in the message.
+- Automatic security never silently switches to weaker security. If the computer used to accept TLS or
+  NLA and now offers only weaker security, CardGate does not connect until you click **Connect with
+  Weaker Security**; do not do that without the administrator's confirmation.
 
 ## Troubleshooting
 
@@ -99,6 +116,12 @@ GitHub and sends nothing about you.
 | The connection was interrupted | The network failed and reconnecting did not succeed (or it is off in Settings). Check your internet connection and connect again. |
 | The smart card module is not from a verified publisher | The card module does not come from a verified maker. Use it (**Use This Module…**) only if you know where it is from (e.g. your IT department). |
 | The smart card module set for this connection was not found | Fix the path in **Edit Connection** (section Card), or leave it empty. |
+| The computer requires stronger connection security | In the connection settings choose **Security: Automatic**. If it is already chosen, the computer requires NLA, which could not be used – follow the message or contact your IT department. |
+| The computer offers only weaker connection security | If the computer's administrator changed this on purpose, click **Connect with Weaker Security**. Otherwise do not connect and contact your IT department. |
+| The computer's certificate changed | Trust the new certificate only when the administrator confirms its renewal and fingerprint (see Security). |
+| Your account may not connect to this computer | Ask the computer's administrator to add you to the Remote Desktop Users. |
+| Signing in to the computer with the card failed | Connect again; CardGate then connects without NLA. If the computer requires NLA, contact your IT department (the gateway needs a KDC proxy). |
+| NLA cannot be used for this connection | Enter the computer's full name with its domain (e.g. `pc01.example.com`) and check your internet connection, or the connection to your organization's network (the card's certification authority is downloaded). |
 
 Details are in **Window → Connection Log**; **Copy Log** lets you send it to your IT department.
 The log never contains the PIN.
@@ -118,3 +141,20 @@ defaults write io.github.jk-sw.cardgate DonationPromptDisabled -bool true
 ```
 
 (or with a configuration profile for the `io.github.jk-sw.cardgate` domain).
+
+**Security of the connection to the computer.** CardGate supports NLA, TLS and RDP Security; Automatic
+uses the strongest one the computer accepts. NLA is recommended (one PIN, the computer verifies the card
+before the sign-in). NLA with the card needs:
+- the KDC proxy published on the RD Gateway (`https://<gateway>/KdcProxy`), through which CardGate
+  authenticates the card with a domain controller (Kerberos PKINIT),
+- the computer's name in the Active Directory DNS domain: the realm is the name's suffix in upper case
+  (`pc01.example.com` → `EXAMPLE.COM`); for a computer in another DNS zone NLA fails and CardGate connects
+  without it,
+- domain controller certificates issued under the same root certification authority as the card
+  certificates (CardGate downloads it from the addresses in the card certificate and keeps it),
+- users allowed to sign in through Remote Desktop.
+
+On the computer, security is set by Group Policy in **Computer Configuration → Administrative Templates →
+Windows Components → Remote Desktop Services → Remote Desktop Session Host → Security**: "Require use of
+specific security layer for remote (RDP) connections" = **SSL** and "Require user authentication for remote
+connections by using Network Level Authentication" = **Enabled**.

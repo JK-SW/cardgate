@@ -48,6 +48,7 @@ extension AppAlert {
         case .clientMissing, .clientSettingsNotSaved, .modulePathUnusable:
             "The remote desktop client cannot be started"
         case .gatewayMissing: "The connection has no gateway"
+        case .nlaUnavailable: "NLA cannot be used for this connection"
         }
     }
 
@@ -83,6 +84,13 @@ extension AppAlert {
             """
             CardGate connects only through an RD Gateway, which protects the connection and your PIN. \
             Add the gateway address in the connection settings.
+            """
+        case .nlaUnavailable:
+            """
+            NLA is set for this connection, or the computer accepted it before. It needs the computer's \
+            full name with its domain (for example pc.corp.example) and the certification authority that \
+            issued your card, which is downloaded from the internet: check your connection and try again. \
+            If the computer no longer requires NLA, choose another Security in the connection settings.
             """
         }
     }

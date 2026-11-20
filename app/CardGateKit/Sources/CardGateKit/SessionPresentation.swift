@@ -22,7 +22,9 @@ extension SessionFailure {
     /// warning (trying again or fixing the settings helps).
     public var tone: StatusTone {
         switch self {
-        case .cardLocked, .untrustedCertificate, .gatewayCertificateNotPublic, .gatewayCertificateChanged: .error
+        case .cardLocked, .untrustedCertificate, .gatewayCertificateNotPublic, .gatewayCertificateChanged,
+            .computerCertificateChanged:
+            .error
         default: .warning
         }
     }

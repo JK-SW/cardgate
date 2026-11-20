@@ -49,16 +49,21 @@ public struct FreeRDPCommand: Equatable, Sendable {
     ///   - certificateSHA1: card certificate to sign in with (when the card holds several).
     ///   - smartCardReader: the reader with the card; only it is redirected to the remote computer.
     ///   - options: the app settings for every connection.
+    ///   - security: how the connection to the computer is secured (`SecurityPlan.make`).
+    ///   - confirmedCertificate: the changed computer certificate the user trusts
+    ///     (`SessionLogParser.changedCertificateFingerprint`): it replaces the one trusted before, no other does.
     public init(
         executable: URL, profile: ConnectionProfile, pkcs11Module: String, config: FreeRDPClientConfig,
         askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil, certificateSHA1: String? = nil,
-        smartCardReader: String? = nil, options: SessionOptions = .off
+        smartCardReader: String? = nil, options: SessionOptions = .off, security: SecurityPlan = .rdpOnly,
+        confirmedCertificate: String? = nil
     ) throws(BuildError) {
         guard profile.gateway != nil else { throw .gatewayRequired }
         guard Self.isUsableModulePath(pkcs11Module) else { throw .invalidModulePath }
         self.executable = executable
         self.arguments = Self.arguments(
-            profile: profile, pkcs11Module: pkcs11Module, screen: screen, keepConnection: options.keepConnection)
+            profile: profile, pkcs11Module: pkcs11Module, screen: screen, keepConnection: options.keepConnection,
+            security: security)
         if let reader = smartCardReader, Self.isUsableReaderFilter(reader) {
             // Without it every reader of the Mac is redirected; Windows sign-in then may look at an
             // empty one (e.g. a reader built into the keyboard) and ask to insert the card.
@@ -87,7 +92,13 @@ public struct FreeRDPCommand: Equatable, Sendable {
         if let certificateSHA1, CardCertificate.isFingerprint(certificateSHA1) {
             environment[Self.certificateVariable] = certificateSHA1.lowercased()
         }
+        if let confirmedCertificate, CertificateFingerprint.isValid(confirmedCertificate) {
+            environment[Self.confirmedCertificateVariable] = confirmedCertificate  // patch 0016
+        }
     }
+
+    /// The changed computer certificate the user trusts, by its fingerprint (patch 0016).
+    public static let confirmedCertificateVariable = "FREERDP_ACCEPT_CHANGED_CERTIFICATE"
 
     /// The certificate to sign in with (patched FreeRDP, 0004); the PIN dialog reads it too.
     public static let certificateVariable = "FREERDP_SMARTCARD_CERT_SHA1"
@@ -122,7 +133,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
     }
 
     static func arguments(
-        profile: ConnectionProfile, pkcs11Module: String, screen: ScreenMetrics?, keepConnection: Bool
+        profile: ConnectionProfile, pkcs11Module: String, screen: ScreenMetrics?, keepConnection: Bool,
+        security: SecurityPlan = .rdpOnly
     ) -> [String] {
         let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
         var args = [
@@ -135,14 +147,16 @@ public struct FreeRDPCommand: Equatable, Sendable {
             args.append("/gateway:g:\(gateway),type:http,usage-method:direct,auth:smartcard")
         }
         args += [
-            // Log on with the card redirected into the session; the PKCS#11 module provides the
-            // certificate for the gateway. RDP security avoids a first TLS attempt the server rejects.
+            // Log on with the card: the PKCS#11 module provides the certificate for the gateway
+            // and for Kerberos (NLA); otherwise Windows signs in with the card redirected into the
+            // session.
             "/smartcard-logon",
             "/kerberos:pkcs11-module:\(pkcs11Module)",
-            "/sec:rdp",
-            // The gateway certificate must be trusted by the system CAs; never ask the user.
-            "/cert:deny",
         ]
+        args += security.arguments
+        // The computer's certificate (TLS, NLA) is trusted on first use and must not change then;
+        // the gateway's must be trusted by the system CAs, never asked about (patch 0016).
+        args.append("/cert:tofu")
 
         // The remote desktop follows the size and scale of the window or display while connected
         // (moved to another display, full screen toggled, displays added or removed). When
@@ -199,6 +213,9 @@ public struct FreeRDPCommand: Equatable, Sendable {
         // Smart card redirection: what the remote computer asks the card and what fails.
         "com.freerdp.utils.smartcard.ops:DEBUG",
         "com.freerdp.utils.smartcard.call:TRACE",
+        // The security negotiated with the computer ("Negotiated [HYBRID_EX] security"), which
+        // automatic security remembers (`SessionLogParser.negotiatedSecurity`).
+        "com.freerdp.core.nego:DEBUG",
     ]
 }
 
