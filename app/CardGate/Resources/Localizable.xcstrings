@@ -852,6 +852,22 @@
         }
       }
     },
+    "Component Licenses": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licence komponent"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencie komponentov"
+          }
+        }
+      }
+    },
     "Computer": {
       "localizations": {
         "cs": {
@@ -3396,22 +3412,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Modul čipovej karty bol po podpísaní zmenený."
-          }
-        }
-      }
-    },
-    "Third-Party Licenses": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Licence komponent třetích stran"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Licencie komponentov tretích strán"
           }
         }
       }
