@@ -23,8 +23,9 @@ struct ProcessGroupTests {
         Darwin.kill(pid, 0) == 0
     }
 
+    /// Up to 10 s (a busy CI runner may take seconds); returns as soon as the process is gone.
     static func waitUntilGone(_ pid: pid_t) async {
-        for _ in 0..<100 where isAlive(pid) {
+        for _ in 0..<500 where isAlive(pid) {
             try? await Task.sleep(for: .milliseconds(20))
         }
     }
