@@ -37,7 +37,7 @@ struct AboutView: View {
             HStack(spacing: 16) {
                 Link("Source Code", destination: ProjectLinks.sourceCode)
                 Link("Support the Author", destination: ProjectLinks.donation)
-                Button("Third-Party Licenses") { showsNotices = true }
+                Button("Component Licenses") { showsNotices = true }
                     .buttonStyle(.link)
             }
             .font(.callout)

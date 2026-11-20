@@ -143,7 +143,7 @@ final class CardGateUITests: XCTestCase {
         let about = app.windows["About CardGate"]
         XCTAssertTrue(about.links["Source Code"].waitForExistence(timeout: 5))
         XCTAssertTrue(about.links["Support the Author"].exists)
-        XCTAssertTrue(about.links["Third-Party Licenses"].exists)
+        XCTAssertTrue(about.links["Component Licenses"].exists)
         XCTAssertTrue(about.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Version '")).firstMatch.exists)
     }
 

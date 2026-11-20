@@ -5,6 +5,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Změněno
+- Okno O aplikaci: tlačítko s licencemi přibalených knihoven se jmenuje krátce „Licence komponent“
+  (dřív se název nevešel celý).
+
 ## [0.6.1] - 2026-11-19
 
 Bezpečnostní aktualizace přibaleného FreeRDP a oprava, kvůli které se Windows ve vzdálené ploše
