@@ -296,6 +296,12 @@ public struct SessionLogParser: Sendable {
 
     /// The computer's certificate changed since it was first trusted (patch 0016), also when reconnecting.
     private mutating func noteChangedCertificate(_ line: String) {
+        // With NLA a changed certificate is accepted until Kerberos verifies the computer (patch 0018):
+        // then it is trusted; otherwise the client denies it ("changed since it was first trusted").
+        if line.contains("verified by Kerberos") {
+            changedCertificateFingerprint = nil
+            return
+        }
         if line.contains("changed since it was first trusted"),
             let found = line.range(of: #"new fingerprint [0-9a-f:]+\)"#, options: .regularExpression)
         {

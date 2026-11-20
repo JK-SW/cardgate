@@ -5,6 +5,17 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Změněno
+- S NLA se obnovený certifikát počítače přijme automaticky: Windows si ho zhruba po půl roce obnovuje
+  a CardGate dřív připojení zastavil s hláškou „Certifikát počítače se změnil“. Nový certifikát se uloží,
+  až když počítač při přihlášení kartou (Kerberos) prokáže, že je to stále on; jinak hláška zůstává.
+- Rychlejší připojení s NLA (zhruba o půl minuty): karta se při přihlášení k počítači nečte znovu (použije se
+  certifikát přečtený pro bránu) a přihlášení kartou ke Kerberosu proběhne jednou, ne dvakrát.
+
+### Zabezpečení
+- Přihlášení kartou k počítači (NLA) používá jen Kerberos. Dřív mohl klient při selhání Kerberosu nebo na
+  žádost počítače zkusit NTLM a poslat odpověď odvozenou z PINu, ze které by šlo PIN zjistit.
+
 ## [0.7.0] - 2026-11-20
 
 Připojení i k počítačům, které vyžadují TLS nebo ověření na úrovni sítě (NLA). S NLA stačí jeden PIN

@@ -369,11 +369,12 @@ final class AppModel {
             }
             let options = SessionOptions(defaults: .standard, question: Self.disconnectQuestion)
             do throws(FreeRDPCommand.BuildError) {
-                let command = try FreeRDPCommand(
+                var command = try FreeRDPCommand(
                     executable: executable, profile: profile, pkcs11Module: module,
                     config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current,
                     certificateSHA1: certificate.sha1, smartCardReader: card?.reader, options: options,
                     security: security, confirmedCertificate: confirmingCertificate)
+                Self.addDebugTracing(to: &command)
                 lastAttempt = (profile, security)
                 session.connect(command, gateway: profile.gateway, preventSleep: options.preventSleep)
             } catch {
@@ -381,6 +382,16 @@ final class AppModel {
                 alert = AppAlert(error)
             }
         }
+    }
+
+    /// Debug builds only, to see where Kerberos (NLA) waits: `CARDGATE_KRB5_TRACE=<file>` (MIT krb5
+    /// trace with times; principals and hosts, no PIN).
+    static func addDebugTracing(to command: inout FreeRDPCommand) {
+        #if DEBUG
+            if let trace = ProcessInfo.processInfo.environment["CARDGATE_KRB5_TRACE"], !trace.isEmpty {
+                command.environment["KRB5_TRACE"] = trace
+            }
+        #endif
     }
 
     /// What the remote desktop window asks when it is closed (CardGate → Settings can turn it off).
