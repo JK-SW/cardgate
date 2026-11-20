@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-20
+
+Rychlejší a bezpečnější přihlášení kartou k počítači (NLA): připojení je zhruba o půl minuty kratší,
+obnovený certifikát počítače se přijme sám a PIN nikdy nemůže odejít v odpovědi NTLM.
+
 ### Změněno
 - S NLA se obnovený certifikát počítače přijme automaticky: Windows si ho zhruba po půl roce obnovuje
   a CardGate dřív připojení zastavil s hláškou „Certifikát počítače se změnil“. Nový certifikát se uloží,
