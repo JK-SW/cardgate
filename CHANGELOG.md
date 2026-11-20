@@ -5,6 +5,12 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-20
+
+Připojení i k počítačům, které vyžadují TLS nebo ověření na úrovni sítě (NLA). S NLA stačí jeden PIN
+pro bránu, počítač i Windows a spojení mezi bránou a počítačem je šifrované TLS místo RC4. V nastavení
+připojení přibyla volba Zabezpečení; výchozí Automaticky vybere to nejsilnější, které počítač přijme.
+
 ### Přidáno
 - Připojení i k počítačům, které vyžadují TLS nebo ověření na úrovni sítě (NLA). V nastavení připojení je
   nová volba Zabezpečení: Automaticky (výchozí) použije nejsilnější zabezpečení, které počítač přijme, zapamatuje
@@ -26,7 +32,7 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
   (dřív se název nevešel celý).
 
 ### Zabezpečení
-- Spojení mezi bránou a počítačem je u TLS a NLA šifrované TLS místo RC4 (RDP Security); NLA navíc ověří
+- Spojení mezi bránou a počítačem je u TLS a NLA šifrované TLS místo RC4 (Zabezpečení RDP); NLA navíc ověří
   počítač i uživatele přes Kerberos. Certifikát počítače se při prvním připojení zapamatuje a jeho změna
   připojení zastaví. Nový certifikát lze přijmout tlačítkem „Důvěřovat novému certifikátu“ – přijme se jen
   certifikát s otiskem SHA-256 uvedeným v hlášce. Certifikát brány musí být jako dosud důvěryhodný.
