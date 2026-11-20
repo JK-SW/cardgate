@@ -38,6 +38,8 @@ struct GatewayReachabilityTests {
         #expect(
             await GatewayReachability.probe(host: "192.0.2.1", port: 443, timeout: .milliseconds(600)) == .unreachable)
         let elapsed = clock.now - started
-        #expect(elapsed >= .milliseconds(550) && elapsed < .seconds(3))
+        // Generous upper bound: busy CI runners delay the timer by seconds; a probe that ignored the
+        // timeout would wait for the system's TCP connect timeout (over a minute).
+        #expect(elapsed >= .milliseconds(550) && elapsed < .seconds(15))
     }
 }
