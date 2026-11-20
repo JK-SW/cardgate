@@ -25,14 +25,17 @@ fi
 rsync -a "$HELPER/Frameworks/" "$CONTENTS/Frameworks/"
 (cd "$HELPER/Frameworks" && ls -A) >"$EMBEDDED"
 
-# Channel and codec plugins FreeRDP loads at runtime, if it was built with any.
-if [[ -d "$HELPER/PlugIns/freerdp3" ]]; then
-  mkdir -p "$CONTENTS/PlugIns"
-  rsync -a --delete "$HELPER/PlugIns/freerdp3/" "$CONTENTS/PlugIns/freerdp3/"
-else
-  rm -rf "$CONTENTS/PlugIns/freerdp3"
-  rmdir "$CONTENTS/PlugIns" 2>/dev/null || true
-fi
+# Plugins loaded at runtime: FreeRDP's channels and codecs (if it was built with any) and Kerberos
+# PKINIT (krb5).
+for plugins in freerdp3 krb5; do
+  if [[ -d "$HELPER/PlugIns/$plugins" ]]; then
+    mkdir -p "$CONTENTS/PlugIns"
+    rsync -a --delete "$HELPER/PlugIns/$plugins/" "$CONTENTS/PlugIns/$plugins/"
+  else
+    rm -rf "${CONTENTS:?}/PlugIns/$plugins"
+  fi
+done
+rmdir "$CONTENTS/PlugIns" 2>/dev/null || true
 
 mkdir -p "$CONTENTS/Resources"
 cp "$HELPER/ThirdPartyNotices.txt" "$CONTENTS/Resources/ThirdPartyNotices.txt"
@@ -40,6 +43,6 @@ cp "$HELPER/ThirdPartyNotices.txt" "$CONTENTS/Resources/ThirdPartyNotices.txt"
 IDENTITY="${EXPANDED_CODE_SIGN_IDENTITY:--}"
 [[ -n "$IDENTITY" ]] || IDENTITY="-"
 signed=("$CONTENTS/Frameworks")
-[[ -d "$CONTENTS/PlugIns/freerdp3" ]] && signed+=("$CONTENTS/PlugIns/freerdp3")
-find "${signed[@]}" -name '*.dylib' -exec codesign --force --timestamp=none -s "$IDENTITY" {} \;
+[[ -d "$CONTENTS/PlugIns" ]] && signed+=("$CONTENTS/PlugIns")
+find "${signed[@]}" \( -name '*.dylib' -o -name '*.so' \) -exec codesign --force --timestamp=none -s "$IDENTITY" {} \;
 codesign --force --timestamp=none -s "$IDENTITY" "$CONTENTS/$SESSION_APP"

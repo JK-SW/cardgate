@@ -43,6 +43,8 @@ release() { printf '{"tag_name":"%s","draft":%s,"prerelease":%s}' "$1" "${2:-fal
 printf '[%s]' "$(release v1.7.19)" >"$TMP/api/repos_DaveGamble_cJSON_releases.json"
 printf '[{"ref":"refs/tags/VER-2-14-3"},{"ref":"refs/tags/VER-2-15-0"},{"ref":"refs/tags/VER-2-BETA4"}]' \
   >"$TMP/api/repos_freetype_freetype_git_matching-refs_tags_VER-.json"
+printf '[{"ref":"refs/tags/krb5-1.22-final"},{"ref":"refs/tags/krb5-1.22.3-final"},{"ref":"refs/tags/krb5-1.22.4-final"},{"ref":"refs/tags/krb5-1.23-beta1"},{"ref":"refs/tags/krb5-1.23-final"},{"ref":"refs/tags/krb5-1.23.1-final"},{"ref":"refs/tags/krb5-1.24-final"}]' \
+  >"$TMP/api/repos_krb5_krb5_git_matching-refs_tags_krb5-.json"
 printf '[%s,%s,%s]' "$(release release-3.2.30)" "$(release release-3.4.18)" "$(release release-3.4.20)" \
   >"$TMP/api/repos_libsdl-org_SDL_releases.json"
 printf '[%s,%s,%s]' "$(release 3.9.0)" "$(release 3.33.1)" "$(release 3.10.0)" \
@@ -50,6 +52,7 @@ printf '[%s,%s,%s]' "$(release 3.9.0)" "$(release 3.33.1)" "$(release 3.10.0)" \
 cat >"$TMP/deps.lock" <<'EOF'
 # test
 openssl   4.1.0   0  https://example.com/{v}
+krb5      1.22.3  0  https://example.com/{v}
 cjson     1.7.19  0  https://example.com/{v}
 freetype  2.15.0  0  https://example.com/{v}
 sdl3      3.4.18  0  https://example.com/{v}
@@ -58,12 +61,25 @@ EOF
 
 expected="openssl 4.1.0 4.1.1 https://github.com/openssl/openssl/releases/tag/openssl-4.1.1
 openssl 4.1.0 4.2.0 https://github.com/openssl/openssl/releases/tag/openssl-4.2.0
+krb5 1.22.3 1.22.4 https://web.mit.edu/kerberos/krb5-1.22/
+krb5 1.22.3 1.24 https://web.mit.edu/kerberos/krb5-1.24/
 sdl3 3.4.18 3.4.20 https://github.com/libsdl-org/SDL/releases/tag/release-3.4.20
 freerdp 3.33.0 3.33.1 https://github.com/FreeRDP/FreeRDP/releases/tag/3.33.1"
 log "check-dependency-updates.sh"
 got="$(PATH="$TMP/bin:$PATH" FAKE_API="$TMP/api" DEPS_LOCK="$TMP/deps.lock" \
   "$ROOT/scripts/check-dependency-updates.sh")" || fail "check-dependency-updates.sh failed"
 [[ "$got" == "$expected" ]] || fail "check-dependency-updates.sh printed:
+$got
+expected:
+$expected"
+
+# A line MIT Kerberos named X.Y: its fixes X.Y.Z are reported, not only the newest line.
+printf '%s\n' "krb5      1.23  0  https://example.com/{v}" >"$TMP/krb5-line.lock"
+got="$(PATH="$TMP/bin:$PATH" FAKE_API="$TMP/api" DEPS_LOCK="$TMP/krb5-line.lock" \
+  "$ROOT/scripts/check-dependency-updates.sh")" || fail "check-dependency-updates.sh failed for krb5 1.23"
+expected="krb5 1.23 1.23.1 https://web.mit.edu/kerberos/krb5-1.23/
+krb5 1.23 1.24 https://web.mit.edu/kerberos/krb5-1.24/"
+[[ "$got" == "$expected" ]] || fail "check-dependency-updates.sh printed for krb5 1.23:
 $got
 expected:
 $expected"

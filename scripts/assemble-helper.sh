@@ -3,6 +3,8 @@
 # same layout as inside the app bundle (Contents/...):
 #   Helpers/CardGateSession.app  the RDP client (Contents/MacOS/sdl-freerdp) in an agent app
 #   Frameworks/*.dylib           every non-system library it needs
+#   PlugIns/krb5/                Kerberos plugins: preauth/pkinit.so (the card), tls/k5tls.so (HTTPS to
+#                                the KDC proxy), for network level authentication (NLA)
 # All install names are rewritten to @rpath, every file is ad-hoc signed.
 source "$(dirname "$0")/common.sh"
 
@@ -78,6 +80,13 @@ cat >"$HELPER/$SESSION_APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 plutil -lint -s "$HELPER/$SESSION_APP/Contents/Info.plist"
+# Kerberos loads these as plugins from its plugin directory, which is built into libkrb5 as a path
+# in the build prefix: the connection has to point it to the bundle (plugin_base_dir in krb5.conf).
+for plugin in preauth/pkinit.so tls/k5tls.so; do
+  [[ -f "$PREFIX/lib/krb5/plugins/$plugin" ]] || die "Kerberos plugin $plugin not found – run scripts/build-deps.sh krb5"
+  mkdir -p "$HELPER/PlugIns/krb5/$(dirname "$plugin")"
+  cp "$PREFIX/lib/krb5/plugins/$plugin" "$HELPER/PlugIns/krb5/$plugin"
+done
 # FreeRDP may load channel/codec plugins at runtime
 if compgen -G "$PREFIX/lib/freerdp3/*.dylib" >/dev/null; then
   mkdir -p "$HELPER/PlugIns/freerdp3"; cp -L "$PREFIX"/lib/freerdp3/*.dylib "$HELPER/PlugIns/freerdp3/"

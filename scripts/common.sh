@@ -51,7 +51,7 @@ dep_field() {
   case "$field" in
     version) echo "$v" ;;
     sha) echo "$sha" ;;
-    url) echo "${url//\{v\}/$v}" ;;
+    url) url="${url//\{v\}/$v}"; echo "${url//\{vmm\}/$(cut -d. -f1,2 <<<"$v")}" ;;
   esac
 }
 

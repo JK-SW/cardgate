@@ -2,7 +2,7 @@
 # Builds FreeRDP (with our patches) and all its runtime dependencies from pinned sources
 # into $BUILD/prefix. Re-running only rebuilds steps whose inputs changed.
 #
-# Usage: scripts/build-deps.sh [step...]   steps: licenses openssl cjson freetype sdl3 sdl3_ttf freerdp sparkle
+# Usage: scripts/build-deps.sh [step...]   steps: licenses openssl krb5 cjson freetype sdl3 sdl3_ttf freerdp sparkle
 # Build tools needed: Xcode command line tools, cmake, ninja, pkg-config.
 source "$(dirname "$0")/common.sh"
 
@@ -23,6 +23,47 @@ build_openssl() {
       --prefix="$PREFIX" --libdir=lib --openssldir=/private/etc/ssl \
       -mmacosx-version-min="$MACOSX_DEPLOYMENT_TARGET" \
     && make -j"$JOBS" >/dev/null && make install_sw >/dev/null)
+}
+
+# MIT Kerberos with PKINIT: network level authentication (NLA) to the computer with the card
+# (Kerberos via the gateway's KDC proxy). Only the client side is built: the libraries FreeRDP links
+# (krb5, k5crypto, com_err, krb5support), the plugins it loads at runtime (pkinit: the card, k5tls:
+# HTTPS to the KDC proxy), the headers and krb5-config. No KDC, admin tools or RPC library.
+#
+# libkrb5 compiles its prefix in: a configuration file and plugin directories it reads whatever its
+# configuration says. They point to a directory only root can create (/var/empty is root's), not to
+# the build directory (on the release build machine a path any user could create); the client gets
+# its own configuration and plugin directory (KRB5_CONFIG, FreeRDPCommand). The files are installed
+# into a staging directory and moved to $PREFIX, install names rewritten to @rpath.
+build_krb5() {
+  local KRB5_COMPILED_PREFIX=/var/empty/cardgate-krb5
+  local parts=(util include lib/crypto lib/krb5 plugins/preauth/pkinit plugins/tls/k5tls build-tools)
+  local s part stage="$OBJ/krb5-stage" f ref; s="$(unpack krb5)"
+  log "Building MIT Kerberos (client)"
+  rm -rf "$stage"
+  (cd "$s/src" && ./configure --prefix="$KRB5_COMPILED_PREFIX" \
+      --with-crypto-impl=openssl --with-tls-impl=openssl --enable-pkinit \
+      --without-system-verto --without-ldap --without-libedit --without-readline \
+      --disable-nls --disable-rpath \
+      CPPFLAGS="-I$PREFIX/include" LDFLAGS="$LDFLAGS -L$PREFIX/lib" >"$OBJ/krb5-configure.log" 2>&1) \
+    || { tail -30 "$OBJ/krb5-configure.log"; die "MIT Kerberos configure failed"; }
+  (cd "$s/src" && make install-mkdirs DESTDIR="$stage") >"$OBJ/krb5-build.log" 2>&1 \
+    || die "MIT Kerberos install-mkdirs failed"
+  for part in "${parts[@]}"; do
+    (cd "$s/src/$part" && make -j"$JOBS" WARN_CFLAGS="-Wall -Wno-deprecated-declarations" \
+        && make install DESTDIR="$stage") >>"$OBJ/krb5-build.log" 2>&1 \
+      || { tail -30 "$OBJ/krb5-build.log"; die "MIT Kerberos build failed in $part"; }
+  done
+  # Into the prefix: libraries by @rpath (as every other one), krb5-config with the real paths.
+  # Without its pkg-config files: they name the compiled-in prefix (FreeRDP asks krb5-config).
+  rsync -a --exclude lib/pkgconfig "$stage$KRB5_COMPILED_PREFIX/" "$PREFIX/"
+  while IFS= read -r -d '' f; do
+    [[ "$f" == *.dylib ]] && install_name_tool -id "@rpath/$(basename "$f")" "$f"
+    while read -r ref; do
+      [[ "$ref" == "$KRB5_COMPILED_PREFIX"/* ]] && install_name_tool -change "$ref" "@rpath/$(basename "$ref")" "$f"
+    done < <(otool -L "$f" | tail -n +2 | awk '{print $1}')
+  done < <(find "$PREFIX/lib" \( -name 'lib*.dylib' -o -name '*.so' \) -type f -newer "$OBJ/krb5-configure.log" -print0)
+  sed -i '' "s#$KRB5_COMPILED_PREFIX#$PREFIX#g" "$PREFIX/bin/krb5-config"
 }
 
 build_cmake_dep() { # name source-subdir extra-cmake-args...
@@ -64,7 +105,7 @@ build_freerdp() {
   cmake -S "$s" -B "$OBJ/freerdp" "${CMAKE_COMMON[@]}" \
     -DWITH_CLIENT_SDL3=ON -DWITH_CLIENT_SDL2=OFF -DWITH_CLIENT_MAC=OFF -DWITH_X11=OFF -DWITH_WAYLAND=OFF \
     -DWITH_SERVER=OFF -DWITH_SAMPLE=OFF -DWITH_PROXY=OFF -DWITH_SHADOW=OFF -DWITH_PLATFORM_SERVER=OFF \
-    -DWITH_KRB5=OFF \
+    -DWITH_KRB5=ON -DKRB5_ROOT_FLAVOUR=MIT -DKRB5_ROOT_CONFIG="$PREFIX/bin/krb5-config" \
     -DWITH_PKCS11=ON -DWITH_SMARTCARD_PCSC=ON -DWITH_SMARTCARD_EMULATE=OFF \
     -DWITH_OPENSSL=ON -DOPENSSL_ROOT_DIR="$PREFIX" \
     -DWITH_CJSON_REQUIRED=ON -DWITH_JANSSON_REQUIRED=OFF -DWITH_JSONC_REQUIRED=OFF \
@@ -80,12 +121,24 @@ build_freerdp() {
   analyze_patched_sources "$s"
 }
 
+# Analyzer findings in FreeRDP's own code of a file CardGate patches (message as printed, without
+# position), one line each: each is ignored once; any other finding, or the same one again, fails.
+known_upstream_findings() {
+  case "$1" in
+    # user-to-user ticket encoding (KRB_TGT_REP), which CardGate does not use; patch 0015 is elsewhere
+    winpr/libwinpr/sspi/Kerberos/kerberos.c)
+      echo "Access to field 'cbBuffer' results in a dereference of a null pointer (loaded from variable 'buf') [core.NullDereference]" ;;
+    *) ;;
+  esac
+}
+
 # Static analysis of the C sources CardGate adds to FreeRDP (fails the build on any finding).
 # libfreerdp/utils/smartcard_call.c (patch 0006) is left out: the analyzer reports two false memory
 # leaks in FreeRDP's own code there (HashTable_Insert takes ownership).
 analyze_patched_sources() {
   local s="$1" file cmd
   for file in libfreerdp/core/gateway/rdg_sc.c libfreerdp/core/gateway/rdg.c libfreerdp/core/smartcardlogon.c \
+    winpr/libwinpr/sspi/Kerberos/kerberos.c \
     client/common/client.c client/SDL/SDL3/sdl_monitor.cpp client/SDL/SDL3/sdl_context.cpp \
     client/SDL/SDL3/sdl_freerdp.cpp client/SDL/SDL3/sdl_utils.cpp client/SDL/SDL3/sdl_input.cpp; do
     cmd="$(python3 -I -c '
@@ -106,7 +159,14 @@ for entry in json.load(open(sys.argv[1])):
     findings="$(cd "$OBJ/freerdp" \
       && eval "$CC --analyze -Xanalyzer -analyzer-output=text -Werror $cmd -o /dev/null" 2>&1)" \
       || die "static analysis failed for $file: $findings"
-    if grep -Eq 'warning: .*\[[a-z]+(\.[A-Za-z0-9]+)+\]$' <<<"$findings"; then
+    # Analyzer findings without file position, minus the known ones in FreeRDP's own code.
+    local reported
+    reported="$(grep -E 'warning: .*\[[a-z]+(\.[A-Za-z0-9]+)+\]$' <<<"$findings" \
+      | sed -E 's/^.*:[0-9]+:[0-9]+: warning: //' \
+      | awk -v known="$(known_upstream_findings "$file")" \
+          'BEGIN { n = split(known, k, "\n"); for (i = 1; i <= n; i++) if (k[i] != "") left[k[i]]++ }
+           left[$0]-- > 0 { next } { print }' || true)"
+    if [[ -n "$reported" ]]; then
       printf '%s\n' "$findings" >&2
       die "static analyzer reported issues in $file"
     fi
@@ -128,7 +188,7 @@ build_licenses() {
   local dir="$PREFIX/share/licenses"
   rm -rf "$dir"; mkdir -p "$dir"
   local entry name files f archive top
-  for entry in "openssl:LICENSE.txt" "cjson:LICENSE" "freetype:LICENSE.TXT docs/FTL.TXT" \
+  for entry in "openssl:LICENSE.txt" "krb5:NOTICE" "cjson:LICENSE" "freetype:LICENSE.TXT docs/FTL.TXT" \
                "sdl3:LICENSE.txt" "sdl3_ttf:LICENSE.txt" "freerdp:LICENSE" "sparkle:LICENSE"; do
     name="${entry%%:*}"; files="${entry#*:}"
     archive="$(fetch "$name")"
@@ -141,7 +201,7 @@ build_licenses() {
   log "License texts collected"
 }
 
-ALL=(licenses openssl cjson freetype sdl3 sdl3_ttf freerdp sparkle)
+ALL=(licenses openssl krb5 cjson freetype sdl3 sdl3_ttf freerdp sparkle)
 STEPS=("${@:-${ALL[@]}}")
 mkdir -p "$OBJ" "$PREFIX"
 rebuilt=0  # once a step is rebuilt, everything after it is rebuilt too

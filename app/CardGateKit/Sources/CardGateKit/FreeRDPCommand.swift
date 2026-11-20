@@ -29,6 +29,11 @@ public struct FreeRDPCommand: Equatable, Sendable {
         app.appending(path: "Contents").appending(path: bundledClientPath)
     }
 
+    /// The Kerberos plugins (PKINIT, TLS) inside the app bundle `app` (`scripts/assemble-helper.sh`).
+    public static func kerberosPlugins(in app: URL) -> URL {
+        app.appending(path: "Contents/PlugIns/krb5")
+    }
+
     public enum BuildError: Error, Equatable, Sendable {
         /// The PKCS#11 module path cannot be passed safely as a FreeRDP sub-option.
         case invalidModulePath
@@ -62,6 +67,10 @@ public struct FreeRDPCommand: Equatable, Sendable {
         }
         self.environment = [
             "XDG_CONFIG_HOME": config.directory.path(percentEncoded: false),
+            // Kerberos (network level authentication): CardGate's configuration only, tickets in
+            // memory only (never in a file of the Mac's ticket cache).
+            "KRB5_CONFIG": config.kerberosConfigURL.path(percentEncoded: false),
+            "KRB5CCNAME": "MEMORY:cardgate",
             // SDL would otherwise make the client a regular app with its own Dock icon.
             "SDL_MAC_BACKGROUND_APP": "1",
         ]
@@ -86,7 +95,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
     /// Variables of the app's environment the client and the PIN dialog it starts still get.
     /// Nothing else is passed on: WinPR reads its log settings from the environment (`WLOG_FILTER`
     /// could turn on the smart card data dumps, which contain the PIN), OpenSSL its trust store
-    /// (`SSL_CERT_FILE`) and dyld libraries to load (`DYLD_INSERT_LIBRARIES`). The proxy variables
+    /// (`SSL_CERT_FILE`), Kerberos its configuration (`KRB5_CONFIG`, CardGate sets its own) and dyld
+    /// libraries to load (`DYLD_INSERT_LIBRARIES`). The proxy variables
     /// stay: FreeRDP connects to the gateway through them (`libfreerdp/core/proxy.c`).
     public static let inheritedVariables: Set<String> = [
         "HOME", "USER", "LOGNAME", "TMPDIR", "PATH", "SHELL", "LANG", "__CF_USER_TEXT_ENCODING",

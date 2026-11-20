@@ -1,0 +1,38 @@
+--- a/winpr/libwinpr/sspi/Kerberos/kerberos.c
++++ b/winpr/libwinpr/sspi/Kerberos/kerberos.c
+@@ -355,11 +355,15 @@
+ 	WINPR_ASSERT(name);
+ 	WINPR_ASSERT(principal);
+ 
+-	if (enterprise && domain && !strchr(name, '@'))
++	if (enterprise && (domain || strchr(name, '@')))
+ 	{
+ 		char* upn = nullptr;
+ 		size_t upnlen = 0;
+-		(void)winpr_asprintf(&upn, &upnlen, "%s@%s", name, domain);
++		/* the name may already be the whole UPN (smart card logon) */
++		if (strchr(name, '@'))
++			upn = _strdup(name);
++		else
++			(void)winpr_asprintf(&upn, &upnlen, "%s@%s", name, domain);
+ 		if (!upn)
+ 			return ENOMEM;
+ 
+@@ -528,7 +532,16 @@
+ 
+ 	if (pszPrincipal)
+ 	{
+-		if (kerberos_parse_principal(ctx, pszPrincipal, domain, FALSE, &principal))
++		/* Smart card logon (PKINIT) with the whole UPN of the certificate as the user name and no
++		 * domain: the UPN suffix need not be a realm. Send the enterprise principal to the
++		 * configured realm, as Windows clients do; the KDC finds the account by its UPN. Without
++		 * a configured realm the suffix is the realm, as before. */
++		char* configuredRealm = nullptr;
++		const BOOL upnLogon = (!domain || !*domain) && strchr(pszPrincipal, '@') && krb_settings &&
++		                      krb_settings->pkinitX509Identity &&
++		                      (krb5_get_default_realm(ctx, &configuredRealm) == 0);
++		krb5_free_default_realm(ctx, configuredRealm);
++		if (kerberos_parse_principal(ctx, pszPrincipal, domain, upnLogon, &principal))
+ 			goto cleanup;
+ 		WINPR_ASSERT(principal);
+ 	}

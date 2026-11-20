@@ -340,7 +340,8 @@ final class AppModel {
             if card?.state == .noToken { return }
             guard let certificate = signInCertificate else { return }
             do {
-                try clientConfig.install(for: profile)
+                try clientConfig.install(
+                    for: profile, kerberosPlugins: FreeRDPCommand.kerberosPlugins(in: Bundle.main.bundleURL))
             } catch {
                 logger.error("Cannot write the client settings: \(error, privacy: .public)")
                 alert = .clientSettingsNotSaved

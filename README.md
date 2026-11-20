@@ -55,7 +55,8 @@ Nikdy nepřikládejte PIN, certifikát ani skutečné adresy brány a počítač
 Apache License 2.0, viz [LICENSE](LICENSE). Aplikace obsahuje upravený klient
 [FreeRDP](https://github.com/FreeRDP/FreeRDP) a další komponenty s vlastními licencemi
 (FreeRDP a OpenSSL – Apache 2.0, SDL a SDL_ttf – zlib, FreeType – FreeType License, cJSON a Sparkle
-– MIT); jejich texty jsou v aplikaci v okně **O aplikaci**.
+– MIT, MIT Kerberos – licence MIT a další podobné, viz jeho NOTICE); jejich texty jsou v aplikaci
+v okně **O aplikaci**.
 
 ## Vývoj s pomocí AI
 

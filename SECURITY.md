@@ -19,7 +19,7 @@ Only the latest release is supported. CardGate updates itself (CardGate → Chec
 ## Scope
 
 The app, its build and release scripts, and the patches in `patches/` that CardGate applies to the
-bundled FreeRDP. A problem in FreeRDP, OpenSSL, SDL, FreeType, cJSON or Sparkle that is not caused by
+bundled FreeRDP. A problem in FreeRDP, OpenSSL, MIT Kerberos, SDL, FreeType, cJSON or Sparkle that is not caused by
 these patches belongs to that project; a report here is still welcome if it affects CardGate.
 
 ## Hlášení zranitelnosti (česky)

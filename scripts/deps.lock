@@ -1,6 +1,7 @@
 # Pinned third-party sources. Single place for dependency versions.
-# Format: NAME VERSION SHA256 URL   (URL may contain {v} = VERSION)
+# Format: NAME VERSION SHA256 URL   (URL may contain {v} = VERSION, {vmm} = its MAJOR.MINOR)
 openssl   4.1.0   50c17baf54cb008f6ce42d50deb4b28050a1aad711636cabd4b241c7e90cc2fd  https://github.com/openssl/openssl/releases/download/openssl-{v}/openssl-{v}.tar.gz
+krb5      1.22.3  fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b  https://kerberos.org/dist/krb5/{vmm}/krb5-{v}.tar.gz
 cjson     1.7.19  7fa616e3046edfa7a28a32d5f9eacfd23f92900fe1f8ccd988c1662f30454562  https://github.com/DaveGamble/cJSON/archive/refs/tags/v{v}.tar.gz
 freetype  2.15.0  93cd47eb719c325107f2d3cf087d06299e944c3b48a40b55537302304dea1dd5  https://downloads.sourceforge.net/project/freetype/freetype2/{v}/freetype-{v}.tar.xz
 sdl3      3.4.20  f3bb06f55bed9557227a700af2ea62e49497ebdf58037732a731a5fb3ef8581f  https://github.com/libsdl-org/SDL/releases/download/release-{v}/SDL3-{v}.tar.gz
