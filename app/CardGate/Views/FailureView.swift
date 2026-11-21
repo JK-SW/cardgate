@@ -105,7 +105,7 @@ struct FailureView: View {
             """
         case .multipleCertificates:
             """
-            Choose the certificate to sign in with: Edit Connection, section Card. If you do not know which \
+            Choose the certificate to sign in with: Edit Connection, section Advanced. If you do not know which \
             one, contact your IT department.
             """
         case .gatewayCertificateChanged:

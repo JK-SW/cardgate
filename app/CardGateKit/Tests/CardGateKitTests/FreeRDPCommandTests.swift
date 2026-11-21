@@ -266,6 +266,23 @@ struct FreeRDPCommandTests {
         #expect(none.environment[FreeRDPCommand.confirmedCertificateVariable] == nil)
     }
 
+    /// With the card (default) Windows gets the card; nothing is set for patch 0019.
+    @Test func signsInToWindowsWithTheCard() throws {
+        let command = try command(profile())
+        #expect(command.environment[FreeRDPCommand.windowsSignInVariable] == nil)
+        #expect(command.arguments.contains("/smartcard-logon"))
+    }
+
+    /// Password sign-in to Windows (patch 0019): the card still signs in to the gateway and NLA.
+    @Test func signsInToWindowsWithAPassword() throws {
+        var profile = try profile()
+        profile.windowsSignIn = .password
+        let command = try command(profile)
+        #expect(command.environment[FreeRDPCommand.windowsSignInVariable] == "password")
+        #expect(command.arguments.contains("/smartcard-logon"))
+        #expect(command.arguments.contains { $0.hasPrefix("/gateway:") && $0.hasSuffix(",auth:smartcard") })
+    }
+
     /// The client gets only the variables it needs: WinPR log settings could log the PIN, OpenSSL
     /// would trust other certificates and dyld would load other libraries.
     @Test func passesOnlyAllowedEnvironment() throws {

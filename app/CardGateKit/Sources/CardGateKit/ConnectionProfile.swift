@@ -18,6 +18,8 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
     public var input: InputSettings
     /// How the connection to the computer is secured.
     public var security: ConnectionSecurity
+    /// How the user signs in to Windows on the computer.
+    public var windowsSignIn: WindowsSignIn
 
     public init(
         id: UUID = UUID(),
@@ -29,7 +31,8 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         display: DisplaySettings = .init(),
         redirection: RedirectionSettings = .init(),
         input: InputSettings = .init(),
-        security: ConnectionSecurity = .automatic
+        security: ConnectionSecurity = .automatic,
+        windowsSignIn: WindowsSignIn = .smartCard
     ) {
         self.id = id
         self.name = name
@@ -41,6 +44,7 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         self.redirection = redirection
         self.input = input
         self.security = security
+        self.windowsSignIn = windowsSignIn
     }
 
     // Settings added in later versions are optional so older saved profiles keep loading.
@@ -59,7 +63,20 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         // the computer offers.
         // A method from a newer version that this one does not know: automatic.
         security = (try? container.decodeIfPresent(ConnectionSecurity.self, forKey: .security)) ?? .automatic
+        // Older versions always signed in with the card; a method from a newer version: the card.
+        windowsSignIn = (try? container.decodeIfPresent(WindowsSignIn.self, forKey: .windowsSignIn)) ?? .smartCard
     }
+}
+
+/// How the user signs in to Windows. The card always signs in to the gateway and, with NLA, to the
+/// computer's network level authentication; this only decides what Windows itself gets.
+public enum WindowsSignIn: String, Codable, CaseIterable, Sendable {
+    /// Windows signs in with the card (the PIN entered for the gateway, or again in Windows).
+    case smartCard
+    /// Windows shows its sign-in screen and asks for the password: for computers where Windows does
+    /// not accept the card. Gets no PIN (patch 0019): with NLA empty credentials, so the screen is
+    /// empty; without NLA the user name from the card is filled in.
+    case password
 }
 
 public struct InputSettings: Codable, Equatable, Sendable {

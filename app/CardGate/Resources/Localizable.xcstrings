@@ -17,18 +17,18 @@
         }
       }
     },
-    "A renewed certificate is on the card: choose it in the connection settings (section Card).": {
+    "A renewed certificate is on the card: choose it in the connection settings (section Advanced).": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Na kartě je obnovený certifikát: vyberte ho v nastavení připojení (část Karta)."
+            "value": "Na kartě je obnovený certifikát: vyberte ho v nastavení připojení (část Pokročilé)."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Na karte je obnovený certifikát: vyberte ho v nastaveniach pripojenia (časť Karta)."
+            "value": "Na karte je obnovený certifikát: vyberte ho v nastaveniach pripojenia (časť Pokročilé)."
           }
         }
       }
@@ -225,6 +225,22 @@
         }
       }
     },
+    "Automatic (%@ of the screen)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky (%@ obrazovky)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automaticky (%@ obrazovky)"
+          }
+        }
+      }
+    },
     "Automatic (%@)": {
       "localizations": {
         "cs": {
@@ -257,18 +273,18 @@
         }
       }
     },
-    "Automatic uses the strongest security the computer accepts and remembers it. With NLA you do not enter the PIN a second time when signing in to Windows.": {
+    "Automatic uses the strongest security the computer accepts and remembers it.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automaticky použije nejsilnější zabezpečení, které počítač přijme, a zapamatuje si ho. S NLA nemusíte PIN při přihlášení do Windows zadávat podruhé."
+            "value": "Automaticky použije nejsilnější zabezpečení, které počítač přijme, a zapamatuje si ho."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automaticky použije najsilnejšie zabezpečenie, ktoré počítač prijme, a zapamätá si ho. S NLA nemusíte PIN pri prihlásení do Windows zadávať druhýkrát."
+            "value": "Automaticky použije najsilnejšie zabezpečenie, ktoré počítač prijme, a zapamätá si ho."
           }
         }
       }
@@ -644,6 +660,22 @@
         }
       }
     },
+    "Change these only if you need to or your IT department tells you so.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Měňte jen v případě potřeby nebo na pokyn IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meňte len v prípade potreby alebo na pokyn IT oddelenia."
+          }
+        }
+      }
+    },
     "Changes apply to the next connection.": {
       "localizations": {
         "cs": {
@@ -740,18 +772,18 @@
         }
       }
     },
-    "Check the module path in the connection settings (section Card), or leave it empty.": {
+    "Check the module path in the connection settings (section Advanced), or leave it empty.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zkontrolujte cestu k modulu v nastavení připojení (část Karta), nebo ji nechte prázdnou."
+            "value": "Zkontrolujte cestu k modulu v nastavení připojení (část Pokročilé), nebo ji nechte prázdnou."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skontrolujte cestu k modulu v nastaveniach pripojenia (časť Karta), alebo ju nechajte prázdnu."
+            "value": "Skontrolujte cestu k modulu v nastaveniach pripojenia (časť Pokročilé), alebo ju nechajte prázdnu."
           }
         }
       }
@@ -820,18 +852,34 @@
         }
       }
     },
-    "Choose the certificate to sign in with: Edit Connection, section Card. If you do not know which one, contact your IT department.": {
+    "Choose the certificate to sign in with: Edit Connection, section Advanced. If you do not know which one, contact your IT department.": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vyberte certifikát pro přihlášení: Upravit připojení, část Karta. Pokud nevíte který, obraťte se na IT oddělení."
+            "value": "Vyberte certifikát pro přihlášení: Upravit připojení, část Pokročilé. Pokud nevíte který, obraťte se na IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vyberte certifikát na prihlásenie: Upraviť pripojenie, časť Karta. Ak neviete ktorý, obráťte sa na IT oddelenie."
+            "value": "Vyberte certifikát na prihlásenie: Upraviť pripojenie, časť Pokročilé. Ak neviete ktorý, obráťte sa na IT oddelenie."
+          }
+        }
+      }
+    },
+    "Choose user name and password if Windows on this computer does not accept the card. The card still signs you in to the gateway.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jméno a heslo zvolte, pokud Windows na tomto počítači kartu nepřijme. K bráně vás karta přihlásí i tak."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meno a heslo zvoľte, ak Windows na tomto počítači kartu neprijme. K bráne vás karta prihlási aj tak."
           }
         }
       }
@@ -1040,22 +1088,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Log pripojenia"
-          }
-        }
-      }
-    },
-    "Connection to the Computer": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Připojení k počítači"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pripojenie k počítaču"
           }
         }
       }
@@ -1622,6 +1654,22 @@
         }
       }
     },
+    "Hidden": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skryto"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skryté"
+          }
+        }
+      }
+    },
     "Import .rdp File…": {
       "localizations": {
         "cs": {
@@ -2034,22 +2082,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Minimalizovať okno"
-          }
-        }
-      }
-    },
-    "Mouse": {
-      "localizations": {
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Myš"
-          }
-        },
-        "sk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Myš"
           }
         }
       }
@@ -2598,18 +2630,18 @@
         }
       }
     },
-    "Sharing": {
+    "Sharing and Input": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sdílení"
+            "value": "Sdílení a ovládání"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zdieľanie"
+            "value": "Zdieľanie a ovládanie"
           }
         }
       }
@@ -2646,6 +2678,22 @@
         }
       }
     },
+    "Shown": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazeno"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazené"
+          }
+        }
+      }
+    },
     "Sign In": {
       "localizations": {
         "cs": {
@@ -2658,6 +2706,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prihlásiť"
+          }
+        }
+      }
+    },
+    "Sign in to Windows": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlášení do Windows"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlásenie do Windows"
           }
         }
       }
@@ -4020,6 +4084,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Okno"
+          }
+        }
+      }
+    },
+    "Windows shows its sign-in screen and asks for your password. The card still signs you in to the gateway and stays available in Windows.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows ukáže svou přihlašovací obrazovku a zeptá se na heslo. K bráně vás karta přihlásí dál a ve Windows zůstane k dispozici."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows ukáže svoju prihlasovaciu obrazovku a opýta sa na heslo. K bráne vás karta prihlási ďalej a vo Windows zostane k dispozícii."
+          }
+        }
+      }
+    },
+    "With NLA you do not enter the PIN a second time when signing in to Windows.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S NLA nemusíte PIN při přihlášení do Windows zadávat podruhé."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S NLA nemusíte PIN pri prihlásení do Windows zadávať druhýkrát."
+          }
+        }
+      }
+    },
+    "With the card": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kartou"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kartou"
+          }
+        }
+      }
+    },
+    "With user name and password": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jménem a heslem"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menom a heslom"
           }
         }
       }

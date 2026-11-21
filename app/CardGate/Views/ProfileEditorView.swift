@@ -6,6 +6,102 @@ struct ProfileEditorView: View {
     @Environment(AppModel.self) private var model
     @Bindable var editor: ProfileEditorModel
     @State private var confirmDelete = false
+    /// Open when the connection already uses an advanced setting; only the user closes it.
+    @State private var showAdvanced: Bool
+
+    init(editor: ProfileEditorModel) {
+        self.editor = editor
+        _showAdvanced = State(initialValue: editor.usesAdvancedSettings)
+    }
+
+    /// A whole row that opens and closes the advanced settings, like the rows of System Settings.
+    private var advancedToggle: some View {
+        Button {
+            withAnimation { showAdvanced.toggle() }
+        } label: {
+            HStack {
+                Text("Advanced")
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(showAdvanced ? 90 : 0))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("profile.advanced")
+        .accessibilityValue(showAdvanced ? Text("Shown") : Text("Hidden"))
+    }
+
+    /// Settings most connections never change.
+    @ViewBuilder private var advancedSettings: some View {
+        Picker("Sign-in certificate", selection: $editor.certificateSHA1) {
+            Text("Automatic (newest valid)").tag(String?.none)
+            ForEach(certificateChoices) { certificate in
+                Text(label(for: certificate)).tag(Optional(certificate.sha1))
+            }
+            if let chosen = editor.certificateSHA1, !certificateChoices.contains(where: { $0.sha1 == chosen }) {
+                Text("Certificate not on the inserted card").tag(Optional(chosen))
+            }
+        }
+        .help("Choose a certificate only if your card holds several valid sign-in certificates.")
+
+        Picker("Security", selection: $editor.security) {
+            if let remembered = model.rememberedSecurity(for: editor.id) {
+                Text("Automatic (\(remembered.shortName))").tag(ConnectionSecurity.automatic)
+            } else {
+                Text("Automatic").tag(ConnectionSecurity.automatic)
+            }
+            Text("NLA").tag(ConnectionSecurity.nla)
+            Text("TLS").tag(ConnectionSecurity.tls)
+            Text("RDP Security").tag(ConnectionSecurity.rdp)
+        }
+        .help(securityHelp)
+        .accessibilityIdentifier("profile.security")
+
+        Picker("Sign in to Windows", selection: $editor.windowsSignIn) {
+            Text("With the card").tag(WindowsSignIn.smartCard)
+            Text("With user name and password").tag(WindowsSignIn.password)
+        }
+        .help(
+            """
+            Choose user name and password if Windows on this computer does not accept \
+            the card. The card still signs you in to the gateway.
+            """
+        )
+        .accessibilityIdentifier("profile.windowsSignIn")
+        if editor.windowsSignIn == .password {
+            Text(
+                """
+                Windows shows its sign-in screen and asks for your password. The card still \
+                signs you in to the gateway and stays available in Windows.
+                """
+            )
+            .foregroundStyle(.secondary)
+            .font(.callout)
+        }
+
+        TextField("PKCS#11 module", text: $editor.pkcs11Module, prompt: Text("Automatic"))
+            .help("Leave empty unless your IT department tells you otherwise.")
+            .accessibilityIdentifier("profile.module")
+        if !editor.moduleIsValid {
+            moduleError
+        }
+    }
+
+    private var moduleError: some View {
+        Text("Enter the full path of the module, starting with /, without commas.")
+            .foregroundStyle(.red)
+            .font(.callout)
+    }
+
+    /// Without the PIN promise when Windows asks for a password.
+    private var securityHelp: Text {
+        let automatic = Text("Automatic uses the strongest security the computer accepts and remembers it.")
+        guard editor.windowsSignIn == .smartCard else { return automatic }
+        let pin = Text("With NLA you do not enter the PIN a second time when signing in to Windows.")
+        return automatic + Text(verbatim: " ") + pin
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -53,7 +149,8 @@ struct ProfileEditorView: View {
                     .accessibilityIdentifier("profile.displayMode")
                     if editor.displayMode == .window {
                         Picker("Initial window size", selection: $editor.windowSize) {
-                            Text("Automatic").tag(WindowSize?.none)
+                            Text("Automatic (\(Self.percent(ScreenMetrics.defaultWindowPercent)) of the screen)")
+                                .tag(WindowSize?.none)
                             ForEach(sizes, id: \.self) { size in
                                 Text(size.description).tag(Optional(size))
                             }
@@ -70,72 +167,24 @@ struct ProfileEditorView: View {
                     .accessibilityIdentifier("profile.scale")
                 }
 
-                Section("Sharing") {
+                Section("Sharing and Input") {
                     Toggle("Clipboard", isOn: $editor.clipboard)
                         .accessibilityIdentifier("profile.clipboard")
                     Toggle("Play sound on this Mac", isOn: $editor.audio)
                         .accessibilityIdentifier("profile.audio")
-                }
-
-                Section {
-                    Picker("Sign-in certificate", selection: $editor.certificateSHA1) {
-                        Text("Automatic (newest valid)").tag(String?.none)
-                        ForEach(certificateChoices) { certificate in
-                            Text(label(for: certificate)).tag(Optional(certificate.sha1))
-                        }
-                        if let chosen = editor.certificateSHA1,
-                            !certificateChoices.contains(where: { $0.sha1 == chosen })
-                        {
-                            Text("Certificate not on the inserted card").tag(Optional(chosen))
-                        }
-                    }
-                } header: {
-                    Text("Card")
-                } footer: {
-                    Text("Choose a certificate only if your card holds several valid sign-in certificates.")
-                        .foregroundStyle(.secondary)
-                }
-
-                Section {
-                    Picker("Security", selection: $editor.security) {
-                        if let remembered = model.rememberedSecurity(for: editor.id) {
-                            Text("Automatic (\(remembered.shortName))").tag(ConnectionSecurity.automatic)
-                        } else {
-                            Text("Automatic").tag(ConnectionSecurity.automatic)
-                        }
-                        Text("NLA").tag(ConnectionSecurity.nla)
-                        Text("TLS").tag(ConnectionSecurity.tls)
-                        Text("RDP Security").tag(ConnectionSecurity.rdp)
-                    }
-                    .accessibilityIdentifier("profile.security")
-                } header: {
-                    Text("Connection to the Computer")
-                } footer: {
-                    Text(
-                        """
-                        Automatic uses the strongest security the computer accepts and remembers it. With NLA you \
-                        do not enter the PIN a second time when signing in to Windows.
-                        """
-                    )
-                    .foregroundStyle(.secondary)
-                }
-
-                Section("Mouse") {
                     Toggle("Scroll in the same direction as on this Mac", isOn: $editor.scrollLikeThisMac)
                 }
 
                 Section {
-                    TextField("PKCS#11 module", text: $editor.pkcs11Module, prompt: Text("Automatic"))
-                        .accessibilityIdentifier("profile.module")
-                    if !editor.moduleIsValid {
-                        Text("Enter the full path of the module, starting with /, without commas.")
-                            .foregroundStyle(.red)
-                            .font(.callout)
+                    advancedToggle
+                    if showAdvanced {
+                        advancedSettings
+                    } else if !editor.moduleIsValid {
+                        // Saving is blocked by a setting the closed section hides.
+                        moduleError
                     }
-                } header: {
-                    Text("Advanced")
                 } footer: {
-                    Text("Leave empty unless your IT department tells you otherwise.")
+                    Text("Change these only if you need to or your IT department tells you so.")
                         .foregroundStyle(.secondary)
                 }
             }

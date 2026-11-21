@@ -26,6 +26,7 @@ final class ProfileEditorModel: Identifiable {
     /// `nil` = automatic (newest valid certificate on the card).
     var certificateSHA1: String?
     var security: ConnectionSecurity
+    var windowsSignIn: WindowsSignIn
 
     init(profile: ConnectionProfile?, defaultName: String, isNew: Bool? = nil, isImported: Bool = false) {
         id = profile?.id ?? UUID()
@@ -43,6 +44,7 @@ final class ProfileEditorModel: Identifiable {
         pkcs11Module = profile?.pkcs11Module ?? ""
         certificateSHA1 = profile?.certificateSHA1
         security = profile?.security ?? .automatic
+        windowsSignIn = profile?.windowsSignIn ?? .smartCard
     }
 
     /// Editor for a profile read from an `.rdp` file: new, but pre-filled.
@@ -61,9 +63,17 @@ final class ProfileEditorModel: Identifiable {
         Self.validate(gateway)
     }
 
+    /// The module path as saved.
+    private var trimmedModule: String { pkcs11Module.trimmingCharacters(in: .whitespaces) }
+
     var moduleIsValid: Bool {
-        let path = pkcs11Module.trimmingCharacters(in: .whitespaces)
-        return path.isEmpty || FreeRDPCommand.isUsableModulePath(path)
+        trimmedModule.isEmpty || FreeRDPCommand.isUsableModulePath(trimmedModule)
+    }
+
+    /// Anything in the advanced settings differs from the default.
+    var usesAdvancedSettings: Bool {
+        certificateSHA1 != nil || security != .automatic || windowsSignIn != .smartCard
+            || !trimmedModule.isEmpty
     }
 
     var canSave: Bool { nameIsValid && computerError == nil && gatewayError == nil && moduleIsValid }
@@ -72,19 +82,19 @@ final class ProfileEditorModel: Identifiable {
     func makeProfile() -> ConnectionProfile? {
         guard canSave, let computer = try? HostAddress(parsing: computer) else { return nil }
         guard let gateway = try? HostAddress(parsing: gateway) else { return nil }
-        let module = pkcs11Module.trimmingCharacters(in: .whitespaces)
         return ConnectionProfile(
             id: id,
             name: name.trimmingCharacters(in: .whitespaces),
             computer: computer,
             gateway: gateway,
-            pkcs11Module: module.isEmpty ? nil : module,
+            pkcs11Module: trimmedModule.isEmpty ? nil : trimmedModule,
             certificateSHA1: certificateSHA1,
             display: .init(
                 mode: displayMode, windowSize: displayMode == .window ? windowSize : nil, scale: scale),
             redirection: .init(clipboard: clipboard, audio: audio),
             input: .init(scrollLikeThisMac: scrollLikeThisMac),
-            security: security)
+            security: security,
+            windowsSignIn: windowsSignIn)
     }
 
     private static func validate(_ text: String) -> HostAddress.ParseError? {

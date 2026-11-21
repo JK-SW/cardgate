@@ -14,7 +14,8 @@ struct ModuleProblemView: View {
                 NoticeView(
                     tone: .warning, systemImage: "exclamationmark.triangle.fill",
                     title: Text("The smart card module set for this connection was not found."),
-                    message: Text("Check the module path in the connection settings (section Card), or leave it empty.")
+                    message: Text(
+                        "Check the module path in the connection settings (section Advanced), or leave it empty.")
                 ) {
                     pathText(path)
                     editButton
