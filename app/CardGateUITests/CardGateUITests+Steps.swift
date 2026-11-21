@@ -25,13 +25,31 @@ extension CardGateUITests {
         bar.menuItems[item].click()
     }
 
-    /// Types into the PKCS#11 module field, the last text field of the form (below the visible
-    /// part): Tab from the gateway field moves the focus there, as it would for the user.
+    /// Types into the PKCS#11 module field, the last text field of the form (in the Advanced group,
+    /// below the visible part): opens the group and scrolls to the field.
     func typeModule(_ app: XCUIApplication, _ text: String) {
-        app.textFields["profile.gateway"].click()
-        app.typeKey(.tab, modifierFlags: [])
-        app.typeText(text)
-        XCTAssertEqual(app.textFields["profile.module"].value as? String, text)
+        let module = app.textFields["profile.module"]
+        if !module.exists {
+            let advanced = app.buttons["profile.advanced"]
+            XCTAssertTrue(advanced.waitForExistence(timeout: 5))
+            scrollIntoView(app, advanced)
+            advanced.click()
+            XCTAssertTrue(module.waitForExistence(timeout: 5))
+        }
+        scrollIntoView(app, module)
+        module.click()
+        module.typeText(text)
+        XCTAssertEqual(module.value as? String, text)
+    }
+
+    /// Scrolls the connection sheet until `element` is in its visible part: XCUITest does not
+    /// scroll the form on macOS, a click below it lands on the buttons under the form.
+    func scrollIntoView(_ app: XCUIApplication, _ element: XCUIElement) {
+        let form = app.sheets.scrollViews.firstMatch
+        for _ in 0..<20 where !form.frame.contains(element.frame) {
+            form.scroll(byDeltaX: 0, deltaY: -50)
+        }
+        XCTAssertTrue(form.frame.contains(element.frame), "\(element) is in view")
     }
 
     /// Opens the connection editor from the welcome screen.

@@ -95,7 +95,14 @@ public struct FreeRDPCommand: Equatable, Sendable {
         if let confirmedCertificate, CertificateFingerprint.isValid(confirmedCertificate) {
             environment[Self.confirmedCertificateVariable] = confirmedCertificate  // patch 0016
         }
+        if profile.windowsSignIn == .password {
+            // Windows gets no PIN and asks for the password (patch 0019).
+            environment[Self.windowsSignInVariable] = "password"
+        }
     }
+
+    /// `password`: sign in to Windows with a password typed in Windows, not the card (patch 0019).
+    public static let windowsSignInVariable = "FREERDP_WINDOWS_SIGN_IN"
 
     /// The changed computer certificate the user trusts, by its fingerprint (patch 0016).
     public static let confirmedCertificateVariable = "FREERDP_ACCEPT_CHANGED_CERTIFICATE"
@@ -263,9 +270,14 @@ public struct ScreenMetrics: Equatable, Sendable {
         self.scale = max(scale, 1)
     }
 
-    /// Window size used when the user did not choose one: 80 % of the usable area.
+    /// Share of the usable area a window takes when the user did not choose its size, in percent.
+    public static let defaultWindowPercent = 80
+
+    /// Window size used when the user did not choose one (`defaultWindowPercent` of the usable area).
     public var defaultWindowSize: WindowSize {
-        WindowSize(width: visibleSize.width * 4 / 5, height: visibleSize.height * 4 / 5)
+        WindowSize(
+            width: visibleSize.width * Self.defaultWindowPercent / 100,
+            height: visibleSize.height * Self.defaultWindowPercent / 100)
     }
 
     /// Whether a window of this size (in points) fits on the display.

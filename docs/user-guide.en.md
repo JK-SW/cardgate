@@ -25,16 +25,24 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 1. Start CardGate and click **Set Up Connection** (or **Import .rdp File…**). Connect only to
    addresses from your IT department: while connected, the remote computer can use your card.
 2. Enter the **Computer** (e.g. `pc01.example.com`) and the **Gateway**.
-3. Optionally choose the display mode (full screen by default, or a window), initial window size, scale (size of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound and scroll direction.
+3. Optionally choose the display mode (full screen by default, or a window), initial window size (**Automatic** = 80 % of the screen), scale (size of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound and scroll direction.
    Click **Save**.
 
 You can have several connections: they are listed on the left. Edit one with the button next to its
 name; add another with **New Connection…** below the list.
 
-Under **Connection to the Computer** there is a **Security** option. Leave it at **Automatic**: CardGate
-uses the strongest security the computer accepts (NLA, TLS or RDP Security), remembers it and after about
-a month tries whether the computer accepts stronger security. The parentheses show what is used now,
-e.g. **Automatic (NLA)**. Choose NLA, TLS or RDP Security only if your IT department tells you to.
+Settings you rarely change are under **Advanced** (click to open; card certificate, security, sign-in to
+Windows and card module). Leave **Security** at **Automatic**: CardGate uses the strongest security the
+computer accepts (NLA, TLS or RDP Security), remembers it and after about a month tries whether the computer
+accepts stronger security. The parentheses show what is used now, e.g. **Automatic (NLA)**. Choose NLA, TLS
+or RDP Security only if your IT department tells you to.
+
+**Sign in to Windows**: the default **With the card** signs you in to Windows with the card (with NLA
+without another PIN). If Windows on the computer does not accept the card (e.g. it shows an error before its
+sign-in screen), choose **With user name and password**: the card still signs you in to the gateway, but
+Windows shows its sign-in screen and asks for your password. If Windows offers the card's PIN, choose
+**Sign-in options** and the password; next time it usually offers the password right away. The card stays
+available in Windows (e.g. for signing).
 
 <img src="images/en/welcome.png" width="560" alt="CardGate welcome screen">
 <img src="images/en/connection-settings.png" width="560" alt="Connection settings">
@@ -117,11 +125,12 @@ GitHub and sends nothing about you.
 | The connection has no gateway | CardGate connects only through an RD Gateway. Click **Edit Connection** and add the gateway address. |
 | The connection was interrupted | The network failed and reconnecting did not succeed (or it is off in Settings). Check your internet connection and connect again. |
 | The smart card module is not from a verified publisher | The card module does not come from a verified maker. Use it (**Use This Module…**) only if you know where it is from (e.g. your IT department). |
-| The smart card module set for this connection was not found | Fix the path in **Edit Connection** (section Card), or leave it empty. |
+| The smart card module set for this connection was not found | Fix the path in **Edit Connection** (section Advanced), or leave it empty. |
 | The computer requires stronger connection security | In the connection settings choose **Security: Automatic**. If it is already chosen, the computer requires NLA, which could not be used – follow the message or contact your IT department. |
 | The computer offers only weaker connection security | If the computer's administrator changed this on purpose, click **Connect with Weaker Security**. Otherwise do not connect and contact your IT department. |
 | The computer's certificate changed | Trust the new certificate only when the administrator confirms its renewal and fingerprint (see Security). |
 | Your account may not connect to this computer | Ask the computer's administrator to add you to the Remote Desktop Users. |
+| Windows shows an error when signing in with the card (e.g. "Hash generation … is not enabled on the server") | Windows on this computer does not accept the card. In the connection settings choose **Sign in to Windows: With user name and password**. |
 | Signing in to the computer with the card failed | Connect again; CardGate then connects without NLA. If the computer requires NLA, contact your IT department (the gateway needs a KDC proxy). |
 | NLA cannot be used for this connection | Enter the computer's full name with its domain (e.g. `pc01.example.com`) and check your internet connection, or the connection to your organization's network (the card's certification authority is downloaded). |
 

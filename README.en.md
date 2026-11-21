@@ -5,7 +5,8 @@
 A macOS (Apple Silicon) app for connecting to Windows desktops through a Remote Desktop Gateway
 that requires **smart card authentication** (the `HTTP_EXTENDED_AUTH_SC` scheme used by mstsc),
 with the private key on a card or token accessed through a PKCS#11 module. The card is also
-redirected into the session for the Windows sign-in. The connection to the computer uses network
+redirected into the session for the Windows sign-in (or, where Windows on the computer does not
+accept the card, Windows asks for a password). The connection to the computer uses network
 level authentication (Kerberos PKINIT with the card through the gateway's KDC proxy, one PIN), TLS or
 RDP Security – by default the strongest the computer accepts.
 

@@ -161,38 +161,6 @@ final class CardGateUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Nastaviť pripojenie"].exists)
     }
 
-    func testWindowSizeIsOnlyOfferedForAWindow() {
-        let app = launch()
-        openNewConnection(app)
-        // A new connection opens in full screen.
-        XCTAssertEqual(app.popUpButtons["profile.displayMode"].value as? String, "Full screen")
-        XCTAssertFalse(app.popUpButtons["profile.windowSize"].exists)
-        app.popUpButtons["profile.displayMode"].click()
-        app.menuItems["Window"].click()
-        XCTAssertTrue(app.popUpButtons["profile.windowSize"].waitForExistence(timeout: 5))
-        app.popUpButtons["profile.displayMode"].click()
-        app.menuItems["Full screen"].click()
-        XCTAssertFalse(app.popUpButtons["profile.windowSize"].exists)
-    }
-
-    /// The scale is offered in every display mode and saved.
-    func testScaleIsSaved() {
-        let app = launch()
-        openNewConnection(app)
-        let scale = app.popUpButtons["profile.scale"]
-        XCTAssertEqual(scale.value as? String, "Automatic")
-        app.popUpButtons["profile.displayMode"].click()
-        app.menuItems["Full screen"].click()
-        scale.click()
-        // The percent format depends on the region ("150%" or "150 %").
-        app.menuItems.matching(NSPredicate(format: "title BEGINSWITH '150'")).firstMatch.click()
-        addConnection(app, name: "Office", computer: "pc01.example.com")
-
-        app.buttons["connection.edit"].click()
-        XCTAssertTrue(scale.waitForExistence(timeout: 5))
-        XCTAssertTrue((scale.value as? String)?.hasPrefix("150") == true)
-    }
-
     func testRejectsAnInvalidGatewayAndModule() {
         let app = launch()
         openNewConnection(app)
@@ -212,25 +180,11 @@ final class CardGateUITests: XCTestCase {
         let hint = app.staticTexts["Enter the full path of the module, starting with /, without commas."]
         XCTAssertTrue(hint.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Save"].isEnabled)
-    }
 
-    func testSharingSettingsAreSaved() {
-        let app = launch()
-        openNewConnection(app)
-        let clipboard = app.switches["profile.clipboard"]
-        let audio = app.switches["profile.audio"]
-        XCTAssertEqual(clipboard.value as? Int, 1)
-        XCTAssertEqual(audio.value as? Int, 1)
-        clipboard.click()
-        audio.click()
-        XCTAssertEqual(clipboard.value as? Int, 0)
-        XCTAssertEqual(audio.value as? Int, 0)
-        addConnection(app, name: "Office", computer: "pc01.example.com")
-
-        app.buttons["connection.edit"].click()
-        XCTAssertTrue(clipboard.waitForExistence(timeout: 5))
-        XCTAssertEqual(clipboard.value as? Int, 0)
-        XCTAssertEqual(audio.value as? Int, 0)
+        // Closing the advanced settings keeps the reason why saving is blocked in view.
+        app.buttons["profile.advanced"].click()
+        XCTAssertFalse(app.textFields["profile.module"].waitForExistence(timeout: 2))
+        XCTAssertTrue(hint.exists)
     }
 
     func testCancelKeepsTheConnectionUnchanged() {

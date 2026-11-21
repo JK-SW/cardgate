@@ -26,17 +26,24 @@ Tento návod otevřete i z aplikace: **Nápověda → Návod k CardGate**.
    (nebo **Importovat soubor .rdp…**, pokud vám ho IT oddělení poslalo). Připojujte se jen k adresám
    od IT oddělení: po dobu připojení může vzdálený počítač používat vaši kartu.
 2. Vyplňte **Počítač** (např. `pc01.example.com`) a **Bránu**.
-3. Volitelně zvolte zobrazení (výchozí je celá obrazovka, nebo okno), počáteční velikost okna, měřítko
-   (velikost textu a aplikací ve Windows; **Automaticky** = 200 % na displeji Retina, jinak 100 %),
-   schránku, zvuk a směr posouvání myší. Klikněte na **Uložit**.
+3. Volitelně zvolte zobrazení (výchozí je celá obrazovka, nebo okno), počáteční velikost okna
+   (**Automaticky** = 80 % obrazovky), měřítko (velikost textu a aplikací ve Windows; **Automaticky** = 200 %
+   na displeji Retina, jinak 100 %), schránku, zvuk a směr posouvání myší. Klikněte na **Uložit**.
 
 Připojení můžete mít i více: jsou v seznamu vlevo. Každé upravíte tlačítkem vedle jeho názvu, nové
 přidáte tlačítkem **Nové připojení…** pod seznamem.
 
-V části **Připojení k počítači** je volba **Zabezpečení**. Nechte ji na **Automaticky**: CardGate použije
-nejsilnější zabezpečení, které počítač přijme (NLA, TLS, nebo Zabezpečení RDP), zapamatuje si ho a zhruba
-po měsíci zkusí, zda počítač nepřijme silnější. V závorce je vidět, co se právě používá, např.
-**Automaticky (NLA)**. NLA, TLS nebo Zabezpečení RDP volte jen na pokyn IT oddělení.
+Méně používané volby jsou v části **Pokročilé** (otevře se kliknutím; certifikát karty, zabezpečení,
+přihlášení do Windows a modul karty). **Zabezpečení** nechte na **Automaticky**: CardGate použije
+nejsilnější zabezpečení, které počítač přijme (NLA, TLS, nebo Zabezpečení RDP), zapamatuje si ho a zhruba po
+měsíci zkusí, zda počítač nepřijme silnější. V závorce je vidět, co se právě používá, např. **Automaticky
+(NLA)**. NLA, TLS nebo Zabezpečení RDP volte jen na pokyn IT oddělení.
+
+**Přihlášení do Windows**: výchozí **Kartou** přihlásí do Windows kartou (s NLA bez dalšího PINu). Pokud
+Windows na počítači přihlášení kartou nepřijme (např. před přihlašovací obrazovkou ukáže chybu), zvolte
+**Jménem a heslem**: k bráně vás karta přihlásí dál, Windows ale ukáže svou přihlašovací obrazovku a zeptá
+se na heslo. Pokud Windows nabídne PIN karty, zvolte **Možnosti přihlášení** a heslo; příště obvykle nabídne
+rovnou heslo. Karta zůstane ve Windows k dispozici (např. pro podpisy).
 
 <img src="images/cs/welcome.png" width="560" alt="Uvítací obrazovka CardGate">
 <img src="images/cs/connection-settings.png" width="560" alt="Nastavení připojení">
@@ -117,11 +124,12 @@ z GitHubu a nic o vás neodesílá.
 | Připojení nemá zadanou bránu | CardGate se připojuje jen přes bránu. Klikněte na **Upravit připojení** a doplňte adresu brány. |
 | Spojení bylo přerušeno | Síť vypadla a obnovení se nepodařilo (nebo je v Nastavení vypnuté). Zkontrolujte připojení k internetu a připojte se znovu. |
 | Modul čipové karty není od ověřeného vydavatele | Modul ke kartě nepochází od ověřeného výrobce. Použijte ho (**Použít tento modul…**), jen pokud víte, odkud je (např. od IT oddělení). |
-| Modul čipové karty nastavený pro toto připojení nebyl nalezen | Opravte cestu v **Upravit připojení** (část Karta), nebo ji nechte prázdnou. |
+| Modul čipové karty nastavený pro toto připojení nebyl nalezen | Opravte cestu v **Upravit připojení** (část Pokročilé), nebo ji nechte prázdnou. |
 | Počítač vyžaduje silnější zabezpečení připojení | V nastavení připojení zvolte **Zabezpečení: Automaticky**. Pokud už je zvolené, počítač vyžaduje NLA, které se nepodařilo použít – postupujte podle hlášky, případně se obraťte na IT oddělení. |
 | Počítač nabízí jen slabší zabezpečení připojení | Pokud to správce počítače změnil záměrně, klikněte na **Připojit se slabším zabezpečením**. Jinak se nepřipojujte a obraťte se na IT oddělení. |
 | Certifikát počítače se změnil | Novému certifikátu důvěřujte, jen když správce potvrdí jeho obnovení a otisk (viz Bezpečnost). |
 | Váš účet se k tomuto počítači nesmí připojit | Požádejte správce počítače o přidání do skupiny Uživatelé vzdálené plochy. |
+| Windows při přihlášení kartou ukáže chybu (např. „Hash generation … is not enabled on the server“) | Windows na tomto počítači přihlášení kartou nepřijímá. V nastavení připojení zvolte **Přihlášení do Windows: Jménem a heslem**. |
 | Přihlášení k počítači kartou se nepovedlo | Připojte se znovu, CardGate se pak připojí bez NLA. Pokud počítač NLA vyžaduje, obraťte se na IT oddělení (brána potřebuje KDC proxy). |
 | U tohoto připojení nelze použít NLA | Zadejte celé jméno počítače s doménou (např. `pc01.example.com`) a zkontrolujte připojení k internetu, případně k síti organizace (kvůli stažení certifikační autority karty). |
 

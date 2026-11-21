@@ -5,6 +5,19 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Volba **Přihlášení do Windows** v nastavení připojení: **Kartou** (výchozí, jako dosud) nebo **Jménem
+  a heslem** pro počítače, kde Windows přihlášení kartou nepřijme a před přihlašovací obrazovkou ukazuje
+  chybu. K bráně (a s NLA k počítači) přihlašuje dál karta, Windows ale ukáže svou přihlašovací obrazovku
+  a zeptá se na heslo; PIN Windows nedostane. Karta zůstane ve Windows k dispozici.
+
+### Změněno
+- Přehlednější nastavení připojení: související volby jsou u sebe (schránka, zvuk a posouvání myší v části
+  Sdílení a ovládání) a ty, které se mění jen výjimečně (certifikát karty, zabezpečení, přihlášení do Windows,
+  modul karty), jsou ve sbalené části **Pokročilé**. Otevře se sama, pokud je v ní něco nastaveno. Vysvětlení
+  k volbám se ukáže po najetí myší.
+- U počáteční velikosti okna je vidět, co znamená Automaticky (80 % obrazovky).
+
 ## [0.7.1] - 2026-11-20
 
 Rychlejší a bezpečnější přihlášení kartou k počítači (NLA): připojení je zhruba o půl minuty kratší,

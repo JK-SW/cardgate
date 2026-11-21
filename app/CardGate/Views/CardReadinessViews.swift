@@ -48,7 +48,7 @@ extension CardReadiness {
         switch self {
         case .needsReinsert: Text("Remove the card or token and insert it again.")
         case .ready(_, .some, true):
-            Text("A renewed certificate is on the card: choose it in the connection settings (section Card).")
+            Text("A renewed certificate is on the card: choose it in the connection settings (section Advanced).")
         case .ready(_, .some, false): Text("Ask your IT department to renew it in time.")
         case .expired: Text("Contact your IT department to renew it.")
         default: nil

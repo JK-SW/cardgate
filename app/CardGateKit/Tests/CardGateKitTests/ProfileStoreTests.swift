@@ -215,5 +215,21 @@ struct ProfileCompatibilityTests {
         #expect(!profile.redirection.audio)
         #expect(profile.input == InputSettings())
         #expect(profile.display.scale == nil)
+        #expect(profile.windowsSignIn == .smartCard)
+    }
+
+    /// Sign-in to Windows: saved and read back; a method of a newer version signs in with the card.
+    @Test func windowsSignIn() throws {
+        var profile = ConnectionProfile(name: "Office", computer: try HostAddress(parsing: "pc01.corp.example"))
+        profile.windowsSignIn = .password
+        let data = try JSONEncoder().encode(profile)
+        #expect(try JSONDecoder().decode(ConnectionProfile.self, from: data) == profile)
+
+        let json = """
+            {"id":"6F1C2A52-8B39-4B79-9A43-2B7D4D0B5E10","name":"Office","computer":"pc01.corp.example",
+             "windowsSignIn":"fromTheFuture"}
+            """
+        let newer = try JSONDecoder().decode(ConnectionProfile.self, from: Data(json.utf8))
+        #expect(newer.windowsSignIn == .smartCard)
     }
 }
