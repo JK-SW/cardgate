@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-21
+
+Přihlášení do Windows jménem a heslem pro počítače, kde Windows kartu nepřijme, a přehlednější nastavení
+připojení s méně používanými volbami ve sbalené části Pokročilé.
+
 ### Přidáno
 - Volba **Přihlášení do Windows** v nastavení připojení: **Kartou** (výchozí, jako dosud) nebo **Jménem
   a heslem** pro počítače, kde Windows přihlášení kartou nepřijme a před přihlašovací obrazovkou ukazuje
