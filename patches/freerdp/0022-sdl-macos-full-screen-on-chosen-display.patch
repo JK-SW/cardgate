@@ -1,0 +1,117 @@
+--- a/client/SDL/SDL3/sdl_window.hpp
++++ b/client/SDL/SDL3/sdl_window.hpp
+@@ -41,6 +41,8 @@
+ 	/* macOS: the height (points) at the top of the display that a fullscreen window leaves out
+ 	 * (the notch of a built-in display), 0 elsewhere. */
+ 	[[nodiscard]] static double notchHeight(SDL_DisplayID id);
++	/* macOS: whether the SDL display is the CoreGraphics display (CGDirectDisplayID). */
++	[[nodiscard]] static bool isCoreGraphicsDisplay(SDL_DisplayID id, uint32_t coreGraphicsID);
+ 
+ 	SdlWindow(SdlWindow&& other) noexcept;
+ 	SdlWindow(const SdlWindow& other) = delete;
+--- a/client/SDL/SDL3/sdl_window.cpp
++++ b/client/SDL/SDL3/sdl_window.cpp
+@@ -502,6 +502,26 @@
+ } // namespace
+ #endif
+ 
++/* SDL takes the bounds of a display from CoreGraphics (CGDisplayBounds, cut to int) and does not
++ * tell its CoreGraphics ID: the display is the one with the same bounds. */
++bool SdlWindow::isCoreGraphicsDisplay(SDL_DisplayID id, uint32_t coreGraphicsID)
++{
++#if defined(__APPLE__)
++	SDL_Rect bounds = {};
++	if ((coreGraphicsID == 0) || !SDL_GetDisplayBounds(id, &bounds))
++		return false;
++	const CGRect r = CGDisplayBounds(coreGraphicsID);
++	return (static_cast<int>(r.origin.x) == bounds.x) &&
++	       (static_cast<int>(r.origin.y) == bounds.y) &&
++	       (static_cast<int>(r.size.width) == bounds.w) &&
++	       (static_cast<int>(r.size.height) == bounds.h);
++#else
++	WINPR_UNUSED(id);
++	WINPR_UNUSED(coreGraphicsID);
++	return false;
++#endif
++}
++
+ /* A fullscreen window (in its own Space, as SDL makes it by default) starts below the camera
+  * housing (notch) of a built-in display. The display is found as SDL finds its bounds: by the
+  * CoreGraphics display of the screen (NSScreenNumber). arm64 only: there objc_msgSend also
+@@ -540,15 +560,11 @@
+ 			continue;
+ 		const CGDirectDisplayID display = reinterpret_cast<SendNumber>(objc_msgSend)(
+ 		    number, sel_registerName("unsignedIntValue"));
+-		const CGRect r = CGDisplayBounds(display);
+-		if ((static_cast<int>(r.origin.x) != bounds.x) ||
+-		    (static_cast<int>(r.origin.y) != bounds.y) ||
+-		    (static_cast<int>(r.size.width) != bounds.w) ||
+-		    (static_cast<int>(r.size.height) != bounds.h))
++		if (!isCoreGraphicsDisplay(id, display))
+ 			continue;
+ 		const auto insets =
+ 		    reinterpret_cast<SendInsets>(objc_msgSend)(screen, sel_registerName("safeAreaInsets"));
+-		if ((insets.top > 0.0) && (insets.top < r.size.height / 2.0))
++		if ((insets.top > 0.0) && (insets.top < bounds.h / 2.0))
+ 			notch = insets.top;
+ 		break;
+ 	}
+--- a/client/SDL/SDL3/sdl_monitor.cpp
++++ b/client/SDL/SDL3/sdl_monitor.cpp
+@@ -21,6 +21,7 @@
+ 
+ #include <freerdp/config.h>
+ 
++#include <cerrno>
+ #include <cmath>
+ #include <cstdio>
+ #include <cstdlib>
+@@ -295,6 +296,39 @@
+ 	return sdl_apply_mon_max_size(sdl, pMaxWidth, pMaxHeight);
+ }
+ 
++/* The display of a single monitor session: FREERDP_SDL_DISPLAY (macOS: the CoreGraphics display
++ * ID, SdlWindow::isCoreGraphicsDisplay), otherwise or if not connected the first
++ * one (the main display). */
++[[nodiscard]] static SDL_DisplayID sdl_full_screen_display(const std::vector<SDL_DisplayID>& ids)
++{
++	WINPR_ASSERT(!ids.empty());
++#if defined(__APPLE__)
++	const char* value = getenv("FREERDP_SDL_DISPLAY");
++	if (!value || (*value == '\0'))
++		return ids.front();
++	char* end = nullptr;
++	errno = 0;
++	const auto wanted = strtoul(value, &end, 10);
++	if ((errno != 0) || !end || (*end != '\0') || (wanted == 0) || (wanted > UINT32_MAX))
++	{
++		WLog_WARN(TAG, "FREERDP_SDL_DISPLAY is not a display ID, using the main display");
++		return ids.front();
++	}
++	for (const auto id : ids)
++	{
++		if (SdlWindow::isCoreGraphicsDisplay(id, static_cast<uint32_t>(wanted)))
++		{
++			const char* name = SDL_GetDisplayName(id);
++			WLog_INFO(TAG, "full screen on the chosen display %" PRIu32 " (%s)", id,
++			          name ? name : "");
++			return id;
++		}
++	}
++	WLog_WARN(TAG, "the chosen display %lu is not connected, using the main display", wanted);
++#endif
++	return ids.front();
++}
++
+ BOOL sdl_detect_monitors(SdlContext* sdl, UINT32* pMaxWidth, UINT32* pMaxHeight)
+ {
+ 	WINPR_ASSERT(sdl);
+@@ -319,7 +353,7 @@
+ 			sdl->setMonitorIds(ids);
+ 		else
+ 		{
+-			sdl->setMonitorIds({ ids.front() });
++			sdl->setMonitorIds({ sdl_full_screen_display(ids) });
+ 		}
+ 	}
+ 	else

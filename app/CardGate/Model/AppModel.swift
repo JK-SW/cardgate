@@ -373,7 +373,7 @@ final class AppModel {
                     executable: executable, profile: profile, pkcs11Module: module,
                     config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current,
                     certificateSHA1: certificate.sha1, smartCardReader: card?.reader, options: options,
-                    security: security, confirmedCertificate: confirmingCertificate)
+                    security: security, confirmedCertificate: confirmingCertificate, displays: ConnectedDisplay.current)
                 Self.addDebugTracing(to: &command)
                 lastAttempt = (profile, security)
                 session.connect(command, gateway: profile.gateway, preventSleep: options.preventSleep)
@@ -401,6 +401,24 @@ final class AppModel {
             detail: String(localized: "You can turn off this question in CardGate → Settings."),
             disconnect: String(localized: "Disconnect"),
             cancel: String(localized: "Cancel"))
+    }
+}
+
+extension ConnectedDisplay {
+    /// The displays connected now, the main one first.
+    @MainActor static var current: [ConnectedDisplay] {
+        NSScreen.screens.compactMap { screen in
+            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
+            else { return nil }
+            let id = number.uint32Value
+            let key =
+                CGDisplayIsBuiltin(id) != 0
+                ? Self.builtInKey
+                : Self.key(
+                    vendor: CGDisplayVendorNumber(id), model: CGDisplayModelNumber(id),
+                    serial: CGDisplaySerialNumber(id))
+            return ConnectedDisplay(name: screen.localizedName, id: id, key: key)
+        }
     }
 }
 

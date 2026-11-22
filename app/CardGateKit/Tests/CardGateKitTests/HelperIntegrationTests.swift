@@ -27,6 +27,7 @@ struct HelperIntegrationTests {
             "signed in: releasing the modifier keys",  // 0014: the same once the session is back
             "released the modifier keys before disconnecting",  // 0014: Cmd+Q leaves no Windows key
             "points at the top left out (notch)",  // 0021: full screen below the notch, taskbar visible
+            "full screen on the chosen display",  // 0022: full screen on the display chosen in the profile
         ])
     func clientContainsPatch(_ text: String) throws {
         #expect(try Self.clientContains(text), "the client lacks the patch with '\(text)'")

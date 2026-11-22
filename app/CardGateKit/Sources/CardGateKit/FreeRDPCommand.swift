@@ -52,11 +52,12 @@ public struct FreeRDPCommand: Equatable, Sendable {
     ///   - security: how the connection to the computer is secured (`SecurityPlan.make`).
     ///   - confirmedCertificate: the changed computer certificate the user trusts
     ///     (`SessionLogParser.changedCertificateFingerprint`): it replaces the one trusted before, no other does.
+    ///   - displays: the connected displays, to find the one the profile chose for full screen.
     public init(
         executable: URL, profile: ConnectionProfile, pkcs11Module: String, config: FreeRDPClientConfig,
         askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil, certificateSHA1: String? = nil,
         smartCardReader: String? = nil, options: SessionOptions = .off, security: SecurityPlan = .rdpOnly,
-        confirmedCertificate: String? = nil
+        confirmedCertificate: String? = nil, displays: [ConnectedDisplay] = []
     ) throws(BuildError) {
         guard profile.gateway != nil else { throw .gatewayRequired }
         guard Self.isUsableModulePath(pkcs11Module) else { throw .invalidModulePath }
@@ -100,7 +101,16 @@ public struct FreeRDPCommand: Equatable, Sendable {
             // Windows gets no PIN and asks for the password (patch 0019).
             environment[Self.windowsSignInVariable] = "password"
         }
+        if profile.display.mode == .fullScreen,
+            let display = ConnectedDisplay.display(for: profile.display.fullScreenDisplay, among: displays)
+        {
+            // Otherwise the client opens on the main display (patch 0022).
+            environment[Self.displayVariable] = String(display.id)
+        }
     }
+
+    /// The CoreGraphics ID of the display to open full screen on (patch 0022).
+    public static let displayVariable = "FREERDP_SDL_DISPLAY"
 
     /// `password`: sign in to Windows with a password typed in Windows, not the card (patch 0019).
     public static let windowsSignInVariable = "FREERDP_WINDOWS_SIGN_IN"

@@ -5,6 +5,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Volba **Zobrazit na** v nastavení připojení: u celé obrazovky s více displeji vyberete, na kterém se vzdálená
+  plocha otevře (výchozí je hlavní displej). Když zvolený displej není připojený, otevře se na hlavním.
+
 ### Opraveno
 - Přepnutí do jiné aplikace přes ⌘Tab (nebo jinak se stisknutou ⌘) už ve Windows neotevře nabídku Start (#36).
 - Zkratky Macu ⌘M, ⌘H, ⌘⌥H, ⌘W a ⌘⌃F už se neposílají do Windows (např. ⌘M kromě minimalizace okna

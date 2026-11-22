@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ (not connected)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (nepřipojený)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (nepripojený)"
+          }
+        }
+      }
+    },
     "%@ – valid until %@": {
       "localizations": {
         "cs": {
@@ -2102,6 +2118,22 @@
         }
       }
     },
+    "Main display": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hlavní displej"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hlavný displej"
+          }
+        }
+      }
+    },
     "Minimize the window": {
       "localizations": {
         "cs": {
@@ -2706,6 +2738,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zobraziť ako"
+          }
+        }
+      }
+    },
+    "Show on": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazit na"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobraziť na"
           }
         }
       }
@@ -3410,6 +3458,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Displej môže zhasnúť; zatvorenie veka Mac uspí aj tak."
+          }
+        }
+      }
+    },
+    "The display the remote desktop opens on in full screen.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Displej, na kterém se vzdálená plocha otevře na celé obrazovce."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Displej, na ktorom sa vzdialená plocha otvorí na celej obrazovke."
           }
         }
       }

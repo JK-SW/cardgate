@@ -234,6 +234,29 @@ struct ProfileCompatibilityTests {
         #expect(newer.windowsSignIn == .smartCard)
     }
 
+    /// The full screen display: saved and read back; a profile without it opens on the main display.
+    @Test func fullScreenDisplay() throws {
+        var profile = ConnectionProfile(name: "Office", computer: try HostAddress(parsing: "pc01.corp.example"))
+        profile.display.fullScreenDisplay = DisplayChoice(key: "4268-9-0", name: "DELL U2720Q")
+        let data = try JSONEncoder().encode(profile)
+        #expect(try JSONDecoder().decode(ConnectionProfile.self, from: data) == profile)
+
+        let json = """
+            {"id":"6F1C2A52-8B39-4B79-9A43-2B7D4D0B5E10","name":"Office","computer":"pc01.corp.example",
+             "display":{"mode":"fullScreen"}}
+            """
+        let older = try JSONDecoder().decode(ConnectionProfile.self, from: Data(json.utf8))
+        #expect(older.display.mode == .fullScreen)
+        #expect(older.display.fullScreenDisplay == nil)
+
+        // A choice this version cannot read: the main display, the profile stays.
+        let unreadable = json.replacingOccurrences(
+            of: #""mode":"fullScreen""#, with: #""mode":"fullScreen","scale":150,"fullScreenDisplay":"built-in""#)
+        let kept = try JSONDecoder().decode(ConnectionProfile.self, from: Data(unreadable.utf8))
+        #expect(kept.display.fullScreenDisplay == nil)
+        #expect(kept.display.scale == 150)
+    }
+
     /// Keeping the session active: saved and read back; a value that is not a Bool turns it off.
     @Test func keepSessionActive() throws {
         var profile = ConnectionProfile(name: "Office", computer: try HostAddress(parsing: "pc01.corp.example"))
