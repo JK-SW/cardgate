@@ -35,7 +35,7 @@ defaults write io.github.jk-sw.cardgate AllowKeepSessionActive -bool YES
 ```
 
 The switch then appears in each connection's settings under **Advanced**, off until turned on there.
-For a connection where it is on, CardGate moves the mouse to the same place in Windows after 30 s
+For a connection where it is on, CardGate taps F15 (a key no app reacts to) in Windows after 30 s
 without input (only after signing in to Windows). Windows then neither disconnects nor locks the
 session for being idle. **This bypasses the idle limits of the computer** (Remote Desktop Services
 time limits, screen lock): use it only where it is necessary and allowed. Removing the key turns it

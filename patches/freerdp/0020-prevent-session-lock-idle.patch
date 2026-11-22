@@ -5,25 +5,15 @@
  	UINT16 lastX;
  	UINT16 lastY;
 +	/* prevent-session-lock: the timer waking the main loop was added (once, also when it
-+	 * failed); a mouse position is known; Windows reported a sign-in (again after each
-+	 * reconnection); the idle time counts from that sign-in */
++	 * failed); Windows reported a sign-in (again after each reconnection); the idle time counts
++	 * from that sign-in; key taps sent */
 +	BOOL idleTimerAdded;
-+	BOOL lastPositionKnown;
 +	BOOL signedIn;
 +	BOOL idleCounting;
++	UINT64 idleKeyTaps;
  	wLog* log;
  } rdp_input_internal;
  
---- a/libfreerdp/core/input.c
-+++ b/libfreerdp/core/input.c
-@@ -997,6 +997,7 @@
- 		{
- 			in->lastX = x;
- 			in->lastY = y;
-+			in->lastPositionKnown = TRUE;
- 		}
- 	}
- 	return TRUE;
 --- a/libfreerdp/core/freerdp.c
 +++ b/libfreerdp/core/freerdp.c
 @@ -58,6 +58,7 @@
@@ -55,15 +45,10 @@
  /* Resend mouse cursor position to prevent session lock in prevent-session-lock mode */
  static BOOL freerdp_prevent_session_lock(rdpContext* context)
  {
-@@ -433,11 +448,33 @@
+@@ -433,19 +448,45 @@
  
  	UINT32 FakeMouseMotionInterval =
  	    freerdp_settings_get_uint32(context->settings, FreeRDP_FakeMouseMotionInterval);
--	if (FakeMouseMotionInterval && in->lastInputTimestamp)
--	{
--		const time_t now = time(nullptr);
--		if (WINPR_ASSERTING_INT_CAST(size_t, now) - in->lastInputTimestamp >
--		    FakeMouseMotionInterval)
 +	/* Only a session signed in to Windows: the sign-in screen times out as Windows sets it. */
 +	if (!in->signedIn)
 +		return TRUE;
@@ -81,20 +66,42 @@
 +			WLog_Print(context->log, WLOG_WARN, "cannot start keeping the session active");
 +		else
 +			WLog_Print(context->log, WLOG_INFO,
-+			           "keeping the session active: mouse move after %" PRIu32 " s without input",
++			           "keeping the session active: F15 tap after %" PRIu32 " s without input",
 +			           FakeMouseMotionInterval);
 +	}
-+	/* Without a known position the move would put the pointer in the top left corner. */
-+	if (FakeMouseMotionInterval && in->lastInputTimestamp && in->lastPositionKnown)
-+	{
++	/* A key tap, not upstream's mouse move to the same place: Windows does not count a move
++	 * that does not move as input (the session still locked). F15: no app reacts to it. */
+ 	if (FakeMouseMotionInterval && in->lastInputTimestamp)
+ 	{
+-		const time_t now = time(nullptr);
+-		if (WINPR_ASSERTING_INT_CAST(size_t, now) - in->lastInputTimestamp >
+-		    FakeMouseMotionInterval)
 +		/* The input functions may update the timestamp from another thread meanwhile. */
 +		const UINT64 now = WINPR_ASSERTING_INT_CAST(UINT64, time(nullptr));
 +		const UINT64 last = in->lastInputTimestamp;
 +		if ((now > last) && (now - last > FakeMouseMotionInterval))
  		{
- 			WLog_Print(context->log, WLOG_DEBUG,
- 			           "fake mouse move: x=%d y=%d lastInputTimestamp=%" PRIu64 " "
-@@ -703,6 +740,12 @@
+-			WLog_Print(context->log, WLOG_DEBUG,
+-			           "fake mouse move: x=%d y=%d lastInputTimestamp=%" PRIu64 " "
+-			           "FakeMouseMotionInterval=%" PRIu32,
+-			           in->lastX, in->lastY, in->lastInputTimestamp, FakeMouseMotionInterval);
+-
+-			BOOL status = freerdp_input_send_mouse_event(context->input, PTR_FLAGS_MOVE, in->lastX,
+-			                                             in->lastY);
++			in->idleKeyTaps++;
++			WLog_Print(context->log, (in->idleKeyTaps == 1) ? WLOG_INFO : WLOG_DEBUG,
++			           "keeping the session active: F15 tap %" PRIu64 " after %" PRIu64
++			           " s without input",
++			           in->idleKeyTaps, now - last);
++
++			const BOOL status = freerdp_input_send_keyboard_event_ex(context->input, TRUE, FALSE,
++			                                                         RDP_SCANCODE_F15) &&
++			                    freerdp_input_send_keyboard_event_ex(context->input, FALSE, FALSE,
++			                                                         RDP_SCANCODE_F15);
+ 			if (!status)
+ 			{
+ 				if (freerdp_get_last_error(context) == FREERDP_ERROR_SUCCESS)
+@@ -703,6 +744,11 @@
  
  	rdp = instance->context->rdp;
  
@@ -102,7 +109,6 @@
 +	rdp_input_internal* in = input_cast(instance->context->input);
 +	in->signedIn = FALSE;
 +	in->idleCounting = FALSE;
-+	in->lastPositionKnown = FALSE; /* the desktop may have another size */
 +
  	if (!utils_reset_abort(instance->context->rdp))
  		return FALSE;
