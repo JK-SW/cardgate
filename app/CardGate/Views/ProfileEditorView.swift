@@ -6,6 +6,8 @@ struct ProfileEditorView: View {
     @Environment(AppModel.self) private var model
     @Bindable var editor: ProfileEditorModel
     @State private var confirmDelete = false
+    /// Displays connected now (updated when they change), for the full screen display.
+    @State private var displays: [ConnectedDisplay] = []
     /// Open when the connection already uses an advanced setting; only the user closes it.
     @State private var showAdvanced: Bool
 
@@ -171,6 +173,16 @@ struct ProfileEditorView: View {
                         }
                         .accessibilityIdentifier("profile.windowSize")
                     }
+                    if editor.displayMode == .fullScreen, displays.count > 1 || editor.fullScreenDisplay != nil {
+                        Picker("Show on", selection: $editor.fullScreenDisplay) {
+                            Text("Main display").tag(DisplayChoice?.none)
+                            ForEach(displayOptions, id: \.self) { option in
+                                Text(Self.label(option)).tag(Optional(option.choice))
+                            }
+                        }
+                        .help("The display the remote desktop opens on in full screen.")
+                        .accessibilityIdentifier("profile.fullScreenDisplay")
+                    }
                     Picker("Scale", selection: $editor.scale) {
                         Text("Automatic").tag(Int?.none)
                         ForEach(scales, id: \.self) { scale in
@@ -221,6 +233,8 @@ struct ProfileEditorView: View {
             .padding()
         }
         .frame(width: 480)
+        .onAppear { displays = ConnectedDisplay.current }
+        .onReceive(Self.displaysChanged) { _ in displays = ConnectedDisplay.current }
         // Within the main window's smallest size (the form scrolls).
         .frame(height: 420)
         .confirmationDialog("Delete this connection?", isPresented: $confirmDelete) {
@@ -250,6 +264,17 @@ struct ProfileEditorView: View {
         if let current = editor.windowSize, !sizes.contains(current) { sizes.insert(current, at: 0) }
         return sizes
     }
+
+    private var displayOptions: [ConnectedDisplay.Option] {
+        ConnectedDisplay.options(chosen: editor.fullScreenDisplay, among: displays)
+    }
+
+    private static func label(_ option: ConnectedDisplay.Option) -> String {
+        option.isConnected ? option.name : String(localized: "\(option.name) (not connected)")
+    }
+
+    private static let displaysChanged = NotificationCenter.default.publisher(
+        for: NSApplication.didChangeScreenParametersNotification)
 
     /// Presets plus the current scale if it is another valid one (from a profile edited by hand).
     private var scales: [Int] {

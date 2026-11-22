@@ -25,7 +25,11 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 1. Start CardGate and click **Set Up Connection** (or **Import .rdp File…**). Connect only to
    addresses from your IT department: while connected, the remote computer can use your card.
 2. Enter the **Computer** (e.g. `pc01.example.com`) and the **Gateway**.
-3. Optionally choose the display mode (full screen by default, or a window), initial window size (**Automatic** = 80 % of the screen), scale (size of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound and scroll direction.
+3. Optionally choose the display mode (full screen by default, or a window), for full screen with several
+   displays also the display (**Main display** = the one with the menu bar; if the chosen display is not
+   connected, it opens on the main one), initial window size (**Automatic** = 80 % of the screen), scale (size
+   of text and apps in Windows; **Automatic** = 200 % on a Retina display, otherwise 100 %), clipboard, sound
+   and scroll direction.
    Click **Save**.
 
 You can have several connections: they are listed on the left. Edit one with the button next to its

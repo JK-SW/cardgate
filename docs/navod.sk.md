@@ -26,7 +26,10 @@ Tento návod otvoríte aj z aplikácie: **Pomocník → Návod na CardGate**.
    (alebo **Importovať súbor .rdp…**, ak vám ho IT oddelenie poslalo). Pripájajte sa len k adresám
    od IT oddelenia: počas pripojenia môže vzdialený počítač používať vašu kartu.
 2. Vyplňte **Počítač** (napr. `pc01.example.com`) a **Bránu**.
-3. Voliteľne zvoľte zobrazenie (predvolená je celá obrazovka, alebo okno), počiatočnú veľkosť okna (**Automaticky** = 80 % obrazovky), mierku (veľkosť textu a aplikácií vo Windows; **Automaticky** = 200 % na displeji Retina, inak 100 %), schránku, zvuk a smer posúvania myšou.
+3. Voliteľne zvoľte zobrazenie (predvolená je celá obrazovka, alebo okno), pri celej obrazovke s viacerými
+   displejmi aj displej (**Hlavný displej** = ten s lištou menu; keď zvolený displej nie je pripojený, otvorí sa
+   na hlavnom), počiatočnú veľkosť okna (**Automaticky** = 80 % obrazovky), mierku (veľkosť textu a aplikácií vo
+   Windows; **Automaticky** = 200 % na displeji Retina, inak 100 %), schránku, zvuk a smer posúvania myšou.
    Kliknite na **Uložiť**.
 
 Pripojení môžete mať aj viac: sú v zozname vľavo. Každé upravíte tlačidlom vedľa jeho názvu, nové

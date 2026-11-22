@@ -100,7 +100,7 @@ public struct DisplaySettings: Codable, Equatable, Sendable {
     public enum Mode: String, Codable, CaseIterable, Sendable {
         /// Resizable window, remote resolution follows the window size.
         case window
-        /// Full screen on the current display.
+        /// Full screen on the main display or the one chosen (`fullScreenDisplay`).
         case fullScreen
         /// Full screen across all displays.
         case allDisplays
@@ -112,11 +112,31 @@ public struct DisplaySettings: Codable, Equatable, Sendable {
     /// Size of text and apps on the remote desktop in percent; `nil` follows the display
     /// (200 % on a Retina display, otherwise 100 %).
     public var scale: Int?
+    /// Full screen: the display to open on; `nil` or not connected = the main display.
+    public var fullScreenDisplay: DisplayChoice?
 
-    public init(mode: Mode = .fullScreen, windowSize: WindowSize? = nil, scale: Int? = nil) {
+    public init(
+        mode: Mode = .fullScreen, windowSize: WindowSize? = nil, scale: Int? = nil,
+        fullScreenDisplay: DisplayChoice? = nil
+    ) {
         self.mode = mode
         self.windowSize = windowSize
         self.scale = scale
+        self.fullScreenDisplay = fullScreenDisplay
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case mode, windowSize, scale, fullScreenDisplay
+    }
+
+    // A display choice this version cannot read (edited by hand, a newer format): the main display,
+    // the rest of the profile stays.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        mode = try container.decode(Mode.self, forKey: .mode)
+        windowSize = try container.decodeIfPresent(WindowSize.self, forKey: .windowSize)
+        scale = try container.decodeIfPresent(Int.self, forKey: .scale)
+        fullScreenDisplay = try? container.decodeIfPresent(DisplayChoice.self, forKey: .fullScreenDisplay)
     }
 
     /// The chosen scale if RDP accepts it; `nil` (follow the display) otherwise.

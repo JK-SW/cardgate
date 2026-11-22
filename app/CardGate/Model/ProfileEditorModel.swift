@@ -19,6 +19,8 @@ final class ProfileEditorModel: Identifiable {
     var windowSize: WindowSize?
     /// `nil` = follows the display.
     var scale: Int?
+    /// Full screen: `nil` = the main display.
+    var fullScreenDisplay: DisplayChoice?
     var clipboard: Bool
     var audio: Bool
     var scrollLikeThisMac: Bool
@@ -44,6 +46,7 @@ final class ProfileEditorModel: Identifiable {
         displayMode = profile?.display.mode ?? DisplaySettings().mode
         windowSize = profile?.display.windowSize
         scale = profile?.display.validScale  // an invalid stored value means Automatic
+        fullScreenDisplay = profile?.display.fullScreenDisplay
         clipboard = profile?.redirection.clipboard ?? true
         audio = profile?.redirection.audio ?? true
         scrollLikeThisMac = profile?.input.scrollLikeThisMac ?? true
@@ -98,7 +101,8 @@ final class ProfileEditorModel: Identifiable {
             pkcs11Module: trimmedModule.isEmpty ? nil : trimmedModule,
             certificateSHA1: certificateSHA1,
             display: .init(
-                mode: displayMode, windowSize: displayMode == .window ? windowSize : nil, scale: scale),
+                mode: displayMode, windowSize: displayMode == .window ? windowSize : nil, scale: scale,
+                fullScreenDisplay: fullScreenDisplay),  // kept for full screen, ignored otherwise
             redirection: .init(clipboard: clipboard, audio: audio),
             input: .init(scrollLikeThisMac: scrollLikeThisMac),
             security: security,

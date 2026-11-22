@@ -16,6 +16,34 @@ extension CardGateUITests {
         XCTAssertFalse(app.popUpButtons["profile.windowSize"].exists)
     }
 
+    /// The display chosen for full screen shows while it is not connected (also with one display) and
+    /// can be changed back to the main display.
+    func testFullScreenDisplayCanBeSetToTheMainDisplay() throws {
+        _ = try writeFile(
+            "profiles.json",
+            #"{"version":1,"profiles":[{"id":"6F1C2A52-8B39-4B79-9A43-2B7D4D0B5E10","name":"Office","#
+                + #""computer":"pc01.example.com","gateway":"rdg.example.com","#
+                + #""display":{"mode":"fullScreen","fullScreenDisplay":{"key":"1-2-3","name":"Projector"}}}]}"#)
+        let app = launch()
+        XCTAssertTrue(app.buttons["connection.edit"].waitForExistence(timeout: 10))
+        app.buttons["connection.edit"].click()
+        let display = app.popUpButtons["profile.fullScreenDisplay"]
+        XCTAssertTrue(display.waitForExistence(timeout: 5))
+        XCTAssertEqual(display.value as? String, "Projector (not connected)")
+        display.click()
+        app.menuItems["Main display"].click()
+        XCTAssertEqual(display.value as? String, "Main display")
+        app.buttons["Save"].click()
+
+        app.buttons["connection.edit"].click()
+        XCTAssertTrue(app.popUpButtons["profile.displayMode"].waitForExistence(timeout: 5))
+        // With one display the choice is gone, with more it shows the main display.
+        if display.exists {
+            XCTAssertEqual(display.value as? String, "Main display")
+        }
+        XCTAssertFalse(app.menuItems["Projector (not connected)"].exists)
+    }
+
     /// The scale is offered in every display mode and saved.
     func testScaleIsSaved() {
         let app = launch()
@@ -24,9 +52,13 @@ extension CardGateUITests {
         XCTAssertEqual(scale.value as? String, "Automatic")
         app.popUpButtons["profile.displayMode"].click()
         app.menuItems["Full screen"].click()
+        // With several displays "Show on" appears above it and moves it down.
+        scrollIntoView(app, scale)
         scale.click()
         // The percent format depends on the region ("150%" or "150 %").
-        app.menuItems.matching(NSPredicate(format: "title BEGINSWITH '150'")).firstMatch.click()
+        let percent = app.menuItems.matching(NSPredicate(format: "title BEGINSWITH '150'")).firstMatch
+        XCTAssertTrue(percent.waitForExistence(timeout: 5))
+        percent.click()
         addConnection(app, name: "Office", computer: "pc01.example.com")
 
         app.buttons["connection.edit"].click()
