@@ -20,8 +20,8 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
     public var security: ConnectionSecurity
     /// How the user signs in to Windows on the computer.
     public var windowsSignIn: WindowsSignIn
-    /// Keeps an idle session from being disconnected or locked by Windows (a mouse movement to
-    /// the same place, `/prevent-session-lock`). Used only while the hidden setting
+    /// Keeps an idle session from being disconnected or locked by Windows (an F15 key tap,
+    /// `/prevent-session-lock`, patch 0020). Used only while the hidden setting
     /// `SessionOptions.Key.allowKeepSessionActive` is on.
     public var keepSessionActive: Bool
 

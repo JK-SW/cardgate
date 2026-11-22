@@ -57,10 +57,9 @@ public struct SessionOptions: Equatable, Sendable {
     /// Seconds without anything sent after which a keep-alive packet goes to the gateway. Some
     /// gateways or proxies close a tunnel that is idle for a few minutes.
     public static let keepAliveSeconds = 60
-    /// Seconds without input after which the client moves the mouse to the same place in an idle
-    /// session kept active (signed in to Windows). The client counts whole seconds and checks every
-    /// quarter of it (patch 0020): the move comes within about 38 s, well below the usual 1 minute
-    /// limits.
+    /// Seconds without input after which the client taps F15 in an idle session kept active
+    /// (signed in to Windows). The client counts whole seconds and checks every quarter of it
+    /// (patch 0020): the tap comes within about 38 s, well below the usual 1 minute limits.
     public static let keepSessionActiveSeconds = 30
     /// Reconnection attempts after an outage; the client waits 15 s between them (its connect
     /// timeout) plus up to 15 s for each attempt, so it gives up after 2.5 to 5 minutes.

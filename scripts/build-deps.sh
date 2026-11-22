@@ -139,7 +139,7 @@ analyze_patched_sources() {
   local s="$1" file cmd
   for file in libfreerdp/core/gateway/rdg_sc.c libfreerdp/core/gateway/rdg.c libfreerdp/core/smartcardlogon.c \
     winpr/libwinpr/sspi/Kerberos/kerberos.c libfreerdp/crypto/tls.c libfreerdp/core/nla.c libfreerdp/core/info.c \
-    libfreerdp/core/freerdp.c libfreerdp/core/input.c client/common/client.c client/SDL/SDL3/sdl_monitor.cpp client/SDL/SDL3/sdl_context.cpp \
+    libfreerdp/core/freerdp.c client/common/client.c client/SDL/SDL3/sdl_monitor.cpp client/SDL/SDL3/sdl_context.cpp \
     client/SDL/SDL3/sdl_freerdp.cpp client/SDL/SDL3/sdl_utils.cpp client/SDL/SDL3/sdl_input.cpp; do
     cmd="$(python3 -I -c '
 import json, shlex, sys
