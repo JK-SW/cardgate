@@ -289,6 +289,22 @@
         }
       }
     },
+    "Bypasses the idle limits set in Windows: the session is neither disconnected nor locked while you are away. Turn it on only where it is necessary and your IT department allows it. Lock your Mac when you leave.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obchází limity nečinnosti nastavené ve Windows: relace se neodpojí ani nezamkne, ani když u počítače nejste. Zapněte jen tam, kde je to nezbytné a vaše IT oddělení to dovolí. Když odcházíte, zamkněte Mac."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obchádza limity nečinnosti nastavené vo Windows: relácia sa neodpojí ani nezamkne, ani keď pri počítači nie ste. Zapnite len tam, kde je to nevyhnutné a vaše IT oddelenie to dovolí. Keď odchádzate, zamknite Mac."
+          }
+        }
+      }
+    },
     "Cancel": {
       "localizations": {
         "cs": {
@@ -2002,6 +2018,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Udržiavať pripojenie a po výpadku ho obnoviť"
+          }
+        }
+      }
+    },
+    "Keep the session active when idle": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udržet relaci aktivní při nečinnosti"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udržať reláciu aktívnu pri nečinnosti"
           }
         }
       }

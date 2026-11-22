@@ -216,6 +216,7 @@ struct ProfileCompatibilityTests {
         #expect(profile.input == InputSettings())
         #expect(profile.display.scale == nil)
         #expect(profile.windowsSignIn == .smartCard)
+        #expect(!profile.keepSessionActive)
     }
 
     /// Sign-in to Windows: saved and read back; a method of a newer version signs in with the card.
@@ -231,5 +232,19 @@ struct ProfileCompatibilityTests {
             """
         let newer = try JSONDecoder().decode(ConnectionProfile.self, from: Data(json.utf8))
         #expect(newer.windowsSignIn == .smartCard)
+    }
+
+    /// Keeping the session active: saved and read back; a value that is not a Bool turns it off.
+    @Test func keepSessionActive() throws {
+        var profile = ConnectionProfile(name: "Office", computer: try HostAddress(parsing: "pc01.corp.example"))
+        profile.keepSessionActive = true
+        let data = try JSONEncoder().encode(profile)
+        #expect(try JSONDecoder().decode(ConnectionProfile.self, from: data) == profile)
+
+        let json = """
+            {"id":"6F1C2A52-8B39-4B79-9A43-2B7D4D0B5E10","name":"Office","computer":"pc01.corp.example",
+             "keepSessionActive":"yes"}
+            """
+        #expect(try !JSONDecoder().decode(ConnectionProfile.self, from: Data(json.utf8)).keepSessionActive)
     }
 }

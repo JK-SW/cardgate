@@ -98,6 +98,18 @@ struct FreeRDPCommandTests {
                 == SessionOptions(keepConnection: false, preventSleep: false, disconnectQuestion: nil))
     }
 
+    /// Keeping an idle session active is offered only after the hidden setting is turned on.
+    @Test func keepSessionActiveIsHiddenUntilAllowed() throws {
+        let domain = "cardgate-tests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: domain))
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let question = DisconnectQuestion(title: "Q", detail: "", disconnect: "D", cancel: "C")
+        #expect(!SessionOptions(defaults: defaults, question: question).keepSessionActiveAvailable)
+        defaults.set(true, forKey: SessionOptions.Key.allowKeepSessionActive)
+        #expect(SessionOptions(defaults: defaults, question: question).keepSessionActiveAvailable)
+        #expect(SessionOptions.keepSessionActiveAvailable(in: defaults))
+    }
+
     @Test func namesTheWindowAfterTheConnection() throws {
         var unnamed = try profile()
         unnamed.name = "  "
@@ -281,6 +293,23 @@ struct FreeRDPCommandTests {
         #expect(command.environment[FreeRDPCommand.windowsSignInVariable] == "password")
         #expect(command.arguments.contains("/smartcard-logon"))
         #expect(command.arguments.contains { $0.hasPrefix("/gateway:") && $0.hasSuffix(",auth:smartcard") })
+    }
+
+    /// Only with the hidden setting on and the connection asking for it.
+    @Test func keepsTheSessionActiveOnlyWhereAllowed() throws {
+        var keeping = try profile()
+        keeping.keepSessionActive = true
+        func arguments(_ profile: ConnectionProfile, available: Bool) throws -> [String] {
+            let options = SessionOptions(
+                keepConnection: true, preventSleep: true, disconnectQuestion: nil,
+                keepSessionActiveAvailable: available)
+            return try FreeRDPCommand(
+                executable: client, profile: profile, pkcs11Module: module, config: config, options: options
+            ).arguments
+        }
+        #expect(try arguments(keeping, available: true).contains("/prevent-session-lock:30"))
+        #expect(try !arguments(keeping, available: false).contains { $0.hasPrefix("/prevent-session-lock") })
+        #expect(try !arguments(profile(), available: true).contains { $0.hasPrefix("/prevent-session-lock") })
     }
 
     /// The client gets only the variables it needs: WinPR log settings could log the PIN, OpenSSL

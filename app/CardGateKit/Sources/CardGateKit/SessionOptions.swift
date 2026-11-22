@@ -10,11 +10,18 @@ public struct SessionOptions: Equatable, Sendable {
     public var preventSleep: Bool
     /// Closing the remote desktop window asks first. `nil`: closes without asking.
     public var disconnectQuestion: DisconnectQuestion?
+    /// The connection settings offer keeping an idle session active (hidden setting, off unless
+    /// turned on with `defaults write`): it works around the idle limits set by the IT department.
+    public var keepSessionActiveAvailable: Bool
 
-    public init(keepConnection: Bool, preventSleep: Bool, disconnectQuestion: DisconnectQuestion?) {
+    public init(
+        keepConnection: Bool, preventSleep: Bool, disconnectQuestion: DisconnectQuestion?,
+        keepSessionActiveAvailable: Bool = false
+    ) {
         self.keepConnection = keepConnection
         self.preventSleep = preventSleep
         self.disconnectQuestion = disconnectQuestion
+        self.keepSessionActiveAvailable = keepSessionActiveAvailable
     }
 
     /// Keys in the app's user defaults.
@@ -22,6 +29,13 @@ public struct SessionOptions: Equatable, Sendable {
         public static let keepConnection = "KeepConnection"
         public static let preventSleep = "PreventSleepWhileConnected"
         public static let confirmDisconnect = "ConfirmDisconnect"
+        /// Hidden: not in Settings, off unless set (`keepSessionActiveAvailable`).
+        public static let allowKeepSessionActive = "AllowKeepSessionActive"
+    }
+
+    /// Whether the hidden setting offers keeping an idle session active.
+    public static func keepSessionActiveAvailable(in defaults: UserDefaults) -> Bool {
+        defaults.bool(forKey: Key.allowKeepSessionActive)
     }
 
     /// Every option is on until the user turns it off (also the default of the Settings switches).
@@ -36,12 +50,18 @@ public struct SessionOptions: Equatable, Sendable {
         func isOn(_ key: String) -> Bool { defaults.object(forKey: key) as? Bool ?? Self.onByDefault }
         self.init(
             keepConnection: isOn(Key.keepConnection), preventSleep: isOn(Key.preventSleep),
-            disconnectQuestion: isOn(Key.confirmDisconnect) ? question : nil)
+            disconnectQuestion: isOn(Key.confirmDisconnect) ? question : nil,
+            keepSessionActiveAvailable: Self.keepSessionActiveAvailable(in: defaults))
     }
 
     /// Seconds without anything sent after which a keep-alive packet goes to the gateway. Some
     /// gateways or proxies close a tunnel that is idle for a few minutes.
     public static let keepAliveSeconds = 60
+    /// Seconds without input after which the client moves the mouse to the same place in an idle
+    /// session kept active (signed in to Windows). The client counts whole seconds and checks every
+    /// quarter of it (patch 0020): the move comes within about 38 s, well below the usual 1 minute
+    /// limits.
+    public static let keepSessionActiveSeconds = 30
     /// Reconnection attempts after an outage; the client waits 15 s between them (its connect
     /// timeout) plus up to 15 s for each attempt, so it gives up after 2.5 to 5 minutes.
     public static let reconnectAttempts = 10

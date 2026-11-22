@@ -20,6 +20,10 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
     public var security: ConnectionSecurity
     /// How the user signs in to Windows on the computer.
     public var windowsSignIn: WindowsSignIn
+    /// Keeps an idle session from being disconnected or locked by Windows (a mouse movement to
+    /// the same place, `/prevent-session-lock`). Used only while the hidden setting
+    /// `SessionOptions.Key.allowKeepSessionActive` is on.
+    public var keepSessionActive: Bool
 
     public init(
         id: UUID = UUID(),
@@ -32,7 +36,8 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         redirection: RedirectionSettings = .init(),
         input: InputSettings = .init(),
         security: ConnectionSecurity = .automatic,
-        windowsSignIn: WindowsSignIn = .smartCard
+        windowsSignIn: WindowsSignIn = .smartCard,
+        keepSessionActive: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -45,6 +50,7 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         self.input = input
         self.security = security
         self.windowsSignIn = windowsSignIn
+        self.keepSessionActive = keepSessionActive
     }
 
     // Settings added in later versions are optional so older saved profiles keep loading.
@@ -65,6 +71,7 @@ public struct ConnectionProfile: Codable, Equatable, Identifiable, Sendable {
         security = (try? container.decodeIfPresent(ConnectionSecurity.self, forKey: .security)) ?? .automatic
         // Older versions always signed in with the card; a method from a newer version: the card.
         windowsSignIn = (try? container.decodeIfPresent(WindowsSignIn.self, forKey: .windowsSignIn)) ?? .smartCard
+        keepSessionActive = (try? container.decodeIfPresent(Bool.self, forKey: .keepSessionActive)) ?? false
     }
 }
 

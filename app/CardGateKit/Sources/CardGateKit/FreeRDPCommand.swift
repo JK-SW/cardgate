@@ -63,7 +63,8 @@ public struct FreeRDPCommand: Equatable, Sendable {
         self.executable = executable
         self.arguments = Self.arguments(
             profile: profile, pkcs11Module: pkcs11Module, screen: screen, keepConnection: options.keepConnection,
-            security: security)
+            security: security,
+            keepSessionActive: profile.keepSessionActive && options.keepSessionActiveAvailable)
         if let reader = smartCardReader, Self.isUsableReaderFilter(reader) {
             // Without it every reader of the Mac is redirected; Windows sign-in then may look at an
             // empty one (e.g. a reader built into the keyboard) and ask to insert the card.
@@ -141,7 +142,7 @@ public struct FreeRDPCommand: Equatable, Sendable {
 
     static func arguments(
         profile: ConnectionProfile, pkcs11Module: String, screen: ScreenMetrics?, keepConnection: Bool,
-        security: SecurityPlan = .rdpOnly
+        security: SecurityPlan = .rdpOnly, keepSessionActive: Bool = false
     ) -> [String] {
         let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
         var args = [
@@ -207,6 +208,10 @@ public struct FreeRDPCommand: Equatable, Sendable {
             // Reconnects after an outage with the PIN it already has (no new PIN dialog); a PIN the
             // card rejects is never offered again (patch 0001).
             args += ["+auto-reconnect", "/auto-reconnect-max-retries:\(SessionOptions.reconnectAttempts)"]
+        }
+        if keepSessionActive {
+            // Windows counts it as input: no idle disconnect, no screen lock (patch 0020).
+            args.append("/prevent-session-lock:\(SessionOptions.keepSessionActiveSeconds)")
         }
         args.append("/log-level:INFO")
         args.append("/log-filters:" + logFilters.joined(separator: ","))

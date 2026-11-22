@@ -81,6 +81,20 @@ struct ProfileEditorView: View {
             .font(.callout)
         }
 
+        if editor.keepSessionActiveAvailable {
+            Toggle("Keep the session active when idle", isOn: $editor.keepSessionActive)
+                .accessibilityIdentifier("profile.keepSessionActive")
+            Text(
+                """
+                Bypasses the idle limits set in Windows: the session is neither disconnected nor \
+                locked while you are away. Turn it on only where it is necessary and your IT \
+                department allows it. Lock your Mac when you leave.
+                """
+            )
+            .foregroundStyle(.secondary)
+            .font(.callout)
+        }
+
         TextField("PKCS#11 module", text: $editor.pkcs11Module, prompt: Text("Automatic"))
             .help("Leave empty unless your IT department tells you otherwise.")
             .accessibilityIdentifier("profile.module")
