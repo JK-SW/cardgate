@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Opraveno
+- Přepnutí do jiné aplikace přes ⌘Tab (nebo jinak se stisknutou ⌘) už ve Windows neotevře nabídku Start (#36).
+- Zkratky Macu ⌘M, ⌘H, ⌘⌥H, ⌘W a ⌘⌃F už se neposílají do Windows (např. ⌘M kromě minimalizace okna
+  minimalizovalo i všechna okna ve Windows) (#36).
+
 ## [0.7.2] - 2026-11-21
 
 Přihlášení do Windows jménem a heslem pro počítače, kde Windows kartu nepřijme, a přehlednější nastavení
