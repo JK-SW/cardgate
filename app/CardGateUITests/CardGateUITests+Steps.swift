@@ -2,11 +2,13 @@ import XCTest
 
 /// Steps the tests share: starting the app and doing what a user does.
 extension CardGateUITests {
-    func launch(language: String = "en") -> XCUIApplication {
+    /// - Parameter arguments: more launch arguments, e.g. a hidden setting (`-Key YES`).
+    func launch(language: String = "en", arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["CARDGATE_DATA_DIR"] = dataDirectory?.path(percentEncoded: false)
         // The example gateways never answer; the background port check would only add a warning.
         app.launchEnvironment["CARDGATE_NO_GATEWAY_CHECK"] = "1"
+        app.launchArguments += arguments
         app.launchArguments += [
             "-AppleLanguages", "(\(language))",
             "-AppleLocale", ["en": "en_US", "cs": "cs_CZ", "sk": "sk_SK"][language] ?? language,

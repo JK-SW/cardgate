@@ -73,4 +73,30 @@ extension CardGateUITests {
         XCTAssertTrue(signIn.waitForExistence(timeout: 5))
         XCTAssertEqual(signIn.value as? String, "With user name and password")
     }
+
+    /// Keeping an idle session active is not offered until the hidden setting is turned on.
+    func testKeepSessionActiveIsHiddenUntilAllowed() {
+        // Turned off explicitly: the app reads the real user defaults of this Mac.
+        let app = launch(arguments: ["-AllowKeepSessionActive", "NO"])
+        openNewConnection(app)
+        app.buttons["profile.advanced"].click()
+        XCTAssertTrue(app.popUpButtons["profile.windowsSignIn"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.checkBoxes["profile.keepSessionActive"].exists)
+    }
+
+    func testKeepSessionActiveIsSavedWhenAllowed() {
+        let app = launch(arguments: ["-AllowKeepSessionActive", "YES"])
+        openNewConnection(app)
+        app.buttons["profile.advanced"].click()
+        let keep = app.checkBoxes["profile.keepSessionActive"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 5))
+        XCTAssertEqual(keep.value as? Int, 0)
+        scrollIntoView(app, keep)
+        keep.click()
+        addConnection(app, name: "Office", computer: "pc01.example.com")
+
+        app.buttons["connection.edit"].click()
+        XCTAssertTrue(keep.waitForExistence(timeout: 5))
+        XCTAssertEqual(keep.value as? Int, 1)
+    }
 }

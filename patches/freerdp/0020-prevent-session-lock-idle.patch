@@ -1,0 +1,143 @@
+--- a/libfreerdp/core/input.h
++++ b/libfreerdp/core/input.h
+@@ -41,6 +41,13 @@
+ 	UINT64 lastInputTimestamp;
+ 	UINT16 lastX;
+ 	UINT16 lastY;
++	/* prevent-session-lock: the timer waking the main loop was added (once, also when it
++	 * failed); a mouse position is known; Windows reported a sign-in (again after each
++	 * reconnection); the idle time counts from that sign-in */
++	BOOL idleTimerAdded;
++	BOOL lastPositionKnown;
++	BOOL signedIn;
++	BOOL idleCounting;
+ 	wLog* log;
+ } rdp_input_internal;
+ 
+--- a/libfreerdp/core/input.c
++++ b/libfreerdp/core/input.c
+@@ -997,6 +997,7 @@
+ 		{
+ 			in->lastX = x;
+ 			in->lastY = y;
++			in->lastPositionKnown = TRUE;
+ 		}
+ 	}
+ 	return TRUE;
+--- a/libfreerdp/core/freerdp.c
++++ b/libfreerdp/core/freerdp.c
+@@ -58,6 +58,7 @@
+ #include <freerdp/version.h>
+ #include <freerdp/log.h>
+ #include <freerdp/utils/signal.h>
++#include <freerdp/timer.h>
+ 
+ #include "../cache/pointer.h"
+ #include "utils.h"
+@@ -423,6 +424,20 @@
+ 	return nCount + (DWORD)rc;
+ }
+ 
++/* The main loop otherwise waits until something arrives: an idle session may send nothing for
++ * longer than the interval. Checks four times per interval. */
++WINPR_ATTR_NODISCARD
++static uint64_t freerdp_prevent_session_lock_timer(rdpContext* context, void* userdata,
++                                                   FreeRDP_TimerID timerID, uint64_t timestamp,
++                                                   uint64_t interval)
++{
++	WINPR_UNUSED(context);
++	WINPR_UNUSED(userdata);
++	WINPR_UNUSED(timerID);
++	WINPR_UNUSED(timestamp);
++	return interval;
++}
++
+ /* Resend mouse cursor position to prevent session lock in prevent-session-lock mode */
+ static BOOL freerdp_prevent_session_lock(rdpContext* context)
+ {
+@@ -433,11 +448,33 @@
+ 
+ 	UINT32 FakeMouseMotionInterval =
+ 	    freerdp_settings_get_uint32(context->settings, FreeRDP_FakeMouseMotionInterval);
+-	if (FakeMouseMotionInterval && in->lastInputTimestamp)
+-	{
+-		const time_t now = time(nullptr);
+-		if (WINPR_ASSERTING_INT_CAST(size_t, now) - in->lastInputTimestamp >
+-		    FakeMouseMotionInterval)
++	/* Only a session signed in to Windows: the sign-in screen times out as Windows sets it. */
++	if (!in->signedIn)
++		return TRUE;
++	if (FakeMouseMotionInterval && !in->idleCounting)
++	{
++		in->idleCounting = TRUE;
++		/* Counts from the sign-in: the user may not touch the session before leaving it. */
++		in->lastInputTimestamp = WINPR_ASSERTING_INT_CAST(UINT64, time(nullptr));
++	}
++	if (FakeMouseMotionInterval && !in->idleTimerAdded)
++	{
++		in->idleTimerAdded = TRUE;
++		if (freerdp_timer_add(context, 250000000ull * FakeMouseMotionInterval,
++		                      freerdp_prevent_session_lock_timer, nullptr, true) == 0)
++			WLog_Print(context->log, WLOG_WARN, "cannot start keeping the session active");
++		else
++			WLog_Print(context->log, WLOG_INFO,
++			           "keeping the session active: mouse move after %" PRIu32 " s without input",
++			           FakeMouseMotionInterval);
++	}
++	/* Without a known position the move would put the pointer in the top left corner. */
++	if (FakeMouseMotionInterval && in->lastInputTimestamp && in->lastPositionKnown)
++	{
++		/* The input functions may update the timestamp from another thread meanwhile. */
++		const UINT64 now = WINPR_ASSERTING_INT_CAST(UINT64, time(nullptr));
++		const UINT64 last = in->lastInputTimestamp;
++		if ((now > last) && (now - last > FakeMouseMotionInterval))
+ 		{
+ 			WLog_Print(context->log, WLOG_DEBUG,
+ 			           "fake mouse move: x=%d y=%d lastInputTimestamp=%" PRIu64 " "
+@@ -703,6 +740,12 @@
+ 
+ 	rdp = instance->context->rdp;
+ 
++	/* prevent-session-lock waits for the sign-in again: Windows may show its sign-in screen. */
++	rdp_input_internal* in = input_cast(instance->context->input);
++	in->signedIn = FALSE;
++	in->idleCounting = FALSE;
++	in->lastPositionKnown = FALSE; /* the desktop may have another size */
++
+ 	if (!utils_reset_abort(instance->context->rdp))
+ 		return FALSE;
+ 	return rdp_client_reconnect(rdp);
+--- a/libfreerdp/core/info.c
++++ b/libfreerdp/core/info.c
+@@ -35,6 +35,7 @@
+ #include "timezone.h"
+ 
+ #include "info.h"
++#include "input.h"
+ 
+ #define TAG FREERDP_TAG("core.info")
+ 
+@@ -1492,6 +1493,10 @@
+ 
+ 			if (status && update->SaveSessionInfo)
+ 				status = update->SaveSessionInfo(context, infoType, &logonInfoEx);
++			/* A new auto-reconnect cookie without a logon error: Windows issues it to a signed-in
++			 * session, also when reconnecting sends no other logon info. */
++			if (status && logonInfoEx.haveCookie && !logonInfoEx.haveErrorInfo)
++				input_cast(context->input)->signedIn = TRUE;
+ 		}
+ 		break;
+ 
+@@ -1501,6 +1506,12 @@
+ 			break;
+ 	}
+ 
++	/* The user signed in to Windows (the extended info: above; it also carries logon errors of
++	 * the sign-in screen): prevent-session-lock keeps only a signed-in session active. */
++	if (status && ((infoType == INFO_TYPE_LOGON) || (infoType == INFO_TYPE_LOGON_LONG) ||
++	               (infoType == INFO_TYPE_LOGON_PLAIN_NOTIFY)))
++		input_cast(context->input)->signedIn = TRUE;
++
+ 	if (!status)
+ 	{
+ 		WLog_WARN(TAG, "SaveSessionInfo error: infoType: %s (%" PRIu32 ")",

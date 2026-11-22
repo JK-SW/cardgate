@@ -27,8 +27,14 @@ final class ProfileEditorModel: Identifiable {
     var certificateSHA1: String?
     var security: ConnectionSecurity
     var windowsSignIn: WindowsSignIn
+    var keepSessionActive: Bool
+    /// The hidden setting offers keeping an idle session active (`SessionOptions`).
+    let keepSessionActiveAvailable: Bool
 
-    init(profile: ConnectionProfile?, defaultName: String, isNew: Bool? = nil, isImported: Bool = false) {
+    init(
+        profile: ConnectionProfile?, defaultName: String, isNew: Bool? = nil, isImported: Bool = false,
+        keepSessionActiveAvailable: Bool = SessionOptions.keepSessionActiveAvailable(in: .standard)
+    ) {
         id = profile?.id ?? UUID()
         self.isNew = isNew ?? (profile == nil)
         self.isImported = isImported
@@ -45,6 +51,8 @@ final class ProfileEditorModel: Identifiable {
         certificateSHA1 = profile?.certificateSHA1
         security = profile?.security ?? .automatic
         windowsSignIn = profile?.windowsSignIn ?? .smartCard
+        keepSessionActive = profile?.keepSessionActive ?? false
+        self.keepSessionActiveAvailable = keepSessionActiveAvailable
     }
 
     /// Editor for a profile read from an `.rdp` file: new, but pre-filled.
@@ -73,7 +81,7 @@ final class ProfileEditorModel: Identifiable {
     /// Anything in the advanced settings differs from the default.
     var usesAdvancedSettings: Bool {
         certificateSHA1 != nil || security != .automatic || windowsSignIn != .smartCard
-            || !trimmedModule.isEmpty
+            || (keepSessionActiveAvailable && keepSessionActive) || !trimmedModule.isEmpty
     }
 
     var canSave: Bool { nameIsValid && computerError == nil && gatewayError == nil && moduleIsValid }
@@ -94,7 +102,8 @@ final class ProfileEditorModel: Identifiable {
             redirection: .init(clipboard: clipboard, audio: audio),
             input: .init(scrollLikeThisMac: scrollLikeThisMac),
             security: security,
-            windowsSignIn: windowsSignIn)
+            windowsSignIn: windowsSignIn,
+            keepSessionActive: keepSessionActive)
     }
 
     private static func validate(_ text: String) -> HostAddress.ParseError? {
