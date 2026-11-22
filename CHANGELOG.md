@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-11-23
+
+Výběr displeje pro celou obrazovku a opravy klávesnice a zobrazení: ⌘Tab a zkratky Macu už nezasahují
+do Windows a na MacBooku s výřezem v displeji už není hlavní panel Windows useknutý.
+
 ### Přidáno
 - Volba **Zobrazit na** v nastavení připojení: u celé obrazovky s více displeji vyberete, na kterém se vzdálená
   plocha otevře (výchozí je hlavní displej). Když zvolený displej není připojený, otevře se na hlavním.
