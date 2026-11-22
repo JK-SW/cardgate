@@ -9,6 +9,9 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 - Přepnutí do jiné aplikace přes ⌘Tab (nebo jinak se stisknutou ⌘) už ve Windows neotevře nabídku Start (#36).
 - Zkratky Macu ⌘M, ⌘H, ⌘⌥H, ⌘W a ⌘⌃F už se neposílají do Windows (např. ⌘M kromě minimalizace okna
   minimalizovalo i všechna okna ve Windows) (#36).
+- Na celé obrazovce Macu s výřezem v displeji (MacBook Pro, MacBook Air) už není dolní okraj vzdálené plochy
+  s hlavním panelem useknutý – ani na přihlašovací obrazovce, ani na počítačích, které velikost po přihlášení
+  neupraví (#28).
 
 ## [0.7.2] - 2026-11-21
 
