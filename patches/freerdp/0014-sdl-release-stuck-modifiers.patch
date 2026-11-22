@@ -51,9 +51,42 @@
  			if (!input.keyboard_focus_in())
  				break;
  			if (!input.keyboard_focus_in())
-@@ -1794,7 +1817,11 @@
- 				std::ignore = freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE,
- 				                                                   RDP_SCANCODE_LCONTROL);
+@@ -1454,6 +1477,8 @@
+ 			if (!confirmDisconnect(ev.windowID))
+ 				break;
+ 			SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Window closed, terminating RDP session...");
++			/* Cmd+W: Cmd is still down, the session would keep the Windows key pressed. */
++			std::ignore = getInputChannelContext().keyboard_release_sent();
+ 			disconnectRequested();
+ 		}
+ 		break;
+@@ -1760,11 +1785,14 @@
+ 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+ 		case SDL_EVENT_MOUSE_BUTTON_UP:
+ 		{
++			/* A held back release of the Windows key first: no Win+click. */
++			std::ignore = getInputChannelContext().keyboard_release_pending();
+ 			const auto& cev = ev.button;
+ 			return handleEvent(cev);
+ 		}
+ 		case SDL_EVENT_MOUSE_WHEEL:
+ 		{
++			std::ignore = getInputChannelContext().keyboard_release_pending();
+ 			const auto& cev = ev.wheel;
+ 			return handleEvent(cev);
+ 		}
+@@ -1787,14 +1815,14 @@
+ 				if (cev.repeat)
+ 					return true;
+ 				/* Cmd is the Windows key in the session; released alone it opens the Start
+-				 * menu. A Ctrl tap while it is down keeps it closed. */
+-				auto input = context()->input;
+-				std::ignore =
+-				    freerdp_input_send_keyboard_event_ex(input, TRUE, FALSE, RDP_SCANCODE_LCONTROL);
+-				std::ignore = freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE,
+-				                                                   RDP_SCANCODE_LCONTROL);
++				 * menu. The mask key while it is down keeps it closed. */
++				std::ignore = getInputChannelContext().keyboard_tap_mask_key();
  				if (confirmDisconnect(cev.windowID))
 +				{
 +					/* Cmd is still down: the session would keep the Windows key pressed. */
@@ -65,71 +98,91 @@
  			if ((cev.type == SDL_EVENT_KEY_UP) && (cev.key == SDLK_Q) && _swallowQuitKeyUp)
 --- a/client/SDL/SDL3/sdl_freerdp.cpp
 +++ b/client/SDL/SDL3/sdl_freerdp.cpp
-@@ -286,6 +286,9 @@
+@@ -286,6 +286,12 @@
  					case SDL_EVENT_USER_WINDOW_RESTORE:
  						sdl->restoreMinimizedWindows();
  						break;
 +					case SDL_EVENT_USER_RELEASE_MODIFIERS:
 +						std::ignore = sdl->getInputChannelContext().keyboard_release_modifiers();
 +						break;
++					case SDL_EVENT_USER_RELEASE_PENDING_WIN:
++						std::ignore = sdl->getInputChannelContext().keyboard_release_pending(true);
++						break;
  					case SDL_EVENT_USER_POINTER_NULL:
  						if (!sdl->setCursor(SdlContext::CURSOR_NULL))
  							throw ErrorMsg{ -1, windowEvent.type, "sdl->setCursor" };
 --- a/client/SDL/SDL3/sdl_utils.hpp
 +++ b/client/SDL/SDL3/sdl_utils.hpp
-@@ -42,6 +42,7 @@
+@@ -42,6 +42,8 @@
  	SDL_EVENT_USER_WINDOW_FULLSCREEN,
  	SDL_EVENT_USER_WINDOW_MINIMIZE,
  	SDL_EVENT_USER_WINDOW_RESTORE,
 +	SDL_EVENT_USER_RELEASE_MODIFIERS,
++	SDL_EVENT_USER_RELEASE_PENDING_WIN,
  	SDL_EVENT_USER_POINTER_NULL,
  	SDL_EVENT_USER_POINTER_DEFAULT,
  	SDL_EVENT_USER_POINTER_POSITION,
 --- a/client/SDL/SDL3/sdl_utils.cpp
 +++ b/client/SDL/SDL3/sdl_utils.cpp
-@@ -156,6 +156,7 @@
+@@ -156,6 +156,8 @@
  			break;
  		case SDL_EVENT_USER_WINDOW_MINIMIZE:
  		case SDL_EVENT_USER_WINDOW_RESTORE:
 +		case SDL_EVENT_USER_RELEASE_MODIFIERS:
++		case SDL_EVENT_USER_RELEASE_PENDING_WIN:
  		case SDL_EVENT_USER_QUIT:
  		case SDL_EVENT_USER_POINTER_NULL:
  		case SDL_EVENT_USER_POINTER_DEFAULT:
 --- a/client/SDL/SDL3/sdl_input.hpp
 +++ b/client/SDL/SDL3/sdl_input.hpp
-@@ -21,6 +21,7 @@
+@@ -21,6 +21,8 @@
  
  #include <string>
  #include <map>
++#include <set>
 +#include <vector>
  #include <list>
  #include <atomic>
  
-@@ -46,6 +47,8 @@
+@@ -46,6 +48,11 @@
  
  	[[nodiscard]] bool keyboard_sync_state();
  	[[nodiscard]] bool keyboard_focus_in();
 +	[[nodiscard]] bool keyboard_release_modifiers();
 +	[[nodiscard]] bool keyboard_release_sent();
++	/* fromTimer: only when the hold is over (a timer of an earlier hold may fire early). */
++	[[nodiscard]] bool keyboard_release_pending(bool fromTimer = false);
++	[[nodiscard]] bool keyboard_tap_mask_key();
  
  	[[nodiscard]] bool handleEvent(const SDL_KeyboardEvent& ev);
  
-@@ -68,6 +71,9 @@
+@@ -68,6 +75,9 @@
  	[[nodiscard]] static bool extract(const std::string& token, uint32_t& key, uint32_t& value);
  
  	[[nodiscard]] UINT32 scancode_to_rdp(Uint32 scancode);
 +	[[nodiscard]] bool releaseStuckModifiers(SDL_Keymod held);
-+	[[nodiscard]] bool sendModifierReleases(const std::vector<UINT32>& scancodes, bool tapCtrl);
++	[[nodiscard]] bool sendModifierReleases(const std::vector<UINT32>& scancodes, bool tapMask);
 +	void trackModifier(const SDL_KeyboardEvent& ev, UINT32 scancode);
  
  	SdlContext* _sdl = nullptr;
  	Uint32 _lastWindowID = 0;
-@@ -81,4 +87,6 @@
+@@ -81,4 +91,17 @@
  	uint32_t _hotkeyDisconnect = 0;
  	uint32_t _hotkeyMinimize = 0;
  	FREERDP_REMAP_TABLE* _remapTable = nullptr;
 +	/* The modifier keys sent as pressed (SDL scancode -> RDP scancode sent); main thread only. */
 +	std::map<SDL_Scancode, UINT32> _sentModifiers;
++	/* Keys of macOS menu shortcuts not sent to the session (their release is not sent either). */
++	std::set<SDL_Scancode> _menuShortcutKeys;
++
++	[[nodiscard]] bool handleMenuShortcut(const SDL_KeyboardEvent& ev);
++	[[nodiscard]] bool holdLoneWinRelease(const SDL_KeyboardEvent& ev, UINT32 scancode);
++
++	/* A Windows key (Cmd) released without another key since it was pressed, not sent yet
++	 * (0: none); main thread only. */
++	UINT32 _pendingWinRelease = 0;
++	Uint64 _pendingWinReleaseAt = 0; /* SDL_GetTicks() when it goes */
++	bool _keySinceWinDown = false;
  };
 --- a/client/SDL/SDL3/sdl_input.cpp
 +++ b/client/SDL/SDL3/sdl_input.cpp
@@ -141,7 +194,7 @@
  #include <array>
  #include <map>
  #include <tuple>
-@@ -328,6 +329,130 @@
+@@ -328,6 +329,142 @@
  	return freerdp_input_send_synchronize_event(_sdl->context()->input, syncFlags);
  }
  
@@ -189,10 +242,22 @@
 +	}
 +}
 +
-+/* Releasing the Windows key or Alt alone opens the Start menu or activates the menu bar; one
-+ * Ctrl tap before keeps them closed. It is left out while a modifier is held: that key already
-+ * came in between, and Ctrl with Shift may switch the keyboard layout. */
-+bool sdlInput::sendModifierReleases(const std::vector<UINT32>& scancodes, bool tapCtrl)
++/* Releasing the Windows key or Alt alone opens the Start menu or activates the menu bar; a key
++ * between keeps them closed. F15: no app reacts to it (Ctrl made apps show their access keys). */
++[[nodiscard]] static bool sdl_tap_mask_key(rdpInput* input)
++{
++	return freerdp_input_send_keyboard_event_ex(input, TRUE, FALSE, RDP_SCANCODE_F15) &&
++	       freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE, RDP_SCANCODE_F15);
++}
++
++/* Releases with the mask key tap before (tapMask) for the Windows key or Alt. It is left out
++ * while a modifier is held: that key already came in between. */
++bool sdlInput::keyboard_tap_mask_key()
++{
++	return sdl_tap_mask_key(_sdl->context()->input);
++}
++
++bool sdlInput::sendModifierReleases(const std::vector<UINT32>& scancodes, bool tapMask)
 +{
 +	auto input = _sdl->context()->input;
 +	WINPR_ASSERT(input);
@@ -203,12 +268,8 @@
 +		                return (scancode == RDP_SCANCODE_LWIN) || (scancode == RDP_SCANCODE_RWIN) ||
 +						       (scancode == RDP_SCANCODE_LMENU) || (scancode == RDP_SCANCODE_RMENU);
 +	                });
-+	if (tapCtrl && menuKey)
-+	{
-+		if (!freerdp_input_send_keyboard_event_ex(input, TRUE, FALSE, RDP_SCANCODE_LCONTROL) ||
-+		    !freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE, RDP_SCANCODE_LCONTROL))
-+			return false;
-+	}
++	if (tapMask && menuKey && !sdl_tap_mask_key(input))
++		return false;
 +	for (const auto scancode : scancodes)
 +	{
 +		if (!freerdp_input_send_keyboard_event_ex(input, FALSE, FALSE, scancode))
@@ -254,17 +315,21 @@
 +		_sentModifiers.erase(code);
 +		released.push_back(freerdp_keyboard_remap_key(_remapTable, scancode_to_rdp(code)));
 +	}
++	_pendingWinRelease = 0; /* released with the others */
 +	return sendModifierReleases(released, !sdl_any_modifier_held(held, keys));
 +}
 +
 +/* Releases the modifiers sent as pressed before the user disconnects (Cmd+Q, the disconnect
-+ * hotkey): the session would keep them. Without the Ctrl tap: it ends the session anyway. */
++ * hotkey): the session would keep them. Without the mask key: it ends the session anyway. */
 +bool sdlInput::keyboard_release_sent()
 +{
 +	std::vector<UINT32> sent;
 +	for (const auto& [code, scancode] : _sentModifiers)
 +		sent.push_back(scancode);
 +	_sentModifiers.clear();
++	if (_pendingWinRelease != 0)
++		sent.push_back(_pendingWinRelease);
++	_pendingWinRelease = 0;
 +	WLog_Print(_sdl->getWLog(), WLOG_INFO, "released the modifier keys before disconnecting");
 +	return sendModifierReleases(sent, false);
 +}
@@ -272,7 +337,107 @@
  bool sdlInput::keyboard_focus_in()
  {
  	auto input = _sdl->context()->input;
-@@ -585,6 +710,9 @@
+@@ -571,8 +708,99 @@
+ 	return freerdp_extract_key_value(token.c_str(), &key, &value);
+ }
+ 
++/* With Cmd+Tab macOS takes the Tab and switches to the other app only after Cmd is released: the
++ * window still gets the release, so the session would get the Windows key alone, which opens the
++ * Start menu. Such a release waits briefly (SDL_EVENT_USER_RELEASE_PENDING_WIN): if the window
++ * lost the focus meanwhile, it goes with the mask key, otherwise as it is (tapping Cmd opens the
++ * Start menu, a little later). The next key sends it first. */
++static constexpr Uint32 sdl_pending_win_release_ms = 150;
++
++[[nodiscard]] static Uint32 sdl_pending_win_release_timer(void* userdata, SDL_TimerID timerID,
++                                                          Uint32 interval)
++{
++	WINPR_UNUSED(userdata);
++	WINPR_UNUSED(timerID);
++	WINPR_UNUSED(interval);
++	std::ignore = sdl_push_user_event(SDL_EVENT_USER_RELEASE_PENDING_WIN);
++	return 0;
++}
++
++bool sdlInput::holdLoneWinRelease(const SDL_KeyboardEvent& ev, UINT32 scancode)
++{
++	const bool win = (ev.scancode == SDL_SCANCODE_LGUI) || (ev.scancode == SDL_SCANCODE_RGUI);
++	if ((ev.type != SDL_EVENT_KEY_UP) || !win || _keySinceWinDown ||
++	    (_sentModifiers.find(ev.scancode) == _sentModifiers.end()))
++		return false;
++	if (!keyboard_release_pending())
++		return false;
++	if (SDL_AddTimer(sdl_pending_win_release_ms, sdl_pending_win_release_timer, nullptr) == 0)
++		return false; /* sent as it is */
++	trackModifier(ev, scancode);
++	_pendingWinRelease = scancode;
++	_pendingWinReleaseAt = SDL_GetTicks() + sdl_pending_win_release_ms;
++	return true;
++}
++
++bool sdlInput::keyboard_release_pending(bool fromTimer)
++{
++	if ((_pendingWinRelease == 0) || (fromTimer && (SDL_GetTicks() < _pendingWinReleaseAt)))
++		return true;
++	const UINT32 scancode = _pendingWinRelease;
++	_pendingWinRelease = 0;
++	const bool focused = SDL_GetKeyboardFocus() != nullptr;
++	if (!focused)
++		WLog_Print(_sdl->getWLog(), WLOG_INFO,
++		           "releasing the Windows key, the window lost the focus after it");
++	return sendModifierReleases({ scancode }, !focused && _sentModifiers.empty());
++}
++
++/* SDL passes a key to the session before the app menu runs its shortcut: Cmd+M also sent Win+M
++ * (Windows minimized all windows), Cmd+H Win+H, Cmd+W Win+W. Shortcuts of the menu SDL creates
++ * are left to macOS; the mask key keeps the Start menu closed when Cmd, the Windows key, is
++ * released. Returns true for such a key (down, repeat or its release). Cmd+Q: sdl_context. */
++bool sdlInput::handleMenuShortcut(const SDL_KeyboardEvent& ev)
++{
++#if defined(__APPLE__)
++	if (ev.type == SDL_EVENT_KEY_UP)
++		return _menuShortcutKeys.erase(ev.scancode) > 0;
++	const SDL_Keymod mods = ev.mod & (SDL_KMOD_GUI | SDL_KMOD_CTRL | SDL_KMOD_ALT | SDL_KMOD_SHIFT);
++	const bool cmd = (mods & SDL_KMOD_GUI) != 0;
++	const bool cmdOnly = cmd && ((mods & ~SDL_KMOD_GUI) == 0);
++	const bool cmdAlt =
++	    cmd && ((mods & SDL_KMOD_ALT) != 0) && ((mods & ~(SDL_KMOD_GUI | SDL_KMOD_ALT)) == 0);
++	const bool cmdCtrl =
++	    cmd && ((mods & SDL_KMOD_CTRL) != 0) && ((mods & ~(SDL_KMOD_GUI | SDL_KMOD_CTRL)) == 0);
++	const bool shortcut =
++	    (cmdOnly && ((ev.key == SDLK_M) || (ev.key == SDLK_H) || (ev.key == SDLK_W))) ||
++	    (cmdAlt && (ev.key == SDLK_H)) || (cmdCtrl && (ev.key == SDLK_F));
++	if (!shortcut)
++		return false;
++	/* A repeat of a key that went to the session before Cmd was pressed still goes there. */
++	if (ev.repeat)
++		return _menuShortcutKeys.count(ev.scancode) > 0;
++	if (!_menuShortcutKeys.insert(ev.scancode).second)
++		return true;
++	WLog_Print(_sdl->getWLog(), WLOG_INFO, "Cmd+%s is a macOS shortcut, not sent to the session",
++	           SDL_GetKeyName(ev.key));
++	/* Also with Ctrl held: it may have been pressed before Cmd. */
++	std::ignore = sdl_tap_mask_key(_sdl->context()->input);
++	return true;
++#else
++	WINPR_UNUSED(ev);
++	return false;
++#endif
++}
++
+ bool sdlInput::handleEvent(const SDL_KeyboardEvent& ev)
+ {
++	/* Any other key first sends a held back release of the Windows key. */
++	if (!keyboard_release_pending())
++		return false;
++	if ((ev.type == SDL_EVENT_KEY_DOWN) && !ev.repeat)
++		_keySinceWinDown = (ev.scancode != SDL_SCANCODE_LGUI) && (ev.scancode != SDL_SCANCODE_RGUI);
++	if (handleMenuShortcut(ev))
++		return true;
++
+ 	UINT32 rdp_scancode = scancode_to_rdp(ev.scancode);
+ #if defined(_WIN32)
+ 	/* CJK IMEs on Windows may set the extended bit for Right Shift, producing
+@@ -585,6 +813,9 @@
  	 * event already queued, so a hotkey could be missed, or fire on a plain key typed just
  	 * before a modifier. */
  	const SDL_Keymod mods = ev.mod;
@@ -282,7 +447,7 @@
  
  	if (_hotkeysEnabled && (mods & _hotkeyModmask) == _hotkeyModmask)
  	{
-@@ -621,6 +749,7 @@
+@@ -621,6 +852,7 @@
  				           masktostr(_hotkeyModmask).c_str(), sdl_scancode_name(_hotkeyDisconnect));
  				if (!keyboard_sync_state())
  					return false;
@@ -290,10 +455,27 @@
  				std::ignore = _sdl->abortConnect();
  				return true;
  			}
-@@ -656,6 +785,7 @@
+@@ -656,6 +888,24 @@
  		           ev.scancode, scancode, sc, ex ? " extended" : "");
  	}
  #endif
++	/* SDL releases every held key when the window loses the focus (SDL_ResetKeyboard: keyboard 0,
++	 * SDL's internal SDL_GLOBAL_KEYBOARD_ID, no raw code). Cmd+Tab sent Cmd, the Windows key, and
++	 * the system took the Tab: released alone it would open the Start menu (Alt: the menu bar),
++	 * so release it with the mask key. SDL releases the keys one by one: the tap only when no
++	 * other modifier is still pressed in the session (that key already came in between). */
++	const bool menuKey = (ev.scancode == SDL_SCANCODE_LGUI) || (ev.scancode == SDL_SCANCODE_RGUI) ||
++	                     (ev.scancode == SDL_SCANCODE_LALT) || (ev.scancode == SDL_SCANCODE_RALT);
++	if ((ev.type == SDL_EVENT_KEY_UP) && menuKey && (ev.which == 0) && (ev.raw == 0) &&
++	    (_sentModifiers.find(ev.scancode) != _sentModifiers.end()))
++	{
++		trackModifier(ev, scancode);
++		WLog_Print(_sdl->getWLog(), WLOG_INFO, "releasing %s, the window lost the focus",
++		           SDL_GetScancodeName(ev.scancode));
++		return sendModifierReleases({ scancode }, _sentModifiers.empty());
++	}
++	if (holdLoneWinRelease(ev, scancode))
++		return true;
 +	trackModifier(ev, scancode);
  	if (freerdp_settings_get_bool(_sdl->context()->settings, FreeRDP_UnicodeInput))
  	{
