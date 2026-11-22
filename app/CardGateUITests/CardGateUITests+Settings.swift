@@ -81,14 +81,14 @@ extension CardGateUITests {
         openNewConnection(app)
         app.buttons["profile.advanced"].click()
         XCTAssertTrue(app.popUpButtons["profile.windowsSignIn"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.checkBoxes["profile.keepSessionActive"].exists)
+        XCTAssertFalse(app.switches["profile.keepSessionActive"].exists)
     }
 
     func testKeepSessionActiveIsSavedWhenAllowed() {
         let app = launch(arguments: ["-AllowKeepSessionActive", "YES"])
         openNewConnection(app)
         app.buttons["profile.advanced"].click()
-        let keep = app.checkBoxes["profile.keepSessionActive"]
+        let keep = app.switches["profile.keepSessionActive"]
         XCTAssertTrue(keep.waitForExistence(timeout: 5))
         XCTAssertEqual(keep.value as? Int, 0)
         scrollIntoView(app, keep)
