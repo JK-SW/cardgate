@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/JK-SW/cardgate/releases/latest"><img alt="Verze" src="https://img.shields.io/github/v/release/JK-SW/cardgate?label=verze"></a>
-  <a href="https://github.com/JK-SW/cardgate/releases"><img alt="Stažení" src="https://img.shields.io/github/downloads/JK-SW/cardgate/total?label=sta%C5%BEen%C3%AD"></a>
+  <a href="https://github.com/JK-SW/cardgate/releases"><img alt="Stažení" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2FJK-SW%2Fb22909bf519d2842816131047d02276b%2Fraw%2Fcardgate-downloads.json&label=sta%C5%BEen%C3%AD"></a>
   <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/github/license/JK-SW/cardgate?label=licence"></a>
   <a href="docs/navod.cs.md#co-budete-potřebovat"><img alt="macOS 15+, Apple Silicon" src="https://img.shields.io/badge/macOS_15%2B-Apple_Silicon-lightgrey?logo=apple"></a>
   <a href="https://github.com/JK-SW/cardgate/actions/workflows/ci.yml"><img alt="Testy" src="https://img.shields.io/github/actions/workflow/status/JK-SW/cardgate/ci.yml?branch=main&label=testy"></a>
