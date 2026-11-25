@@ -1,6 +1,31 @@
-# CardGate
+<p align="center">
+  <img width="160" src="docs/images/logo.svg" alt="">
+</p>
+<h1 align="center">CardGate</h1>
+<p align="center">
+  Vzdálená plocha Windows přes RD Gateway s přihlášením čipovou kartou – pro Mac.
+</p>
 
-[English](README.en.md)
+<p align="center">
+  <a href="https://github.com/JK-SW/cardgate/releases/latest"><img alt="Verze" src="https://img.shields.io/github/v/release/JK-SW/cardgate?label=verze"></a>
+  <a href="https://github.com/JK-SW/cardgate/releases"><img alt="Stažení" src="https://img.shields.io/github/downloads/JK-SW/cardgate/total?label=sta%C5%BEen%C3%AD"></a>
+  <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/github/license/JK-SW/cardgate?label=licence"></a>
+  <img alt="macOS 15+, Apple Silicon" src="https://img.shields.io/badge/macOS_15%2B-Apple_Silicon-lightgrey?logo=apple">
+  <a href="https://github.com/JK-SW/cardgate/actions/workflows/ci.yml"><img alt="Testy" src="https://img.shields.io/github/actions/workflow/status/JK-SW/cardgate/ci.yml?branch=main&label=testy"></a>
+  <a href="https://ko-fi.com/jirikubinek"><img alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-podpo%C5%99it-ff5e5b?logo=kofi&logoColor=white"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/JK-SW/cardgate/releases/latest">Stáhnout</a>
+  ·
+  <a href="docs/navod.cs.md">Návod</a>
+  ·
+  <a href="https://github.com/JK-SW/cardgate/issues/new/choose">Nahlásit chybu</a>
+  ·
+  <a href="CHANGELOG.md">Změny</a>
+  ·
+  <a href="README.en.md">English</a>
+</p>
 
 Aplikace pro Mac (Apple Silicon), která připojí ke vzdálené ploše Windows přes **Vzdálenou bránu
 (RD Gateway) s přihlášením čipovou kartou**. Klasičtí klienti pro Mac (Windows App a další) tento
@@ -15,6 +40,10 @@ způsob přihlášení k bráně neumí. CardGate ano, včetně přihlášení k
 - Celá obrazovka, více monitorů, schránka, zvuk, přesměrování karty do vzdálené plochy.
 - Udržení připojení a obnovení po krátkém výpadku sítě bez nového PINu; Mac během připojení neusne.
 - Čeština, slovenština a angličtina.
+
+<p align="center">
+  <img width="720" src="docs/images/cs/main-window.png" alt="Hlavní okno CardGate">
+</p>
 
 ## Stažení a instalace
 

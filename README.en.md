@@ -1,6 +1,31 @@
-# CardGate
+<p align="center">
+  <img width="160" src="docs/images/logo.svg" alt="">
+</p>
+<h1 align="center">CardGate</h1>
+<p align="center">
+  Windows Remote Desktop through an RD Gateway with smart card sign-in – for the Mac.
+</p>
 
-[Česky](README.md)
+<p align="center">
+  <a href="https://github.com/JK-SW/cardgate/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/JK-SW/cardgate"></a>
+  <a href="https://github.com/JK-SW/cardgate/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/JK-SW/cardgate/total"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/JK-SW/cardgate"></a>
+  <img alt="macOS 15+, Apple Silicon" src="https://img.shields.io/badge/macOS_15%2B-Apple_Silicon-lightgrey?logo=apple">
+  <a href="https://github.com/JK-SW/cardgate/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/JK-SW/cardgate/ci.yml?branch=main&label=tests"></a>
+  <a href="https://ko-fi.com/jirikubinek"><img alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-donate-ff5e5b?logo=kofi&logoColor=white"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/JK-SW/cardgate/releases/latest">Download</a>
+  ·
+  <a href="docs/user-guide.en.md">User guide</a>
+  ·
+  <a href="https://github.com/JK-SW/cardgate/issues/new/choose">Report a bug</a>
+  ·
+  <a href="CHANGELOG.md">Changelog</a>
+  ·
+  <a href="README.md">Česky</a>
+</p>
 
 A macOS (Apple Silicon) app for connecting to Windows desktops through a Remote Desktop Gateway
 that requires **smart card authentication** (the `HTTP_EXTENDED_AUTH_SC` scheme used by mstsc),
@@ -13,6 +38,10 @@ RDP Security – by default the strongest the computer accepts.
 It bundles a patched [FreeRDP](https://github.com/FreeRDP/FreeRDP) client and adds a native UI:
 connection profiles, `.rdp` import, a guarded PIN dialog, card and certificate checks and clear
 error messages.
+
+<p align="center">
+  <img width="720" src="docs/images/en/main-window.png" alt="CardGate main window">
+</p>
 
 Download the latest build from [Releases](https://github.com/JK-SW/cardgate/releases/latest).
 The app is not notarized yet, so macOS blocks its first launch until you click **Open Anyway** in
