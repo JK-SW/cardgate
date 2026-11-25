@@ -17,8 +17,7 @@ You can also open this guide from the app: **Help → CardGate User Guide**.
 2. Move **CardGate** to the **Applications** folder.
 3. On first launch macOS blocks the app because it is not notarized by Apple. Click **Done**, open
    **System Settings → Privacy & Security**, scroll down to the message about CardGate and click
-   **Open Anyway**. Confirm with your password and click **Open**. This is needed once (and after
-   each update).
+   **Open Anyway**. Confirm with your password and click **Open**. This is needed only once.
 
 ## Setting up a connection
 

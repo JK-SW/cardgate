@@ -18,7 +18,7 @@ Tento návod otvoríte aj z aplikácie: **Pomocník → Návod na CardGate**.
 3. Pri prvom spustení macOS aplikáciu zablokuje, pretože nie je notarizovaná u Apple.
    Kliknite na **Hotovo**, otvorte **Nastavenia systému → Súkromie a bezpečnosť**, posuňte sa nadol
    k hláseniu o aplikácii CardGate a kliknite na **Aj tak otvoriť**. Potvrďte heslom a znova **Otvoriť**.
-   Tento krok je potrebný len raz (a po každej aktualizácii).
+   Tento krok je potrebný len raz.
 
 ## Nastavenie pripojenia
 
