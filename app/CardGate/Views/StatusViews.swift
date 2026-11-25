@@ -155,6 +155,7 @@ struct ConnectionStepsView: View {
 
 /// The app's picture: a remote desktop secured with a smart card (drawn, so it stays sharp and
 /// follows the dark mode; the colors match the app icon).
+/// docs/images/logo.svg is a copy for the README: keep it in step when the drawing changes.
 struct AppIllustration: View {
     var width: CGFloat = 112
     @Environment(\.colorScheme) private var colorScheme
