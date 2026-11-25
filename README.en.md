@@ -10,7 +10,7 @@
   <a href="https://github.com/JK-SW/cardgate/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/JK-SW/cardgate"></a>
   <a href="https://github.com/JK-SW/cardgate/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/JK-SW/cardgate/total"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/JK-SW/cardgate"></a>
-  <img alt="macOS 15+, Apple Silicon" src="https://img.shields.io/badge/macOS_15%2B-Apple_Silicon-lightgrey?logo=apple">
+  <a href="docs/user-guide.en.md#requirements"><img alt="macOS 15+, Apple Silicon" src="https://img.shields.io/badge/macOS_15%2B-Apple_Silicon-lightgrey?logo=apple"></a>
   <a href="https://github.com/JK-SW/cardgate/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/JK-SW/cardgate/ci.yml?branch=main&label=tests"></a>
   <a href="https://ko-fi.com/jirikubinek"><img alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-donate-ff5e5b?logo=kofi&logoColor=white"></a>
 </p>
