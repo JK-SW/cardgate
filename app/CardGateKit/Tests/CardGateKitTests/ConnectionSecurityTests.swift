@@ -136,6 +136,13 @@ struct ConnectionSecurityTests {
         #expect(choose.outcome(of: .kerberosFailed) == .rememberNLAFailed)
         #expect(tlsOrStronger.outcome(of: .kerberosFailed) == .rememberNLAFailed)
         #expect(try #require(plan(.nla)).outcome(of: .kerberosFailed) == .keep)
+        // Kerberos named the reason: without NLA Windows signs in on its own (its clock, its way to the
+        // domain), but refuses a disabled account or a refused card certificate too.
+        #expect(choose.outcome(of: .domainUnreachable) == .rememberNLAFailed)
+        #expect(choose.outcome(of: .clockSkew) == .rememberNLAFailed)
+        #expect(choose.outcome(of: .computerUnknownToDomain) == .rememberNLAFailed)
+        #expect(choose.outcome(of: .accountRevoked) == .keep)
+        #expect(choose.outcome(of: .cardCertificateRejected) == .keep)
         #expect(choose.outcome(of: .securityRefused) == .keep)
         // Weaker security only with the user's consent.
         #expect(tls.isWeakened(by: .computerOffersOnlyWeakerSecurity))

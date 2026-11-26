@@ -91,17 +91,46 @@ public struct PINPolicy: Equatable, Sendable {
     }
 }
 
+/// What the PKCS#11 module says about itself and the card, for the diagnostic information (no
+/// label or serial number of the card: they may name its holder).
+public struct PKCS11ModuleInfo: Equatable, Sendable {
+    /// "Example Corp – Example PKCS#11 library, 2.20"
+    public var module: String
+    /// "Example Corp – Example Card, hardware 1.0, firmware 2.1"; empty without a card.
+    public var token: String
+
+    public init(module: String, token: String) {
+        self.module = Self.clean(module)
+        self.token = Self.clean(token)
+    }
+
+    /// One line, without control characters (the text travels between processes line by line).
+    static func clean(_ text: String) -> String {
+        String(text.unicodeScalars.filter { $0.value >= 0x20 && $0.value != 0x7F }.map(Character.init))
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    /// "maker – name version" from the module's or token's fields, leaving out what is empty.
+    static func describe(_ maker: String, _ name: String, _ details: [String]) -> String {
+        let title = [maker, name].filter { !$0.isEmpty }.joined(separator: " – ")
+        return ([title] + details).filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+}
+
 /// Card state and the reader holding the card, as found by `PKCS11Probe`.
 public struct PKCS11ProbeResult: Equatable, Sendable {
     public var state: PKCS11CardState
+    /// The module and the card, when the module could be asked (`nil` from an older check).
+    public var info: PKCS11ModuleInfo?
     /// Name of the smart card reader with the token, when exactly one token is present. Only this
     /// reader is redirected to the remote computer, so an empty reader (e.g. in a keyboard) does
     /// not confuse the Windows sign-in.
     public var reader: String?
 
-    public init(state: PKCS11CardState, reader: String? = nil) {
+    public init(state: PKCS11CardState, reader: String? = nil, info: PKCS11ModuleInfo? = nil) {
         self.state = state
         self.reader = state == .ready ? reader.flatMap(Self.cleanReaderName) : nil
+        self.info = info.flatMap { $0.module.isEmpty && $0.token.isEmpty ? nil : $0 }
     }
 
     /// A reader name as reported in the PKCS#11 slot description (blank padded, maybe cut off).
@@ -112,15 +141,17 @@ public struct PKCS11ProbeResult: Equatable, Sendable {
         return name
     }
 
-    /// Text form used between the probe process and the app: the state, then the reader on line 2.
+    /// Text form used between the probe process and the app: the state, then the reader on line 2,
+    /// the module and the card on lines 3 and 4.
     public var encoded: String {
-        state.encoded + "\n" + (reader ?? "")
+        [state.encoded, reader ?? "", info?.module ?? "", info?.token ?? ""].joined(separator: "\n")
     }
 
     public init?(encoded: String) {
-        let lines = encoded.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
-        guard let first = lines.first, let state = PKCS11CardState(encoded: String(first)) else { return nil }
-        self.init(state: state, reader: lines.count > 1 ? String(lines[1]) : nil)
+        let lines = encoded.split(separator: "\n", maxSplits: 3, omittingEmptySubsequences: false).map(String.init)
+        guard let first = lines.first, let state = PKCS11CardState(encoded: first) else { return nil }
+        let info = lines.count > 2 ? PKCS11ModuleInfo(module: lines[2], token: lines.count > 3 ? lines[3] : "") : nil
+        self.init(state: state, reader: lines.count > 1 ? lines[1] : nil, info: info)
     }
 
     /// How long the app waits for the check process. A card driver can hang (e.g. in `C_Initialize`);
@@ -156,7 +187,33 @@ public enum PKCS11Probe {
         let description = withUnsafeBytes(of: &result.slot_description) { bytes in
             String(bytes: bytes.prefix { $0 != 0 }, encoding: .utf8)
         }
-        return PKCS11ProbeResult(state: state, reader: result.tokens == 1 ? description : nil)
+        return PKCS11ProbeResult(state: state, reader: result.tokens == 1 ? description : nil, info: info(of: result))
+    }
+
+    static func info(of result: cg_card_probe_result) -> PKCS11ModuleInfo {
+        var result = result
+        func text<T>(_ field: inout T) -> String {
+            withUnsafeBytes(of: &field) { String(bytes: $0.prefix { $0 != 0 }, encoding: .utf8) ?? "" }
+        }
+        func version(_ field: (UInt8, UInt8)) -> String { "\(field.0).\(field.1)" }
+        // Without C_GetInfo (the module failed before it) there is nothing to tell, not even a version.
+        let maker = text(&result.library_manufacturer)
+        let name = text(&result.library_description)
+        let library =
+            maker.isEmpty && name.isEmpty
+            ? "" : PKCS11ModuleInfo.describe(maker, name, [version(result.library_version)])
+        let tokenMaker = text(&result.token_manufacturer)
+        let tokenModel = text(&result.token_model)
+        let token =
+            tokenModel.isEmpty && tokenMaker.isEmpty
+            ? ""
+            : PKCS11ModuleInfo.describe(
+                tokenMaker, tokenModel,
+                [
+                    "hardware \(version(result.token_hardware_version))",
+                    "firmware \(version(result.token_firmware_version))",
+                ])
+        return PKCS11ModuleInfo(module: library, token: token)
     }
 
     /// PIN policy of the inserted card, or `nil` if no card is available.

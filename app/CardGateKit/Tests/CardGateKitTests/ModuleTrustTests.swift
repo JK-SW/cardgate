@@ -32,6 +32,16 @@ struct ModuleTrustTests {
             })
     }
 
+    /// The diagnostic information reuses the signature found before loading, never checks again.
+    @Test func checkedSignatureIsReused() {
+        let calls = Calls()
+        var checker = Self.checker(signature: .developerID, calls: calls)
+        #expect(checker.checkedSignature(ofModuleAt: Self.path) == nil)
+        _ = checker.trust(ofModuleAt: Self.path, approvals: .init())
+        #expect(checker.checkedSignature(ofModuleAt: Self.path) == .developerID)
+        #expect(calls.signature.load(ordering: .relaxed) == 1)
+    }
+
     @Test func verifiedPublisherIsTrustedWithoutHashing() {
         let calls = Calls()
         var checker = Self.checker(signature: .developerID, calls: calls)

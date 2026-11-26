@@ -124,11 +124,13 @@ struct FreeRDPCommandTests {
             command.arguments.filter { $0.hasPrefix("/smartcard") } == [
                 "/smartcard:Example USB Reader", "/smartcard-logon",
             ])
+        #expect(command.smartCardReader == "Example USB Reader")
 
         for unusable in ["", "Reader, 2", "Reader\n2"] {
             let all = try FreeRDPCommand(
                 executable: client, profile: profile(), pkcs11Module: module, config: config, smartCardReader: unusable)
             #expect(all.arguments.filter { $0.hasPrefix("/smartcard") } == ["/smartcard-logon"])
+            #expect(all.smartCardReader == nil)
         }
     }
 

@@ -43,6 +43,8 @@ final class SessionController {
     private var pinOutcome: PINPrompt.Event?
     /// Names the current connection in the messages of its PIN dialog (`PINDialogMessages`).
     private var pinSession: String?
+    /// The reader redirected to the computer in the current session (`FreeRDPCommand.smartCardReader`).
+    private var redirectedReader: String?
 
     var isRunning: Bool { process != nil || preflight != nil }
     /// The security the client negotiated with the computer in the current or last session.
@@ -114,6 +116,7 @@ final class SessionController {
         logRevision += 1
         logFileURL = nil
         events = ConnectionLog(reconnects: command.reconnects)
+        redirectedReader = command.smartCardReader
         changeEvents { $0.note(.connecting) }
         phase = .starting
         guard let gateway, let url = GatewayCheckResult.url(for: gateway) else {
@@ -260,12 +263,24 @@ final class SessionController {
         }
     }
 
+    /// A card was taken out of a reader or put in (`CardReaderWatcher`): listed while the client
+    /// runs, if the reader is the one redirected to the computer.
+    func cardInReader(_ reader: String, present: Bool) {
+        guard process != nil, ReaderSlots.isRedirected(reader, filter: redirectedReader) else { return }
+        changeEvents { $0.cardInReader(present) }
+    }
+
     private func receive(_ line: String) {
         appendLog(line, kind: changeEvents { $0.consume(line) })
         // A full disk must not crash the app; the log window still has the line.
         try? logFile?.write(contentsOf: Data((line + "\n").utf8))
         if TitleBarControls.asksForLog(line) { onShowLog?() }
-        if let next = parser.consume(line) {
+        let reconnectFailure = parser.reconnectFailure
+        let next = parser.consume(line)
+        if let failure = parser.reconnectFailure, failure != reconnectFailure {
+            changeEvents { $0.reconnectFailed(failure, line: line) }
+        }
+        if let next {
             let restored = phase == .reconnecting
             let appears = next.desktopAppears(after: phase)
             phase = next
@@ -305,14 +320,13 @@ final class SessionController {
     private func finished(status: Int32, crashed: Bool) {
         process = nil
         pinSession = nil
-        try? logFile?.close()
-        logFile = nil
         logger.info("Client exited with \(crashed ? "signal" : "status", privacy: .public) \(status)")
         var result: SessionEnd
         if case .ended(let end) = parser.processExited(status: status, crashed: crashed) {
             result = end
         } else {
-            result = .failed(.other("exit status \(status)"))  // the parser always ends; never stay running
+            // The parser always ends; never stay running.
+            result = .failed(.other(SessionLogParser.exitDescription(status: status, crashed: crashed)))
         }
         switch (pinOutcome, result) {
         case (.cancelled?, .failed):
@@ -322,6 +336,17 @@ final class SessionController {
         default:
             break
         }
+        if crashed || status != 0 {
+            // The client cannot say it crashed; the detailed log and the file say how it ended. Red
+            // only for a crash, not when CardGate (Disconnect) or someone else stopped it.
+            let exit = SessionLogParser.exitDescription(status: status, crashed: crashed)
+            let line = "CardGate: the client ended with \(exit)"
+            let isCrash = crashed && !isStopping && SessionLogParser.isCrash(signal: status)
+            appendLog(line, kind: isCrash ? .error : .normal)
+            try? logFile?.write(contentsOf: Data((line + "\n").utf8))
+        }
+        try? logFile?.close()
+        logFile = nil
         end(result)
     }
 

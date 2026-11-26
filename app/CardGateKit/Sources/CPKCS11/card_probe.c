@@ -40,6 +40,15 @@ static int token_has_certificate(CK_FUNCTION_LIST_PTR p11, CK_SLOT_ID slot, cg_c
 	return found;
 }
 
+/* Copies a blank padded PKCS#11 text field into a NUL terminated string without the padding. */
+static void copy_padded(char* target, const unsigned char* source, size_t length)
+{
+	memcpy(target, source, length);
+	while (length > 0 && (target[length - 1] == ' ' || target[length - 1] == '\0'))
+		length--;
+	target[length] = '\0';
+}
+
 cg_card_probe_result cg_card_probe(const char* module_path)
 {
 	return cg_card_probe_matching(module_path, NULL, NULL);
@@ -48,7 +57,9 @@ cg_card_probe_result cg_card_probe(const char* module_path)
 cg_card_probe_result cg_card_probe_matching(const char* module_path, cg_certificate_matcher matches,
                                             void* context)
 {
-	cg_card_probe_result result = { -1, 0, 0, 0, 0, 0, 0, { 0 } };
+	cg_card_probe_result result;
+	memset(&result, 0, sizeof(result));
+	result.error = -1;
 	void* module = dlopen(module_path, RTLD_NOW | RTLD_LOCAL);
 	if (!module)
 		return result;
@@ -64,6 +75,16 @@ cg_card_probe_result cg_card_probe_matching(const char* module_path, cg_certific
 	{
 		result.error = (long)rv;
 		goto unload;
+	}
+
+	CK_INFO library;
+	if (p11->C_GetInfo(&library) == CKR_OK)
+	{
+		copy_padded(result.library_manufacturer, library.manufacturerID, sizeof(library.manufacturerID));
+		copy_padded(result.library_description, library.libraryDescription,
+		            sizeof(library.libraryDescription));
+		result.library_version[0] = library.libraryVersion.major;
+		result.library_version[1] = library.libraryVersion.minor;
 	}
 
 	CK_SLOT_ID slots[MAX_SLOTS];
@@ -108,17 +129,18 @@ cg_card_probe_result cg_card_probe_matching(const char* module_path, cg_certific
 				result.pin_min_length = info.ulMinPinLen;
 				result.pin_max_length = info.ulMaxPinLen;
 				result.token_flags = info.flags;
+				copy_padded(result.token_manufacturer, info.manufacturerID, sizeof(info.manufacturerID));
+				copy_padded(result.token_model, info.model, sizeof(info.model));
+				result.token_hardware_version[0] = info.hardwareVersion.major;
+				result.token_hardware_version[1] = info.hardwareVersion.minor;
+				result.token_firmware_version[0] = info.firmwareVersion.major;
+				result.token_firmware_version[1] = info.firmwareVersion.minor;
 			}
 		}
 		CK_SLOT_INFO slot;
 		if (p11->C_GetSlotInfo(slots[0], &slot) == CKR_OK)
 		{
-			size_t length = sizeof(slot.slotDescription);
-			memcpy(result.slot_description, slot.slotDescription, length);
-			while (length > 0 && (result.slot_description[length - 1] == ' ' ||
-			                      result.slot_description[length - 1] == '\0'))
-				length--;
-			result.slot_description[length] = '\0';
+			copy_padded(result.slot_description, slot.slotDescription, sizeof(slot.slotDescription));
 		}
 	}
 

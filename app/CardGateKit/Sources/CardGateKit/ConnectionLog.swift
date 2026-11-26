@@ -24,8 +24,18 @@ public enum ConnectionLogEvent: Equatable, Sendable {
     /// With NLA, Kerberos verified the computer whose certificate was renewed; the new one is kept.
     case renewedCertificateVerified
     case connectionInterrupted
+    /// The gateway ended the connection when its time limit ran out (or its re-authentication
+    /// failed); the client reconnects.
+    case gatewaySessionExpired
+    /// Playing the sound of the remote computer failed (e.g. the audio device went away).
+    case soundFailed
     case reconnecting(attempt: Int, total: Int)
     case reconnected
+    /// An attempt to restore the connection failed for a reason the user can act on (e.g. no card).
+    case reconnectFailed(SessionFailure)
+    /// The card was taken out of the reader redirected to the computer, or put back.
+    case cardRemoved
+    case cardInserted
     /// The desktop scale was changed in the title bar: a percentage, or `nil` for each display's own.
     case scaleChanged(Int?)
     case ended(SessionEnd)
@@ -40,7 +50,8 @@ public enum ConnectionLogEvent: Equatable, Sendable {
 
     public var severity: Severity {
         switch self {
-        case .security(.rdp), .changedCertificateTrusted, .connectionInterrupted:
+        case .security(.rdp), .changedCertificateTrusted, .connectionInterrupted, .gatewaySessionExpired, .soundFailed,
+            .reconnectFailed, .cardRemoved:
             .warning
         case .ended(.closedByUser):
             .info
@@ -84,6 +95,8 @@ public struct ConnectionLog: Equatable, Sendable {
     /// Between a broken connection and its restoration (or the end): the steps of reconnecting and
     /// its errors are summed up by the interruption and the result.
     private var interrupted = false
+    /// The entry of this outage's reconnection failure (`reconnectFailed`), if one was listed.
+    private var reconnectFailureEntry: Int?
     /// An unknown line is not shown endlessly (e.g. repeated by every redraw).
     static let maxEntries = 500
 
@@ -92,6 +105,12 @@ public struct ConnectionLog: Equatable, Sendable {
     private let reconnects: Bool
     /// The previous line reported a problem with the computer's certificate; its subject follows.
     private var afterCertificateProblem = false
+    /// Whether the card is in the redirected reader, once a change was reported.
+    private var cardPresent: Bool?
+    /// The gateway said it ends the session (time limit, re-authentication); the outage follows.
+    /// The time of its line ("16:38:29"): only an outage right after it is the gateway's doing.
+    private var gatewayEndsSession: String?
+    private var soundFailed = false
 
     public init(reconnects: Bool = true) {
         self.reconnects = reconnects
@@ -125,12 +144,49 @@ public struct ConnectionLog: Equatable, Sendable {
         if case .ended(let end) = event {
             interrupted = false
             ending = true
-            if case .failed = end {
-                for problem in kerberosProblems { add(problem.event, time: problem.time) }
+            if case .failed(let failure) = end {
+                // The end says it again.
+                if let index = entries.lastIndex(where: { $0.id == reconnectFailureEntry }),
+                    entries[index].event == .reconnectFailed(failure)
+                {
+                    entries.remove(at: index)
+                    revision += 1
+                }
+                if !Self.saidByKerberos.contains(failure) {
+                    for problem in kerberosProblems { add(problem.event, time: problem.time) }
+                }
             }
             kerberosProblems = []
         }
         add(event, time: Self.timeFormat.string(from: date))
+    }
+
+    /// The card was taken out of the redirected reader (`false`) or put back. Only changes are
+    /// listed; the card is in the reader when connecting.
+    public mutating func cardInReader(_ present: Bool, at date: Date = .now) {
+        guard present != (cardPresent ?? true) else { return }
+        cardPresent = present
+        let time = Self.timeFormat.string(from: date)
+        if !present {
+            // macOS may report the removal a moment after the client passed Windows the answers it caused.
+            let now = Self.seconds(of: time)
+            while let last = entries.last, case .unknown(let text, _) = last.event,
+                Self.readerGoneCodes.contains(where: text.contains), let then = Self.seconds(of: last.time),
+                let now, (now - then + 86_400) % 86_400 <= 5
+            {
+                entries.removeLast()
+                revision += 1
+            }
+        }
+        add(present ? .cardInserted : .cardRemoved, time: time)
+    }
+
+    /// Why reconnecting failed (`SessionLogParser.reconnectFailure`, from `line`): listed once per
+    /// outage, not after the user disconnected.
+    public mutating func reconnectFailed(_ failure: SessionFailure, line: String) {
+        guard interrupted, !ending, reconnectFailureEntry == nil else { return }
+        reconnectFailureEntry = nextID
+        add(.reconnectFailed(failure), time: Self.time(of: line))
     }
 
     /// CardGate stopped the client (Disconnect, Cancel, quitting).
@@ -157,7 +213,11 @@ public struct ConnectionLog: Equatable, Sendable {
                 .normal
             }
         guard level != .normal else { return .normal }
-        if Self.harmless.contains(where: line.contains) { return .harmless }
+        if Self.harmless.contains(where: line.contains) || Self.isCardRemovedAnswer(line)
+            || (cardPresent == false && Self.isReaderGoneAnswer(line))
+        {
+            return .harmless
+        }
         if ending, Self.harmlessWhenEnding.contains(where: line.contains) { return .harmless }
         if pastGateway,
             line.contains(Self.certificateProblem) || (afterCertificateProblem && line.contains("[verify_cb]: CN ="))
@@ -183,6 +243,8 @@ public struct ConnectionLog: Equatable, Sendable {
         // A clipboard format that cannot be converted to another one (e.g. an image to HTML): the
         // other side gets the formats that can.
         "No synthesizer for format",
+        // Windows started work with the card and left it unfinished; the client ends it as Windows does.
+        "ending it and resetting the card like Windows does",
         // The user cancelled or disconnected, or signed out or disconnected in Windows.
         "ERRCONNECT_CONNECT_CANCELLED",
         "ERRINFO_LOGOFF_BY_USER",
@@ -209,6 +271,9 @@ public struct ConnectionLog: Equatable, Sendable {
 
     private mutating func noteState(_ line: String) {
         if line.contains("RD Gateway smart card authentication done") { pastGateway = true }
+        if desktopShown, !interrupted, Self.gatewaySessionEnd.contains(where: line.contains) {
+            gatewayEndsSession = Self.time(of: line)
+        }
         if line.contains("Attempting reconnect (") { pastGateway = false }
         if line.contains("disconnect confirmed by the user") || line.contains("ERRCONNECT_CONNECT_CANCELLED")
             || line.contains("Credential prompt cancelled") || line.contains("Autoreconnect aborted by user")
@@ -221,7 +286,7 @@ public struct ConnectionLog: Equatable, Sendable {
     private mutating func event(in line: String) -> ConnectionLogEvent? {
         if let event = reconnectEvent(in: line) { return event }
         if interrupted { return nil }  // the steps of reconnecting
-        return connectionStep(in: line)
+        return sessionProblem(in: line) ?? connectionStep(in: line)
     }
 
     /// An outage and how the client restores the connection.
@@ -238,12 +303,14 @@ public struct ConnectionLog: Equatable, Sendable {
                 revision += 1
             }
             interrupted = true
-            return .connectionInterrupted
+            reconnectFailureEntry = nil
+            return interruption(at: line)
         }
         if let attempt = Self.numbers(in: line, after: "Attempting reconnect (") {
             // The client also reconnects after some errors of the computer, without an outage.
             if !interrupted, desktopShown {
-                add(.connectionInterrupted, time: Self.time(of: line))
+                add(interruption(at: line), time: Self.time(of: line))
+                reconnectFailureEntry = nil
             }
             interrupted = true
             ending = false
@@ -254,9 +321,25 @@ public struct ConnectionLog: Equatable, Sendable {
             // A new connection: how the previous one ended no longer applies.
             interrupted = false
             ending = false
+            reconnectFailureEntry = nil
             return .reconnected
         }
         return nil
+    }
+
+    /// Why the connection broke, if the gateway said so.
+    private mutating func interruption(at line: String) -> ConnectionLogEvent {
+        defer { gatewayEndsSession = nil }
+        guard let then = gatewayEndsSession.flatMap(Self.seconds(of:)), let now = Self.seconds(of: Self.time(of: line))
+        else { return .connectionInterrupted }
+        return (now - then + 86_400) % 86_400 <= 5 ? .gatewaySessionExpired : .connectionInterrupted
+    }
+
+    /// A problem while the desktop is shown that does not end the session.
+    private mutating func sessionProblem(in line: String) -> ConnectionLogEvent? {
+        guard desktopShown, !soundFailed, Self.soundFailure.contains(where: line.contains) else { return nil }
+        soundFailed = true  // the client closes the device; once is enough
+        return .soundFailed
     }
 
     private mutating func connectionStep(in line: String) -> ConnectionLogEvent? {
@@ -288,8 +371,23 @@ public struct ConnectionLog: Equatable, Sendable {
     /// event), or a step that is not a problem by itself.
     static func explainedElsewhere(_ line: String) -> Bool {
         SessionLogParser.failure(in: line) != nil || line.contains("ERRINFO_")
-            || explained.contains(where: line.contains)
+            || SessionLogParser.gatewayTemporarilyUnavailable(line) || explained.contains(where: line.contains)
+            // Said by the interruption (`gatewaySessionExpired`) or the sound event.
+            || gatewaySessionEnd.contains(where: line.contains) || soundFailure.contains(where: line.contains)
+            || (line.contains("[list_provider_keys]") && line.contains("no certificates found"))
     }
+
+    /// Failures named after what Kerberos said: its own lines are left to the detailed log.
+    static let saidByKerberos: Set<SessionFailure> = [
+        .clockSkew, .domainUnreachable, .computerUnknownToDomain, .accountUnknownToDomain, .accountRevoked,
+        .domainNotTrusted, .cardCertificateRejected,
+    ]
+
+    /// The gateway ends the session: its time limit ran out, or it asked to sign in again and that failed.
+    static let gatewaySessionEnd = ["E_PROXY_SESSIONTIMEOUT", "E_PROXY_REAUTH_"]
+
+    /// The macOS sound output failed; the client closes it (sound is back in the next session).
+    static let soundFailure = ["audio output failed, dropping sound", "Failed to start audio player"]
 
     /// A line of the Kerberos sign-in to the computer (NLA).
     static func isKerberos(_ line: String) -> Bool {
@@ -302,6 +400,13 @@ public struct ConnectionLog: Equatable, Sendable {
         "changed since it was first trusted",
         // The client's own message about how the session ended (the end event says it).
         "[handleShow]: Terminate with",
+        // Consequences of a failure the end event names (a cancelled PIN, a computer that cannot be
+        // reached), and the stack traces the client logs with some of them.
+        "[nego_connect]: Failed to connect",
+        "Error: protocol security negotiation or connection failure",
+        "BIO_read returned an error",
+        "Unsupported BIO_CTRL",
+        "[winpr_log_backtrace_ex]",
     ]
 
     static func isUnknown(_ event: ConnectionLogEvent) -> Bool {
@@ -350,30 +455,4 @@ public struct ConnectionLog: Equatable, Sendable {
         formatter.dateFormat = "HH:mm:ss"
         return formatter
     }()
-}
-
-extension ConnectionLog {
-    /// Texts of the client log this view depends on (the parser's are in `SessionLogParser.logMarkers`).
-    /// Format strings appear as written in the source ("%s").
-    public static let logMarkers = [
-        "This build does not support AAD security",
-        "warn_credential_args",
-        "Implement neon optimized version",
-        "pthread_setschedprio",
-        "krb5_get_etype_info",
-        "QueryContextAttributes implement ulAttribute=",
-        "SEC_E_UNSUPPORTED_FUNCTION",
-        "No synthesizer for format",
-        "Connection aborted by user",
-        "Unhandled SSL error",
-        "%s retries exceeded",
-        "DisconnectProviderUltimatum",
-        "CHANNEL_RC_BAD_CHANNEL_HANDLE",
-        "Certificate verification failure",
-        "disconnect %s by the user",
-        "signed in: releasing the modifier keys",
-        "confirmed by its fingerprint, replacing the stored one",
-        "verified by Kerberos, replacing the stored one",
-        "Terminate with",
-    ]
 }

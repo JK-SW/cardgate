@@ -22,12 +22,16 @@ final class CardMonitor {
 
     /// Called after the set of inserted cards changed.
     var onChange: (() -> Void)?
+    /// Called when a card was put in a reader (`true`) or taken out (`CardReaderWatcher`).
+    var onReaderChange: ((String, Bool) -> Void)?
 
     /// What the PKCS#11 module (and therefore the RDP client) sees; `nil` until checked.
     private(set) var pkcs11State: PKCS11CardState?
     var isChecking: Bool { checkTask != nil }
     /// Reader holding the token (from the last check), redirected to the remote computer.
     private(set) var tokenReader: String?
+    /// What the module said about itself and the card in the last check (diagnostic information).
+    private(set) var moduleInfo: PKCS11ModuleInfo?
     private var checkTask: Task<PKCS11ProbeResult, Never>?
     /// PKCS#11 module to check with; set by the app.
     var module: String? {
@@ -66,6 +70,7 @@ final class CardMonitor {
         }
         readers = CardReaderWatcher()
         readers?.onChange = { [weak self] present in self?.cardInReader(present) }
+        readers?.onReaderChange = { [weak self] reader, present in self?.onReaderChange?(reader, present) }
         // CryptoTokenKit calls its handlers on an XPC queue: they must not be main actor isolated
         // (Swift would trap), so they are explicitly @Sendable and hop to the main actor.
         watcher.setInsertionHandler { @Sendable [weak self] tokenID in
@@ -144,6 +149,7 @@ final class CardMonitor {
             self.logger.info("PKCS#11 check: \(state, privacy: .public), reader \(reader, privacy: .public)")
             self.pkcs11State = result.state
             self.tokenReader = result.reader
+            self.moduleInfo = result.info  // of this module and card only
             self.checkTask = nil
             if self.checkPending {
                 self.checkPending = false

@@ -11,6 +11,12 @@ public struct FreeRDPCommand: Equatable, Sendable {
     /// The client reconnects on its own after an outage (CardGate → Settings).
     public var reconnects: Bool { arguments.contains("+auto-reconnect") }
 
+    /// The reader redirected to the computer (FreeRDP redirects readers whose name contains it);
+    /// `nil` when all are.
+    public var smartCardReader: String? {
+        arguments.first { $0.hasPrefix("/smartcard:") }.map { String($0.dropFirst("/smartcard:".count)) }
+    }
+
     /// Where the client is in the app bundle (relative to `Contents`) and in the assembled helper
     /// (`build/helper`). It is wrapped in a small agent app (`LSUIElement`), so the Dock and the
     /// app switcher show only CardGate; CardGate brings the session window forward itself.

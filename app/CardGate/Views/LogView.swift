@@ -5,7 +5,9 @@ import UniformTypeIdentifiers
 
 /// Log of the last connection, for troubleshooting with the IT department. By default it shows the
 /// important events in words; Details shows the client's own lines (harmless warnings grayed out).
-/// Copy Log and Save Log always take the client's whole log as it was written.
+/// Copy Log copies what is shown; Save Log saves a ZIP archive with the important messages, the
+/// client's whole log and anonymous diagnostic information (`LogArchive`), without the names of the
+/// computer, the gateway and the account (`LogAnonymizer`).
 struct LogView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(Self.importantOnlyKey) private var importantOnly = true
@@ -46,47 +48,106 @@ struct LogView: View {
             Button(action: copyLog) {
                 Label("Copy Log", systemImage: "doc.on.doc")
             }
-            .help("Copy the whole log with every detail, to send it to your IT department")
-            .disabled(!hasLog && logFile == nil)
+            .help("Copy what the window shows: the important messages, or every line of the log")
+            .disabled(importantOnly ? entries.isEmpty : !hasLog && logFile == nil)
             Button(action: saveLog) {
                 Label("Save Log…", systemImage: "square.and.arrow.down")
             }
-            .help("Save the whole log with every detail to a file")
-            .disabled(logFile == nil)
+            .help(
+                """
+                Save a ZIP archive with the important messages, the whole log and diagnostic information, \
+                without the names of the computer, the gateway and your account, to send it to your IT department
+                """
+            )
+            .disabled(entries.isEmpty && !hasLog && logFile == nil)
         }
     }
 }
 
 extension LogView {
-    /// The whole log as the client wrote it (with the command line), from its file; the lines kept
-    /// in memory are only the most recent ones.
+    /// Copies what the window shows: the important messages as text, or the whole log as the client
+    /// wrote it (with the command line, from its file; the lines kept in memory are only the most
+    /// recent ones).
     private func copyLog() {
         let session = model.session
+        if importantOnly {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(Self.importantText(session.eventEntries), forType: .string)
+            return
+        }
         let file = session.logFileURL
         let lines = session.log.texts
         Task {
-            // A long log is read off the main thread.
-            let text = await Task.detached { file.flatMap { try? String(contentsOf: $0, encoding: .utf8) } }.value
+            // Bytes that are not UTF-8 (e.g. a device name) are replaced, the rest is kept: on purpose
+            // not the failable initializer, which would drop the whole log.
+            // swiftlint:disable:next optional_data_string_conversion
+            let text = String(decoding: await Self.wholeLog(file: file, lines: lines), as: UTF8.self)
             NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(text ?? lines.joined(separator: "\n"), forType: .string)
+            NSPasteboard.general.setString(text, forType: .string)
         }
     }
 
-    /// Saves a copy of the shown connection's log file.
+    /// Saves a ZIP archive with the important messages, the whole log and the diagnostic information.
     private func saveLog() {
-        guard let source = model.session.logFileURL else { return }
+        let session = model.session
+        let now = Date.now
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = SessionLogFiles.exportName(at: .now)
-        panel.allowedContentTypes = [.log]
+        panel.nameFieldStringValue = LogArchive.name(at: now)
+        panel.allowedContentTypes = [.zip]
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let target = panel.url else { return }
-        do {
-            // Read whole, then written atomically: an existing file is replaced only by a complete copy
-            // (also on a USB stick or a network share, and when it is the log file itself).
-            try Data(contentsOf: source).write(to: target, options: .atomic)
-        } catch {
-            NSAlert(error: error).runModal()
+        let anonymizer = model.logAnonymizer
+        let important = Self.importantText(session.eventEntries)
+        let diagnostics = model.diagnosticReport(at: now).text
+        let file = session.logFileURL
+        let lines = session.log.texts
+        let folder = String(LogArchive.name(at: now).dropLast(".zip".count))
+        Task {
+            let log = await Self.wholeLog(file: file, lines: lines)
+            let result = await Task.detached {
+                Result {
+                    // Without the names of the computer, the gateway and the account (`LogAnonymizer`); bytes
+                    // that are not UTF-8 are replaced.
+                    // swiftlint:disable:next optional_data_string_conversion
+                    let text = String(decoding: log, as: UTF8.self)
+                    // The same for both files: also the names the log's command line gives.
+                    let names = anonymizer.adding(commandLine: text)
+                    let log = Data(names.anonymize(text).utf8)
+                    let important = names.anonymize(important)
+                    let archive = try LogArchive.make(
+                        folder: folder,
+                        files: [
+                            (LogArchive.importantName, Data(important.utf8)), (LogArchive.logName, log),
+                            (LogArchive.diagnosticsName, Data(diagnostics.utf8)),
+                        ])
+                    // Written atomically: an existing file is replaced only by a complete archive.
+                    try archive.write(to: target, options: .atomic)
+                }
+            }.value
+            if case .failure(let error) = result { NSAlert(error: error).runModal() }
         }
+    }
+
+    /// The whole log from its file as written (read off the main thread), or the lines in memory.
+    private static func wholeLog(file: URL?, lines: [String]) async -> Data {
+        let data = await Task.detached { file.flatMap { try? Data(contentsOf: $0) } }.value
+        return data ?? Data(lines.joined(separator: "\n").utf8)
+    }
+
+    /// "16:38:29  ⚠ The connection was interrupted. Reconnecting…", one message per line, as shown.
+    static func importantText(_ entries: [ConnectionLog.Entry]) -> String {
+        entries.map { entry in
+            let mark =
+                switch entry.event.severity {
+                case .info: ""
+                case .warning: "⚠ "
+                case .error: "✖ "
+                }
+            let text: String =
+                if case .unknown(let text, _) = entry.event { text } else { entry.event.message ?? "" }
+            return "\(entry.time)  \(mark)\(text)"
+        }
+        .joined(separator: "\n") + "\n"
     }
 }
 
@@ -197,28 +258,41 @@ private struct EventList: View {
 
 extension ConnectionLogEvent {
     /// The sentence of the important messages view; `nil` for a line of the client (`unknown`).
-    fileprivate var message: LocalizedStringKey? {
+    var message: String? {
         switch self {
-        case .connecting: "Connecting…"
-        case .signingInToGateway: "Signing in to the gateway with the card…"
-        case .gatewayAccepted: "The gateway accepted the card."
-        case .security(.nla): "The connection to the computer is secured with NLA."
-        case .security(.tls): "The connection to the computer is secured with TLS."
+        case .connecting: String(localized: "Connecting…")
+        case .signingInToGateway: String(localized: "Signing in to the gateway with the card…")
+        case .gatewayAccepted: String(localized: "The gateway accepted the card.")
+        case .security(.nla): String(localized: "The connection to the computer is secured with NLA.")
+        case .security(.tls): String(localized: "The connection to the computer is secured with TLS.")
         case .security(.rdp):
-            "The computer uses RDP Security with the older RC4 encryption. Windows asks for your sign-in details again."
-        case .desktopShown: "The remote desktop is open."
-        case .signedIn: "Signed in to Windows."
+            String(
+                localized: """
+                    The computer uses RDP Security with the older RC4 encryption. Windows asks for your sign-in \
+                    details again.
+                    """)
+        case .desktopShown: String(localized: "The remote desktop is open.")
+        case .signedIn: String(localized: "Signed in to Windows.")
         case .changedCertificateTrusted:
-            "The computer's changed certificate was trusted (confirmed by its fingerprint)."
-        case .renewedCertificateVerified: "The computer's renewed certificate was verified by Kerberos and saved."
-        case .connectionInterrupted: "The connection was interrupted. Reconnecting…"
-        case .reconnecting(let attempt, let total): "Reconnecting (attempt \(attempt) of \(total))…"
-        case .reconnected: "The connection was restored."
+            String(localized: "The computer's changed certificate was trusted (confirmed by its fingerprint).")
+        case .renewedCertificateVerified:
+            String(localized: "The computer's renewed certificate was verified by Kerberos and saved.")
+        case .connectionInterrupted: String(localized: "The connection was interrupted. Reconnecting…")
+        case .gatewaySessionExpired:
+            String(localized: "The gateway ended the connection when its time limit ran out. Reconnecting…")
+        case .soundFailed: String(localized: "Playing sound failed.")
+        case .reconnecting(let attempt, let total): String(localized: "Reconnecting (attempt \(attempt) of \(total))…")
+        case .reconnected: String(localized: "The connection was restored.")
+        case .reconnectFailed(let failure): String(localized: "A reconnection attempt failed: \(failure.title)")
+        case .cardRemoved: String(localized: "The card was removed from the reader.")
+        case .cardInserted: String(localized: "The card is back in the reader.")
         case .scaleChanged(let percent?):
-            "The scale of the remote desktop was changed to \((Double(percent) / 100).formatted(.percent))."
-        case .scaleChanged(nil): "The remote desktop uses the scale of each display again."
-        case .ended(.closedByUser): "Disconnected."
-        case .ended(.failed(.other(let code))): "The connection failed (\(code))"
+            String(
+                localized:
+                    "The scale of the remote desktop was changed to \((Double(percent) / 100).formatted(.percent)).")
+        case .scaleChanged(nil): String(localized: "The remote desktop uses the scale of each display again.")
+        case .ended(.closedByUser): String(localized: "Disconnected.")
+        case .ended(.failed(.other(let code))): String(localized: "The connection failed (\(code))")
         case .ended(.failed(let failure)): failure.title
         case .unknown: nil
         }

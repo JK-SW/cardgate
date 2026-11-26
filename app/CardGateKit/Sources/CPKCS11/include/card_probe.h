@@ -21,6 +21,16 @@ typedef struct {
     /// Slot description of the first present token, trailing blanks removed. With common middleware
     /// it is the PC/SC reader name (at most 64 bytes, possibly cut off).
     char slot_description[65];
+    /// The module (C_GetInfo) and the first present token, or the one holding the matched
+    /// certificate (C_GetTokenInfo): blank padding removed. Never the token's label or serial number
+    /// (they may name the holder).
+    char library_manufacturer[33];
+    char library_description[33];
+    unsigned char library_version[2];
+    char token_manufacturer[33];
+    char token_model[17];
+    unsigned char token_hardware_version[2];
+    unsigned char token_firmware_version[2];
 } cg_card_probe_result;
 
 /// Loads the PKCS#11 module, reads which tokens are present and their token info, and unloads the

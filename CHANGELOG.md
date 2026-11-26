@@ -6,7 +6,10 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 ## [Unreleased]
 
 ### Přidáno
-- Tlačítko **Uložit log…** v okně logu uloží celý log připojení do souboru.
+- Tlačítko **Uložit log…** v okně logu uloží archiv ZIP s důležitými zprávami, celým logem a anonymními
+  diagnostickými údaji (verze aplikace a macOS, model Macu, displeje, software a typ karty, nastavení
+  připojení bez adres). Jména počítače a brány, název připojení a účet Windows jsou v archivu nahrazené
+  `***`, takže ho lze poslat bez úprav. **Kopírovat log** zkopíruje to, co okno právě ukazuje.
 - Záhlaví okna vzdálené plochy ukazuje měřítko plochy (např. 150 %): lupami ho zmenšíte nebo zvětšíte,
   kliknutím na číslo vyberete ze seznamu. Windows ho změní hned, bez odpojení. Tlačítko vedle otevře
   log připojení.
@@ -15,7 +18,21 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 - Přehlednější log připojení: ve výchozím zobrazení **Důležité** ukazuje srozumitelně průběh připojení
   a jen skutečné problémy – varování oranžově (např. zabezpečení RDP se starším šifrováním RC4, výpadek
   sítě), chyby červeně. Zobrazení **Podrobnosti** ukazuje všechny řádky logu, známé neškodné zprávy šedě.
-  **Kopírovat log** i **Uložit log…** berou vždy celý log.
+- Srozumitelnější důvody, proč se připojení nezdařilo nebo skončilo – v hlavním okně (s doporučeným krokem)
+  i v logu, např. zakázaný nebo zablokovaný účet, brána nepovoluje připojení k tomuto počítači, brána je
+  dočasně nedostupná, počítač nemá licenci pro vzdálenou plochu, čas na Macu se liší od času v doméně nebo
+  doména počítač nezná. Zablokovaný účet ani odmítnutý certifikát karty už automatiku nepřepnou
+  na připojení bez NLA (Windows je odmítne i bez něj).
+- Log připojení zaznamená, když brána ukončí spojení po vypršení povolené doby a když selže přehrávání
+  zvuku. Technické zprávy, které jen doprovázejí jinou chybu, zůstávají jen v Podrobnostech.
+- Log připojení zaznamená vyjmutí karty ze čtečky a její vrácení. Když se obnovení připojení nezdaří
+  kvůli kartě (např. není ve čtečce), řekne to místo technických hlášení.
+
+### Opraveno
+- Když se obnovovalo připojení bez karty ve čtečce, program vzdálené plochy mohl spadnout
+  („Připojení se nezdařilo (signal 11)“). Pokud program přesto neočekávaně skončí, CardGate to řekne
+  srozumitelně.
+- Když se USB token rychle vytáhl a hned zasunul, CardGate ho někdy přestal vidět (nezaznamenal jeho vrácení).
 
 ## [0.7.3] - 2026-11-23
 

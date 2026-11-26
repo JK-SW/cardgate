@@ -33,6 +33,22 @@
         }
       }
     },
+    "A reconnection attempt failed: %@": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokus o obnovení se nezdařil: %@"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokus o obnovenie zlyhal: %@"
+          }
+        }
+      }
+    },
     "A renewed certificate is on the card: choose it in the connection settings (section Advanced).": {
       "localizations": {
         "cs": {
@@ -157,6 +173,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpojil vás správca alebo samotný počítač (napr. pred reštartom). Skúste to neskôr alebo kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "An error in Windows ended the session": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ve Windows došlo k chybě a relace skončila"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vo Windows došlo k chybe a relácia skončila"
           }
         }
       }
@@ -521,13 +553,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "CardGate přijímá jen certifikáty od veřejných certifikačních autorit. Pokud vaše organizace používá vlastní certifikát, obraťte se na IT oddělení. Jinak může jít o odposlech: nepřipojujte se a nahlaste to IT oddělení."
+            "value": "CardGate přijímá jen certifikáty od veřejných certifikačních autorit. Pokud vaše organizace používá vlastní certifikát, kontaktujte IT oddělení. Jinak může jít o odposlech: nepřipojujte se a nahlaste to IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "CardGate prijíma len certifikáty od verejných certifikačných autorít. Ak vaša organizácia používa vlastný certifikát, obráťte sa na IT oddelenie. Inak môže ísť o odpočúvanie: nepripájajte sa a nahláste to IT oddeleniu."
+            "value": "CardGate prijíma len certifikáty od verejných certifikačných autorít. Ak vaša organizácia používa vlastný certifikát, kontaktujte IT oddelenie. Inak môže ísť o odpočúvanie: nepripájajte sa a nahláste to IT oddeleniu."
           }
         }
       }
@@ -537,13 +569,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "CardGate se umí k bráně přihlásit jen klíčem RSA; tato karta má jiný typ (například ECC). Obraťte se na IT oddělení."
+            "value": "CardGate se umí k bráně přihlásit jen klíčem RSA; tato karta má jiný typ (například ECC). Kontaktujte IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "CardGate sa vie k bráne prihlásiť len kľúčom RSA; táto karta má iný typ (napríklad ECC). Obráťte sa na IT oddelenie."
+            "value": "CardGate sa vie k bráne prihlásiť len kľúčom RSA; táto karta má iný typ (napríklad ECC). Kontaktujte IT oddelenie."
           }
         }
       }
@@ -772,6 +804,22 @@
         }
       }
     },
+    "Check that the connection settings have the computer's full name with its domain (for example pc01.example.com). Connect again: CardGate now connects without NLA.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte, že je v nastavení připojení celé jméno počítače s doménou (např. pc01.example.com). Připojte se znovu: CardGate se teď připojí bez NLA."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte, či je v nastaveniach pripojenia celé meno počítača s doménou (napr. pc01.example.com). Pripojte sa znova: CardGate sa teraz pripojí bez NLA."
+          }
+        }
+      }
+    },
     "Check that the file exists and that you may read it, or install the card software again. A module set in the connection can be changed in its settings.": {
       "localizations": {
         "cs": {
@@ -784,6 +832,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skontrolujte, či súbor existuje a máte právo ho čítať, alebo nainštalujte softvér ku karte znova. Modul nastavený v pripojení je možné zmeniť v jeho nastaveniach."
+          }
+        }
+      }
+    },
+    "Check the computer's full name in the connection settings (for example pc01.example.com). If it is correct, contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte v nastavení připojení celé jméno počítače (např. pc01.example.com). Pokud je správné, kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte v nastaveniach pripojenia celé meno počítača (napr. pc01.example.com). Ak je správne, kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "Check the date and time in System Settings → General → Date & Time, then connect again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte datum a čas v Nastavení systému → Obecné → Datum a čas a připojte se znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte dátum a čas v Nastaveniach systému → Všeobecné → Dátum a čas a pripojte sa znova."
+          }
+        }
+      }
+    },
+    "Check the date and time in System Settings → General → Date & Time. Connect again: CardGate now connects without NLA.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte datum a čas v Nastavení systému → Obecné → Datum a čas. Připojte se znovu: CardGate se teď připojí bez NLA."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte dátum a čas v Nastaveniach systému → Všeobecné → Dátum a čas. Pripojte sa znova: CardGate sa teraz pripojí bez NLA."
+          }
+        }
+      }
+    },
+    "Check the gateway address in the connection settings. If it is correct, contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkontrolujte adresu brány v nastavení připojení. Pokud je správná, kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skontrolujte adresu brány v nastaveniach pripojenia. Ak je správna, kontaktujte IT oddelenie."
           }
         }
       }
@@ -889,13 +1001,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vyberte certifikát pro přihlášení: Upravit připojení, část Pokročilé. Pokud nevíte který, obraťte se na IT oddělení."
+            "value": "Vyberte certifikát pro přihlášení: Upravit připojení, část Pokročilé. Pokud nevíte který, kontaktujte IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vyberte certifikát na prihlásenie: Upraviť pripojenie, časť Pokročilé. Ak neviete ktorý, obráťte sa na IT oddelenie."
+            "value": "Vyberte certifikát na prihlásenie: Upraviť pripojenie, časť Pokročilé. Ak neviete ktorý, kontaktujte IT oddelenie."
           }
         }
       }
@@ -1008,6 +1120,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojiť"
+          }
+        }
+      }
+    },
+    "Connect again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojte se znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojte sa znova."
+          }
+        }
+      }
+    },
+    "Connect again. If it happens again, contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojte se znovu. Pokud se to bude opakovat, kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojte sa znova. Ak sa to bude opakovať, kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "Connect again: CardGate now connects without NLA. If it fails, contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojte se znovu: CardGate se teď připojí bez NLA. Pokud se to nepovede, kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojte sa znova: CardGate sa teraz pripojí bez NLA. Ak sa to nepodarí, kontaktujte IT oddelenie."
           }
         }
       }
@@ -1220,6 +1380,22 @@
         }
       }
     },
+    "Contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
     "Copy Log": {
       "localizations": {
         "cs": {
@@ -1236,18 +1412,18 @@
         }
       }
     },
-    "Copy the whole log with every detail, to send it to your IT department": {
+    "Copy what the window shows: the important messages, or every line of the log": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zkopírujte celý log se všemi podrobnostmi a pošlete ho IT oddělení"
+            "value": "Zkopíruje, co okno ukazuje: důležité zprávy, nebo všechny řádky logu"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skopírujte celý log so všetkými podrobnosťami a pošlite ho IT oddeleniu"
+            "value": "Skopíruje, čo okno ukazuje: dôležité správy, alebo všetky riadky logu"
           }
         }
       }
@@ -1552,6 +1728,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zadajte adresu svojho pracovného počítača."
+          }
+        }
+      }
+    },
+    "Enter the computer's full name with its domain (for example pc01.example.com) in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V nastavení připojení zadejte celé jméno počítače s doménou (např. pc01.example.com)."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V nastaveniach pripojenia zadajte celé meno počítača s doménou (napr. pc01.example.com)."
           }
         }
       }
@@ -1979,13 +2171,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nebude načten. Nainstalujte software ke kartě znovu nebo se obraťte na IT oddělení."
+            "value": "Nebude načten. Nainstalujte software ke kartě znovu nebo kontaktujte IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nebude načítaný. Nainštalujte softvér ku karte znova alebo sa obráťte na IT oddelenie."
+            "value": "Nebude načítaný. Nainštalujte softvér ku karte znova alebo kontaktujte IT oddelenie."
           }
         }
       }
@@ -2001,7 +2193,7 @@
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nie je to certifikát, ktorý mal počítač pri prvom pripojení, preto bolo pripojenie pre vašu bezpečnosť zastavené. Novému certifikátu dôverujte, len ak správca počítača potvrdí, že bol obnovený a jeho odtlačok SHA-256 je %@; inak sa obráťte na IT oddelenie."
+            "value": "Nie je to certifikát, ktorý mal počítač pri prvom pripojení, preto bolo pripojenie pre vašu bezpečnosť zastavené. Novému certifikátu dôverujte, len ak správca počítača potvrdí, že bol obnovený a jeho odtlačok SHA-256 je %@; inak kontaktujte IT oddelenie."
           }
         }
       }
@@ -2075,13 +2267,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vyžaduje ověřování na úrovni sítě (NLA) a přihlášení kartou přes bránu s ním minule selhalo, proto ho CardGate nenabídl. Obraťte se na IT oddělení (NLA potřebuje bránu s KDC proxy); po opravě zkuste znovu s NLA."
+            "value": "Vyžaduje ověřování na úrovni sítě (NLA) a přihlášení kartou přes bránu s ním minule selhalo, proto ho CardGate nenabídl. Kontaktujte IT oddělení (NLA potřebuje bránu s KDC proxy); po opravě zkuste znovu s NLA."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vyžaduje overovanie na úrovni siete (NLA) a prihlásenie kartou cez bránu s ním minule zlyhalo, preto ho CardGate neponúkol. Obráťte sa na IT oddelenie (NLA potrebuje bránu s KDC proxy); po oprave skúste znova s NLA."
+            "value": "Vyžaduje overovanie na úrovni siete (NLA) a prihlásenie kartou cez bránu s ním minule zlyhalo, preto ho CardGate neponúkol. Kontaktujte IT oddelenie (NLA potrebuje bránu s KDC proxy); po oprave skúste znova s NLA."
           }
         }
       }
@@ -2107,13 +2299,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dříve přijímal silnější zabezpečení, než nabízí teď. Pokud to jeho správce změnil záměrně, připojte se se slabším zabezpečením. Jinak může jít o odposlech spojení: nepřipojujte se a obraťte se na IT oddělení."
+            "value": "Dříve přijímal silnější zabezpečení, než nabízí teď. Pokud to jeho správce změnil záměrně, připojte se se slabším zabezpečením. Jinak může jít o odposlech spojení: nepřipojujte se a kontaktujte IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Predtým prijímal silnejšie zabezpečenie, než ponúka teraz. Ak to jeho správca zmenil zámerne, pripojte sa so slabším zabezpečením. Inak môže ísť o odpočúvanie spojenia: nepripájajte sa a obráťte sa na IT oddelenie."
+            "value": "Predtým prijímal silnejšie zabezpečenie, než ponúka teraz. Ak to jeho správca zmenil zámerne, pripojte sa so slabším zabezpečením. Inak môže ísť o odpočúvanie spojenia: nepripájajte sa a kontaktujte IT oddelenie."
           }
         }
       }
@@ -2550,6 +2742,22 @@
         }
       }
     },
+    "Playing sound failed.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přehrávání zvuku selhalo."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prehrávanie zvuku zlyhalo."
+          }
+        }
+      }
+    },
     "Quit CardGate and disconnect?": {
       "localizations": {
         "cs": {
@@ -2758,18 +2966,18 @@
         }
       }
     },
-    "Save the whole log with every detail to a file": {
+    "Save a ZIP archive with the important messages, the whole log and diagnostic information, without the names of the computer, the gateway and your account, to send it to your IT department": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uloží celý log se všemi podrobnostmi do souboru"
+            "value": "Uloží archiv ZIP s důležitými zprávami, celým logem a diagnostickými údaji, bez jmen počítače, brány a vašeho účtu, abyste ho mohli poslat IT oddělení"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uloží celý log so všetkými podrobnosťami do súboru"
+            "value": "Uloží archív ZIP s dôležitými správami, celým logom a diagnostickými údajmi, bez mien počítača, brány a vášho účtu, aby ste ho mohli poslať IT oddeleniu"
           }
         }
       }
@@ -3430,6 +3638,22 @@
         }
       }
     },
+    "The card is back in the reader.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta je znovu ve čtečce."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta je znova v čítačke."
+          }
+        }
+      }
+    },
     "The card is locked": {
       "localizations": {
         "cs": {
@@ -3494,6 +3718,22 @@
         }
       }
     },
+    "The card was removed from the reader.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta byla vyjmuta ze čtečky."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karta bola vybratá z čítačky."
+          }
+        }
+      }
+    },
     "The card's key type is not supported": {
       "localizations": {
         "cs": {
@@ -3506,6 +3746,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Typ kľúča na karte nie je podporovaný"
+          }
+        }
+      }
+    },
+    "The certificate may be invalid or revoked. Contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát může být neplatný nebo zneplatněný. Kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certifikát môže byť neplatný alebo zneplatnený. Kontaktujte IT oddelenie."
           }
         }
       }
@@ -3547,13 +3803,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač zvolil ověření na úrovni sítě (NLA) a přihlášení kartou přes bránu se nepovedlo. Připojte se znovu: CardGate se teď připojí bez NLA. Podrobnosti jsou v záznamu připojení."
+            "value": "Počítač zvolil ověření na úrovni sítě (NLA) a přihlášení kartou přes bránu se nepovedlo. Připojte se znovu: CardGate se teď připojí bez NLA. Podrobnosti jsou v logu připojení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač zvolil overenie na úrovni siete (NLA) a prihlásenie kartou cez bránu sa nepodarilo. Pripojte sa znova: CardGate sa teraz pripojí bez NLA. Podrobnosti sú v zázname pripojenia."
+            "value": "Počítač zvolil overenie na úrovni siete (NLA) a prihlásenie kartou cez bránu sa nepodarilo. Pripojte sa znova: CardGate sa teraz pripojí bez NLA. Podrobnosti sú v logu pripojenia."
           }
         }
       }
@@ -3590,6 +3846,22 @@
         }
       }
     },
+    "The computer has no remote desktop license": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač nemá licenci pro vzdálenou plochu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač nemá licenciu pre vzdialenú plochu"
+          }
+        }
+      }
+    },
     "The computer offers only weaker connection security": {
       "localizations": {
         "cs": {
@@ -3606,18 +3878,34 @@
         }
       }
     },
-    "The computer requires network level authentication (NLA), and the sign-in with the card through the gateway failed. Details are in the connection log. Contact your IT department; if the computer allows it, choose Security: TLS in the connection settings.": {
+    "The computer refused the connection": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač vyžaduje ověření na úrovni sítě (NLA) a přihlášení kartou přes bránu se nepovedlo. Podrobnosti jsou v záznamu připojení. Kontaktujte IT oddělení; pokud to počítač dovoluje, zvolte v nastavení připojení Zabezpečení: TLS."
+            "value": "Počítač připojení odmítl"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Počítač vyžaduje overenie na úrovni siete (NLA) a prihlásenie kartou cez bránu sa nepodarilo. Podrobnosti sú v zázname pripojenia. Kontaktujte IT oddelenie; ak to počítač dovoľuje, zvoľte v nastaveniach pripojenia Zabezpečenie: TLS."
+            "value": "Počítač pripojenie odmietol"
+          }
+        }
+      }
+    },
+    "The computer requires network level authentication (NLA), and the sign-in with the card through the gateway failed. Details are in the connection log. Contact your IT department; if the computer allows it, choose Security: TLS in the connection settings.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vyžaduje ověření na úrovni sítě (NLA) a přihlášení kartou přes bránu se nepovedlo. Podrobnosti jsou v logu připojení. Kontaktujte IT oddělení; pokud to počítač dovoluje, zvolte v nastavení připojení Zabezpečení: TLS."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač vyžaduje overenie na úrovni siete (NLA) a prihlásenie kartou cez bránu sa nepodarilo. Podrobnosti sú v logu pripojenia. Kontaktujte IT oddelenie; ak to počítač dovoľuje, zvoľte v nastaveniach pripojenia Zabezpečenie: TLS."
           }
         }
       }
@@ -3894,6 +4182,70 @@
         }
       }
     },
+    "The domain could not be reached through the gateway": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodařilo se spojit s doménou přes bránu"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nepodarilo sa spojiť s doménou cez bránu"
+          }
+        }
+      }
+    },
+    "The domain does not know the card's account": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doména nezná účet z karty"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doména nepozná účet z karty"
+          }
+        }
+      }
+    },
+    "The domain does not know this computer": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doména tento počítač nezná"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doména tento počítač nepozná"
+          }
+        }
+      }
+    },
+    "The domain refused the card's certificate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doména odmítla certifikát karty"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doména odmietla certifikát karty"
+          }
+        }
+      }
+    },
     "The file cannot be imported": {
       "localizations": {
         "cs": {
@@ -3915,13 +4267,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Soubor s připojeními nejde přečíst ani zálohovat. Aby zůstal nedotčený, změny se neuloží. Spusťte CardGate znovu; pokud se to opakuje, obraťte se na IT oddělení."
+            "value": "Soubor s připojeními nejde přečíst ani zálohovat. Aby zůstal nedotčený, změny se neuloží. Spusťte CardGate znovu; pokud se to opakuje, kontaktujte IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Súbor s pripojeniami sa nedá prečítať ani zálohovať. Aby zostal nedotknutý, zmeny sa neuložia. Spustite CardGate znova; ak sa to opakuje, obráťte sa na IT oddelenie."
+            "value": "Súbor s pripojeniami sa nedá prečítať ani zálohovať. Aby zostal nedotknutý, zmeny sa neuložia. Spustite CardGate znova; ak sa to opakuje, kontaktujte IT oddelenie."
           }
         }
       }
@@ -4022,6 +4374,38 @@
         }
       }
     },
+    "The gateway does not allow connecting to this computer": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána nepovoluje připojení k tomuto počítači"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána nepovoľuje pripojenie k tomuto počítaču"
+          }
+        }
+      }
+    },
+    "The gateway does not support signing in with a card": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána nepodporuje přihlášení kartou"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána nepodporuje prihlásenie kartou"
+          }
+        }
+      }
+    },
     "The gateway does not wait long for the PIN. Click Connect and enter the PIN right away.": {
       "localizations": {
         "cs": {
@@ -4034,6 +4418,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brána na PIN dlho nečaká. Kliknite na Pripojiť a PIN zadajte hneď."
+          }
+        }
+      }
+    },
+    "The gateway ended the connection when its time limit ran out. Reconnecting…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána ukončila spojení po vypršení povolené doby. Obnovuji…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána ukončila spojenie po uplynutí povoleného času. Obnovujem…"
+          }
+        }
+      }
+    },
+    "The gateway is temporarily unavailable": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána je dočasně nedostupná"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána je dočasne nedostupná"
           }
         }
       }
@@ -4155,13 +4571,13 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cesta k softwaru pro čipovou kartu obsahuje čárku nebo zalomení řádku. Přesuňte modul do jiné složky nebo se obraťte na IT oddělení."
+            "value": "Cesta k softwaru pro čipovou kartu obsahuje čárku nebo zalomení řádku. Přesuňte modul do jiné složky nebo kontaktujte IT oddělení."
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cesta k softvéru pre čipovú kartu obsahuje čiarku alebo zalomenie riadku. Presuňte modul do iného priečinka alebo sa obráťte na IT oddelenie."
+            "value": "Cesta k softvéru pre čipovú kartu obsahuje čiarku alebo zalomenie riadku. Presuňte modul do iného priečinka alebo kontaktujte IT oddelenie."
           }
         }
       }
@@ -4242,6 +4658,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vzdialená plocha je otvorená."
+          }
+        }
+      }
+    },
+    "The remote desktop program quit unexpectedly": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Program vzdálené plochy neočekávaně skončil"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Program vzdialenej plochy neočakávane skončil"
           }
         }
       }
@@ -4456,6 +4888,70 @@
         }
       }
     },
+    "The system ended the remote desktop program": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systém ukončil program vzdálené plochy"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systém ukončil program vzdialenej plochy"
+          }
+        }
+      }
+    },
+    "This Mac does not trust the domain's certificate": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac nedůvěřuje certifikátu domény"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac nedôveruje certifikátu domény"
+          }
+        }
+      }
+    },
+    "This Mac's time differs from the domain's": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čas na Macu se liší od času v doméně"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čas na Macu sa líši od času v doméne"
+          }
+        }
+      }
+    },
+    "This is an error in the program. Connect again. If it happens again, please report it and attach the connection log.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jde o chybu programu. Připojte se znovu. Pokud se to bude opakovat, nahlaste ji prosím a přiložte log připojení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ide o chybu programu. Pripojte sa znova. Ak sa to bude opakovať, nahláste ju, prosím, a priložte log pripojenia."
+          }
+        }
+      }
+    },
     "Too many wrong PINs were entered. Unlock the card with the PUK or contact your IT department.": {
       "localizations": {
         "cs": {
@@ -4500,6 +4996,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skúsiť znova s NLA"
+          }
+        }
+      }
+    },
+    "Try again in a while.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zkuste to za chvíli znovu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skúste to o chvíľu znova."
           }
         }
       }
@@ -4820,6 +5332,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adresu počítača a brány vám dá IT oddelenie."
+          }
+        }
+      }
+    },
+    "Your account cannot sign in now": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet se teď nemůže přihlásit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet sa teraz nemôže prihlásiť"
+          }
+        }
+      }
+    },
+    "Your account has a restriction, for example its sign-in hours. Contact your IT department.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Účet má omezení, například povolenou dobu přihlášení. Kontaktujte IT oddělení."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Účet má obmedzenie, napríklad povolený čas prihlásenia. Kontaktujte IT oddelenie."
+          }
+        }
+      }
+    },
+    "Your account has expired": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platnost vašeho účtu skončila"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platnosť vášho účtu skončila"
+          }
+        }
+      }
+    },
+    "Your account is disabled": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet je zakázaný"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet je zakázaný"
+          }
+        }
+      }
+    },
+    "Your account is disabled or locked": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet je zakázaný nebo zablokovaný"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet je zakázaný alebo zablokovaný"
+          }
+        }
+      }
+    },
+    "Your account is locked": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet je zablokovaný"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Váš účet je zablokovaný"
           }
         }
       }
