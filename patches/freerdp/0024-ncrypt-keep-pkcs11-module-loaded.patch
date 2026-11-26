@@ -1,0 +1,79 @@
+--- a/winpr/libwinpr/ncrypt/ncrypt_pkcs11.c
++++ b/winpr/libwinpr/ncrypt/ncrypt_pkcs11.c
+@@ -1533,10 +1533,56 @@
+ 
+ fail:
+ 	if (status != ERROR_SUCCESS)
++	{
++		/* The caller unloads the module (out_load_library): unloading it here too would undo the
++		 * reference that keeps it loaded (pin_pkcs11_module). */
++		ret->library = nullptr;
+ 		ret->baseProvider.baseHandle.releaseFn((NCRYPT_HANDLE)ret);
++	}
+ 	return status;
+ }
+ 
++#if !defined(_WIN32)
++#include <pthread.h>
++
++/* Some PKCS#11 modules keep threads of their own running after C_Finalize (seen with a card
++ * removed while reconnecting): unloading the module under them crashes the process. Each module
++ * keeps one reference of its own for the life of the process, so FreeLibrary never unloads it;
++ * opening and releasing providers stays balanced. */
++static void pin_pkcs11_module(const char* modulePath)
++{
++	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
++	static char* pinned[8] = WINPR_C_ARRAY_INIT;
++
++	pthread_mutex_lock(&lock);
++	size_t x = 0;
++	for (; x < ARRAYSIZE(pinned) && pinned[x]; x++)
++	{
++		if (strcmp(pinned[x], modulePath) == 0)
++			break;
++	}
++	BOOL failed = FALSE;
++	if (x >= ARRAYSIZE(pinned))
++		failed = TRUE;
++	else if (!pinned[x])
++	{
++		HANDLE library = LoadLibraryA(modulePath);
++		if (library)
++		{
++			pinned[x] = _strdup(modulePath);
++			if (!pinned[x])
++				FreeLibrary(library);
++		}
++		failed = !pinned[x];
++	}
++	pthread_mutex_unlock(&lock);
++	if (failed)
++		WLog_WARN(TAG,
++		          "cannot keep pkcs11 module '%s' loaded; it may be unloaded under its threads",
++		          modulePath);
++}
++#endif
++
+ SECURITY_STATUS NCryptOpenP11StorageProviderEx(NCRYPT_PROV_HANDLE* phProvider,
+                                                WINPR_ATTR_UNUSED LPCWSTR pszProviderName,
+                                                WINPR_ATTR_UNUSED DWORD dwFlags, LPCSTR* modulePaths)
+@@ -1581,11 +1627,19 @@
+ 			status = NTE_PROVIDER_DLL_FAIL;
+ 			goto out_load_library;
+ 		}
++#if !defined(_WIN32)
++		/* A working module only (initialized, so its threads may run from now on). */
++		pin_pkcs11_module(modulePath);
++#endif
+ 
+ 		provider = (NCryptP11ProviderHandle*)*phProvider;
+ 		provider->modulePath = _strdup(modulePath);
+ 		if (!provider->modulePath)
+ 		{
++			/* Released here, not returned half done; the module is unloaded once, below. */
++			provider->library = nullptr;
++			provider->baseProvider.baseHandle.releaseFn((NCRYPT_HANDLE)provider);
++			*phProvider = 0;
+ 			status = NTE_NO_MEMORY;
+ 			goto out_load_library;
+ 		}
