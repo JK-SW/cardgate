@@ -5,6 +5,15 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+### Přidáno
+- Tlačítko **Uložit log…** v okně logu uloží celý log připojení do souboru.
+
+### Změněno
+- Přehlednější log připojení: ve výchozím zobrazení **Důležité** ukazuje srozumitelně průběh připojení
+  a jen skutečné problémy – varování oranžově (např. zabezpečení RDP se starším šifrováním RC4, výpadek
+  sítě), chyby červeně. Zobrazení **Podrobnosti** ukazuje všechny řádky logu, známé neškodné zprávy šedě.
+  **Kopírovat log** i **Uložit log…** berou vždy celý log.
+
 ## [0.7.3] - 2026-11-23
 
 Výběr displeje pro celou obrazovku a opravy klávesnice a zobrazení: ⌘Tab a zkratky Macu už nezasahují

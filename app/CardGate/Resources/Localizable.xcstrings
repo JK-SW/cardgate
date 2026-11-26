@@ -1092,6 +1092,22 @@
         }
       }
     },
+    "Connecting…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojuji…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripájam…"
+          }
+        }
+      }
+    },
     "Connection": {
       "localizations": {
         "cs": {
@@ -1220,18 +1236,18 @@
         }
       }
     },
-    "Copy the log to send it to your IT department": {
+    "Copy the whole log with every detail, to send it to your IT department": {
       "localizations": {
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zkopírujte log a pošlete ho IT oddělení"
+            "value": "Zkopírujte celý log se všemi podrobnostmi a pošlete ho IT oddělení"
           }
         },
         "sk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skopírujte log a pošlite ho IT oddeleniu"
+            "value": "Skopírujte celý log so všetkými podrobnosťami a pošlite ho IT oddeleniu"
           }
         }
       }
@@ -1280,6 +1296,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vymazať toto pripojenie?"
+          }
+        }
+      }
+    },
+    "Details": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podrobnosti"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podrobnosti"
           }
         }
       }
@@ -1344,6 +1376,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpojené pre nečinnosť"
+          }
+        }
+      }
+    },
+    "Disconnected.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojeno."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpojené."
           }
         }
       }
@@ -1520,6 +1568,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zadajte úplnú cestu k modulu začínajúcu /, bez čiarok."
+          }
+        }
+      }
+    },
+    "Error": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chyba"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chyba"
           }
         }
       }
@@ -1718,6 +1782,38 @@
         }
       }
     },
+    "Important": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Důležité"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dôležité"
+          }
+        }
+      }
+    },
+    "Important: the steps and problems of the connection in words. Details: every line of the log.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Důležité: průběh a problémy připojení srozumitelně. Podrobnosti: všechny řádky logu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dôležité: priebeh a problémy pripojenia zrozumiteľne. Podrobnosti: všetky riadky logu."
+          }
+        }
+      }
+    },
     "In progress": {
       "localizations": {
         "cs": {
@@ -1746,6 +1842,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "V okne vzdialenej plochy podržte ľavé klávesy ⌃ Control, ⌥ Option a ⇧ Shift a stlačte:"
+          }
+        }
+      }
+    },
+    "Information": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informace"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informácia"
           }
         }
       }
@@ -2002,6 +2114,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Predtým prijímal silnejšie zabezpečenie, než ponúka teraz. Ak to jeho správca zmenil zámerne, pripojte sa so slabším zabezpečením. Inak môže ísť o odpočúvanie spojenia: nepripájajte sa a obráťte sa na IT oddelenie."
+          }
+        }
+      }
+    },
+    "Its lines appear here once it starts.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeho řádky se zde zobrazí, jakmile se spustí."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeho riadky sa tu zobrazia, hneď ako sa spustí."
           }
         }
       }
@@ -2502,6 +2630,22 @@
         }
       }
     },
+    "Reconnecting (attempt %lld of %lld)…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnovuji připojení (pokus %lld z %lld)…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnovujem pripojenie (pokus %lld z %lld)…"
+          }
+        }
+      }
+    },
     "Remote desktop connection (CardGate)": {
       "localizations": {
         "cs": {
@@ -2578,6 +2722,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Uložiť"
+          }
+        }
+      }
+    },
+    "Save Log…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložit log…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložiť log…"
+          }
+        }
+      }
+    },
+    "Save the whole log with every detail to a file": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloží celý log se všemi podrobnostmi do souboru"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloží celý log so všetkými podrobnosťami do súboru"
           }
         }
       }
@@ -2710,6 +2886,22 @@
         }
       }
     },
+    "Show": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobrazit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobraziť"
+          }
+        }
+      }
+    },
     "Show Connections": {
       "localizations": {
         "cs": {
@@ -2838,6 +3030,22 @@
         }
       }
     },
+    "Signed in to Windows.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlášeno do Windows."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlásené do Windows."
+          }
+        }
+      }
+    },
     "Signing in to %@.": {
       "localizations": {
         "cs": {
@@ -2866,6 +3074,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prihlásenie k počítaču kartou sa nepodarilo"
+          }
+        }
+      }
+    },
+    "Signing in to the gateway with the card…": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přihlašuji se k bráně kartou…"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prihlasujem sa k bráne kartou…"
           }
         }
       }
@@ -3222,6 +3446,22 @@
         }
       }
     },
+    "The client has not written anything yet": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klient zatím nic nezapsal"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klient zatiaľ nič nezapísal"
+          }
+        }
+      }
+    },
     "The computer cannot be reached": {
       "localizations": {
         "cs": {
@@ -3334,6 +3574,22 @@
         }
       }
     },
+    "The computer uses RDP Security with the older RC4 encryption. Windows asks for your sign-in details again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač používá zabezpečení RDP se starším šifrováním RC4. Windows se znovu zeptá na přihlašovací údaje."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Počítač používa zabezpečenie RDP so starším šifrovaním RC4. Windows sa znova opýta na prihlasovacie údaje."
+          }
+        }
+      }
+    },
     "The computer verified your card, but your account is not allowed to connect to it remotely. Ask the computer's administrator to add you to the Remote Desktop Users.": {
       "localizations": {
         "cs": {
@@ -3366,6 +3622,38 @@
         }
       }
     },
+    "The computer's changed certificate was trusted (confirmed by its fingerprint).": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Změněný certifikát počítače byl přijat (potvrzený otiskem)."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zmenený certifikát počítača bol prijatý (potvrdený odtlačkom)."
+          }
+        }
+      }
+    },
+    "The computer's renewed certificate was verified by Kerberos and saved.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnovený certifikát počítače ověřil Kerberos a byl uložen."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obnovený certifikát počítača overil Kerberos a bol uložený."
+          }
+        }
+      }
+    },
     "The connection failed": {
       "localizations": {
         "cs": {
@@ -3382,6 +3670,22 @@
         }
       }
     },
+    "The connection failed (%@)": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení se nezdařilo (%@)"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie sa nepodarilo (%@)"
+          }
+        }
+      }
+    },
     "The connection has no gateway": {
       "localizations": {
         "cs": {
@@ -3394,6 +3698,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojenie nemá zadanú bránu"
+          }
+        }
+      }
+    },
+    "The connection to the computer is secured with NLA.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení k počítači je zabezpečené pomocí NLA."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie k počítaču je zabezpečené pomocou NLA."
+          }
+        }
+      }
+    },
+    "The connection to the computer is secured with TLS.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení k počítači je zabezpečené pomocí TLS."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie k počítaču je zabezpečené pomocou TLS."
           }
         }
       }
@@ -3426,6 +3762,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pripojenie sa prerušilo. Obnovujem…"
+          }
+        }
+      }
+    },
+    "The connection was restored.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Připojení bylo obnoveno."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pripojenie bolo obnovené."
           }
         }
       }
@@ -3522,6 +3874,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Súbor s pripojeniami je poškodený. Zostal uložený ako %@. Nastavte pripojenie znova."
+          }
+        }
+      }
+    },
+    "The gateway accepted the card.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána přijala kartu."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brána prijala kartu."
           }
         }
       }
@@ -3794,6 +4162,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vzdialená plocha nebude reagovať, kým sa pripojenie neobnoví."
+          }
+        }
+      }
+    },
+    "The remote desktop is open.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzdálená plocha je otevřená."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzdialená plocha je otvorená."
           }
         }
       }
@@ -4132,6 +4516,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Verzia %@"
+          }
+        }
+      }
+    },
+    "Warning": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varování"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upozornenie"
           }
         }
       }

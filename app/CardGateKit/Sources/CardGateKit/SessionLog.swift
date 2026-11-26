@@ -286,12 +286,7 @@ public struct SessionLogParser: Sendable {
             computerOffers = method
         }
         noteChangedCertificate(line)
-        if line.contains("Negotiated ["),
-            let range = line.range(of: #"Negotiated \[[A-Z_]+\]"#, options: .regularExpression)
-        {
-            let name = line[range].dropFirst("Negotiated [".count).dropLast()
-            negotiatedSecurity = SecurityMethod(negotiatedProtocol: String(name)) ?? negotiatedSecurity
-        }
+        negotiatedSecurity = Self.negotiatedMethod(in: line) ?? negotiatedSecurity
     }
 
     /// The computer's certificate changed since it was first trusted (patch 0016), also when reconnecting.

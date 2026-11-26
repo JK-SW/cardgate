@@ -47,33 +47,7 @@ struct FailureView: View {
         }
     }
 
-    private var title: LocalizedStringKey {
-        switch failure {
-        case .noCertificate: "No certificate found on the card"
-        case .wrongPIN: "Wrong PIN"
-        case .cardLocked: "The card is locked"
-        case .cardRefusedLogin: "The card refused the sign-in"
-        case .gatewayUnreachable: "The gateway cannot be reached"
-        case .gatewayDenied: "The gateway refused the sign-in"
-        case .untrustedCertificate: "The gateway's certificate is not trusted"
-        case .gatewayCertificateNotPublic: "The gateway's certificate is not publicly trusted"
-        case .multipleCertificates: "The card has several sign-in certificates"
-        case .unsupportedCardKey: "The card's key type is not supported"
-        case .gatewayCertificateChanged: "The gateway's certificate changed"
-        case .pinTimedOut: "The PIN was not entered in time"
-        case .computerUnreachable: "The computer cannot be reached"
-        case .securityRefused: "The computer requires stronger connection security"
-        case .computerOffersOnlyWeakerSecurity: "The computer offers only weaker connection security"
-        case .computerCertificateChanged: "The computer's certificate changed"
-        case .notAllowedOnComputer: "Your account may not connect to this computer"
-        case .kerberosFailed: "Signing in to the computer with the card failed"
-        case .connectionLost: "The connection was interrupted"
-        case .sessionTakenOver: "Another connection took over the session"
-        case .idleTimeout: "Disconnected after a period of inactivity"
-        case .disconnectedByServer: "The computer ended the connection"
-        case .other: "The connection failed"
-        }
-    }
+    private var title: LocalizedStringKey { failure.title }
 
     private var advice: LocalizedStringKey {
         switch failure {
@@ -218,6 +192,37 @@ struct FailureView: View {
             """
         case .other(let code):
             "Details are in the connection log (\(code))."
+        }
+    }
+}
+
+extension SessionFailure {
+    /// The title of the failure, also the connection log's message for it.
+    var title: LocalizedStringKey {
+        switch self {
+        case .noCertificate: "No certificate found on the card"
+        case .wrongPIN: "Wrong PIN"
+        case .cardLocked: "The card is locked"
+        case .cardRefusedLogin: "The card refused the sign-in"
+        case .gatewayUnreachable: "The gateway cannot be reached"
+        case .gatewayDenied: "The gateway refused the sign-in"
+        case .untrustedCertificate: "The gateway's certificate is not trusted"
+        case .gatewayCertificateNotPublic: "The gateway's certificate is not publicly trusted"
+        case .multipleCertificates: "The card has several sign-in certificates"
+        case .unsupportedCardKey: "The card's key type is not supported"
+        case .gatewayCertificateChanged: "The gateway's certificate changed"
+        case .pinTimedOut: "The PIN was not entered in time"
+        case .computerUnreachable: "The computer cannot be reached"
+        case .securityRefused: "The computer requires stronger connection security"
+        case .computerOffersOnlyWeakerSecurity: "The computer offers only weaker connection security"
+        case .computerCertificateChanged: "The computer's certificate changed"
+        case .notAllowedOnComputer: "Your account may not connect to this computer"
+        case .kerberosFailed: "Signing in to the computer with the card failed"
+        case .connectionLost: "The connection was interrupted"
+        case .sessionTakenOver: "Another connection took over the session"
+        case .idleTimeout: "Disconnected after a period of inactivity"
+        case .disconnectedByServer: "The computer ended the connection"
+        case .other: "The connection failed"
         }
     }
 }

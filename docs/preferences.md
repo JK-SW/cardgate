@@ -25,6 +25,7 @@ defaults write io.github.jk-sw.cardgate ConfirmDisconnect -bool NO
 | `DonationPromptDisabled` | Bool | `YES`: CardGate never offers to support the project. |
 | `SUEnableAutomaticChecks` | Bool | `NO`: no automatic check for updates (Sparkle). **Check for Updates…** still works. |
 | `AllowKeepSessionActive` | Bool | `YES`: the connection settings offer **Keep the session active when idle** (see below). |
+| `LogImportantMessagesOnly` | Bool | `NO`: the connection log opens with **Details** (the window remembers the last choice). |
 
 ### Keep the session active when idle
 

@@ -137,8 +137,11 @@ GitHub and sends nothing about you.
 | Signing in to the computer with the card failed | Connect again; CardGate then connects without NLA. If the computer requires NLA, contact your IT department (the gateway needs a KDC proxy). |
 | NLA cannot be used for this connection | Enter the computer's full name with its domain (e.g. `pc01.example.com`) and check your internet connection, or the connection to your organization's network (the card's certification authority is downloaded). |
 
-Details are in **Window → Connection Log**; **Copy Log** lets you send it to your IT department.
-The log never contains the PIN.
+Details are in **Window → Connection Log**. By default (**Important**) it shows the course of the
+connection in words: warnings in orange (e.g. weaker RDP Security or a network outage), errors in red.
+**Details** shows every line of the log; known harmless messages are gray. **Copy Log**
+and **Save Log…** always take the whole log with every detail, to send it to your IT department. The log never
+contains the PIN.
 The logs of the last five connections are also in the folder `~/Library/Logs/CardGate`.
 
 Report a bug or an idea in [Issues](https://github.com/JK-SW/cardgate/issues) (check the log before you paste it and replace addresses,

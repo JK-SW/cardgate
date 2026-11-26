@@ -21,6 +21,14 @@ public struct SessionLogFiles: Sendable {
     /// Log of the most recent connection.
     public var latest: URL { url(index: 0) }
 
+    /// The name offered when the user saves the log: "CardGate-log-2026-11-26-1655.log".
+    public static func exportName(at date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd-HHmm"
+        return "CardGate-log-\(formatter.string(from: date)).log"
+    }
+
     /// `index` 0 is the newest log.
     public func url(index: Int) -> URL {
         directory.appending(path: index == 0 ? "last-session.log" : "last-session.\(index).log")

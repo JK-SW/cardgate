@@ -13,6 +13,12 @@ struct HelperIntegrationTests {
         #expect(try Self.clientContains(marker), "FreeRDP no longer logs '\(marker)'")
     }
 
+    /// The log window's view of the log depends on these texts (`ConnectionLog`).
+    @Test(.enabled(if: helper != nil), arguments: ConnectionLog.logMarkers)
+    func clientContainsConnectionLogMarker(_ marker: String) throws {
+        #expect(try Self.clientContains(marker), "FreeRDP no longer logs '\(marker)'")
+    }
+
     /// Texts of patches that cannot be tested without a session: their loss (e.g. a FreeRDP update
     /// that no longer applies them) must not go unnoticed.
     @Test(
