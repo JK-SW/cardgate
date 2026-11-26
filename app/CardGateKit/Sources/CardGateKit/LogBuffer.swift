@@ -4,10 +4,13 @@ public struct LogBuffer: Equatable, Sendable {
     public struct Line: Identifiable, Equatable, Sendable {
         public let id: Int
         public let text: String
+        /// How the log window shows it (`ConnectionLog`).
+        public let kind: LogLineKind
 
-        public init(id: Int, text: String) {
+        public init(id: Int, text: String, kind: LogLineKind = .normal) {
             self.id = id
             self.text = text
+            self.kind = kind
         }
     }
 
@@ -21,8 +24,8 @@ public struct LogBuffer: Equatable, Sendable {
         self.capacity = max(1, capacity)
     }
 
-    public mutating func append(_ text: String) {
-        lines.append(Line(id: nextID, text: text))
+    public mutating func append(_ text: String, kind: LogLineKind = .normal) {
+        lines.append(Line(id: nextID, text: text, kind: kind))
         nextID += 1
         if lines.count >= capacity + slack { lines.removeFirst(lines.count - capacity) }
     }

@@ -92,6 +92,14 @@ extension SessionLogParser {
             && line.range(of: #"\]: krb5_[a-z_]+ \("#, options: .regularExpression) != nil
     }
 
+    /// "Negotiated [HYBRID_EX][0x00000008] security" → NLA.
+    static func negotiatedMethod(in line: String) -> SecurityMethod? {
+        guard line.contains("Negotiated ["),
+            let range = line.range(of: #"Negotiated \[[A-Z_]+\]"#, options: .regularExpression)
+        else { return nil }
+        return SecurityMethod(negotiatedProtocol: String(line[range].dropFirst("Negotiated [".count).dropLast()))
+    }
+
     static func failure(in line: String) -> SessionFailure? {
         guard line.contains("[ERROR]"), !line.contains("ERRCONNECT_CONNECT_CANCELLED") else { return nil }
         if let known = knownFailures.first(where: { line.contains($0.text) }) { return known.failure }

@@ -10,7 +10,21 @@ final class SessionController {
     /// `nil` before the first connection.
     private(set) var phase: SessionPhase?
     /// Recent client log lines for the log window (never contains the PIN; the client never logs it).
-    private(set) var log = LogBuffer(capacity: 5000)
+    @ObservationIgnored private(set) var log = LogBuffer(capacity: 5000) {
+        didSet { if log.lines.isEmpty != !hasLog { hasLog = !log.lines.isEmpty } }
+    }
+    /// Observed instead of `log` where only its presence matters: it changes once per connection,
+    /// not with every line.
+    private(set) var hasLog = false
+    /// Observed by the detailed view of the log window, which shows `log`.
+    private(set) var logRevision = 0
+    /// The important events of the connection, in words (the log window's default view). Only
+    /// these entries are observed: most client lines change nothing in them.
+    private(set) var eventEntries: [ConnectionLog.Entry] = []
+    @ObservationIgnored private var events = ConnectionLog()
+    /// The log file of the shown connection; `nil` before the client started or if it could not be
+    /// written. Copy Log and Save Log take the whole log from it.
+    private(set) var logFileURL: URL?
 
     private var process: Process?
     /// The last sessions' logs are also kept in files for support (never contain the PIN).
@@ -95,6 +109,10 @@ final class SessionController {
                 options: .idleSystemSleepDisabled,
                 reason: String(localized: "Remote desktop connection (CardGate)")) : nil
         log.removeAll()
+        logRevision += 1
+        logFileURL = nil
+        events = ConnectionLog(reconnects: command.reconnects)
+        changeEvents { $0.note(.connecting) }
         phase = .starting
         guard let gateway, let url = GatewayCheckResult.url(for: gateway) else {
             launch(command, gatewayTrusted: false)
@@ -106,6 +124,9 @@ final class SessionController {
             self.preflight = nil
             self.logger.info(
                 "Gateway check \(url, privacy: .private(mask: .hash)): \(String(describing: result), privacy: .public)")
+            if result == .untrusted || result == .unreachable {
+                self.recordBeforeClient("gateway check before connecting: \(result)")
+            }
             switch result {
             case .untrusted:
                 self.end(.failed(.untrustedCertificate))
@@ -122,6 +143,7 @@ final class SessionController {
             try start(command, gatewayTrusted: gatewayTrusted)
         } catch {
             logger.error("Cannot start client: \(error.localizedDescription, privacy: .public)")
+            recordBeforeClient("cannot start the client: \(error.localizedDescription)")
             end(.failed(.other(error.localizedDescription)))
         }
     }
@@ -130,6 +152,7 @@ final class SessionController {
     private func end(_ end: SessionEnd) {
         isStopping = false
         awake = nil
+        changeEvents { $0.note(.ended(end)) }
         phase = .ended(end)
         onEnded?(end)
     }
@@ -167,6 +190,7 @@ final class SessionController {
         self.pinSession = pinSession
         // Only now: a client that cannot start would leave an empty log and push out an old one.
         logFile = Self.openLogFile()
+        logFileURL = logFile == nil ? nil : Self.logFiles.latest
         try? logFile?.write(contentsOf: Data("CardGate: \(command.arguments.joined(separator: " "))\n".utf8))
 
         let reader = OutputReader()
@@ -219,6 +243,7 @@ final class SessionController {
         guard let process, !isStopping else { return }
         isStopping = true
         parser.stopRequested()
+        events.stopRequested()
         let pid = process.processIdentifier
         if let pinSession { PINPrompt.close(session: pinSession) }
         Task { [weak self] in
@@ -234,7 +259,7 @@ final class SessionController {
     }
 
     private func receive(_ line: String) {
-        log.append(line)
+        appendLog(line, kind: changeEvents { $0.consume(line) })
         // A full disk must not crash the app; the log window still has the line.
         try? logFile?.write(contentsOf: Data((line + "\n").utf8))
         if let next = parser.consume(line) {
@@ -248,6 +273,30 @@ final class SessionController {
                 logger.info("Session restored")
             }
         }
+    }
+
+    /// A failure before the client wrote anything: in the log window and in a log file of its own,
+    /// so it can be copied and saved like any other.
+    private func recordBeforeClient(_ text: String) {
+        let line = "CardGate: \(text)"
+        appendLog(line, kind: .error)
+        guard let file = Self.openLogFile() else { return }
+        try? file.write(contentsOf: Data((line + "\n").utf8))
+        try? file.close()
+        logFileURL = Self.logFiles.latest
+    }
+
+    private func appendLog(_ line: String, kind: LogLineKind) {
+        log.append(line, kind: kind)
+        logRevision += 1
+    }
+
+    /// Changes the events and publishes their entries only if they changed.
+    private func changeEvents<Result>(_ change: (inout ConnectionLog) -> Result) -> Result {
+        let revision = events.revision
+        let result = change(&events)
+        if events.revision != revision { eventEntries = events.entries }
+        return result
     }
 
     private func finished(status: Int32, crashed: Bool) {

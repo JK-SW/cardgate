@@ -135,8 +135,11 @@ z GitHubu a nič o vás neodosiela.
 | Prihlásenie k počítaču kartou sa nepodarilo | Pripojte sa znova, CardGate sa potom pripojí bez NLA. Ak počítač NLA vyžaduje, obráťte sa na IT oddelenie (brána potrebuje KDC proxy). |
 | Pri tomto pripojení nemožno použiť NLA | Zadajte celé meno počítača s doménou (napr. `pc01.example.com`) a skontrolujte pripojenie k internetu, prípadne k sieti organizácie (kvôli stiahnutiu certifikačnej autority karty). |
 
-Podrobnosti nájdete v menu **Okno → Log pripojenia**; tlačidlom **Kopírovať log** ho môžete
-poslať IT oddeleniu. Log neobsahuje PIN.
+Podrobnosti nájdete v menu **Okno → Log pripojenia**. V predvolenom zobrazení **Dôležité** ukazuje
+zrozumiteľne priebeh pripojenia: upozornenia oranžovo (napr. slabšie zabezpečenie RDP alebo výpadok
+siete), chyby červeno. V zobrazení **Podrobnosti** uvidíte všetky riadky logu; známe neškodné správy
+sú sivé. Tlačidlo **Kopírovať log** skopíruje a **Uložiť log…** uloží do súboru vždy celý log so všetkými
+podrobnosťami, aby ste ho mohli poslať IT oddeleniu. Log neobsahuje PIN.
 Logy posledných piatich pripojení sú aj v priečinku `~/Library/Logs/CardGate`.
 
 Chybu aplikácie alebo námet nahláste v [Issues](https://github.com/JK-SW/cardgate/issues) (log pred vložením skontrolujte a adresy

@@ -23,4 +23,10 @@ struct SessionLogFilesTests {
         #expect(!FileManager.default.fileExists(atPath: logs.url(index: 3).path(percentEncoded: false)))
         #expect(logs.latest.lastPathComponent == "last-session.log")
     }
+
+    @Test func nameOfASavedLog() throws {
+        let date = try #require(
+            Calendar.current.date(from: DateComponents(year: 2026, month: 11, day: 26, hour: 16, minute: 5)))
+        #expect(SessionLogFiles.exportName(at: date) == "CardGate-log-2026-11-26-1605.log")
+    }
 }

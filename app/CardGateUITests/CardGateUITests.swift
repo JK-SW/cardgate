@@ -137,6 +137,8 @@ final class CardGateUITests: XCTestCase {
 
         app.typeKey("l", modifierFlags: [.command, .option])
         XCTAssertTrue(app.windows["Connection Log"].waitForExistence(timeout: 5))
+        // The important messages in words, or every detail.
+        XCTAssertTrue(app.windows["Connection Log"].descendants(matching: .any)["log.view"].exists)
         app.typeKey("w", modifierFlags: .command)
 
         choose(app, menu: "CardGate", item: "About CardGate")
