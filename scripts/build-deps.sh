@@ -141,7 +141,8 @@ analyze_patched_sources() {
     winpr/libwinpr/sspi/Kerberos/kerberos.c libfreerdp/crypto/tls.c libfreerdp/core/nla.c libfreerdp/core/info.c \
     libfreerdp/core/freerdp.c client/common/client.c client/SDL/SDL3/sdl_monitor.cpp client/SDL/SDL3/sdl_context.cpp \
     client/SDL/SDL3/sdl_freerdp.cpp client/SDL/SDL3/sdl_utils.cpp client/SDL/SDL3/sdl_input.cpp \
-    client/SDL/SDL3/sdl_window.cpp; do
+    client/SDL/SDL3/sdl_window.cpp client/SDL/SDL3/sdl_disp.cpp client/SDL/SDL3/sdl_titlebar.cpp \
+    client/SDL/SDL3/sdl_titlebar_macos.mm; do
     cmd="$(python3 -I -c '
 import json, shlex, sys
 for entry in json.load(open(sys.argv[1])):

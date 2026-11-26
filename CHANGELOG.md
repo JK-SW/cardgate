@@ -7,6 +7,9 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ### Přidáno
 - Tlačítko **Uložit log…** v okně logu uloží celý log připojení do souboru.
+- Záhlaví okna vzdálené plochy ukazuje měřítko plochy (např. 150 %): lupami ho zmenšíte nebo zvětšíte,
+  kliknutím na číslo vyberete ze seznamu. Windows ho změní hned, bez odpojení. Tlačítko vedle otevře
+  log připojení.
 
 ### Změněno
 - Přehlednější log připojení: ve výchozím zobrazení **Důležité** ukazuje srozumitelně průběh připojení

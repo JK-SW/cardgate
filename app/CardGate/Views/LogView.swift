@@ -214,6 +214,9 @@ extension ConnectionLogEvent {
         case .connectionInterrupted: "The connection was interrupted. Reconnecting…"
         case .reconnecting(let attempt, let total): "Reconnecting (attempt \(attempt) of \(total))…"
         case .reconnected: "The connection was restored."
+        case .scaleChanged(let percent?):
+            "The scale of the remote desktop was changed to \((Double(percent) / 100).formatted(.percent))."
+        case .scaleChanged(nil): "The remote desktop uses the scale of each display again."
         case .ended(.closedByUser): "Disconnected."
         case .ended(.failed(.other(let code))): "The connection failed (\(code))"
         case .ended(.failed(let failure)): failure.title

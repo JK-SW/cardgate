@@ -62,6 +62,8 @@ final class SessionController {
     /// Called when a connection reached the remote desktop and when a session ended.
     var onConnected: (() -> Void)?
     var onEnded: ((SessionEnd) -> Void)?
+    /// The client asked to show the connection log (its title bar).
+    var onShowLog: (() -> Void)?
 
     init() {
         let center = DistributedNotificationCenter.default()
@@ -262,6 +264,7 @@ final class SessionController {
         appendLog(line, kind: changeEvents { $0.consume(line) })
         // A full disk must not crash the app; the log window still has the line.
         try? logFile?.write(contentsOf: Data((line + "\n").utf8))
+        if TitleBarControls.asksForLog(line) { onShowLog?() }
         if let next = parser.consume(line) {
             let restored = phase == .reconnecting
             let appears = next.desktopAppears(after: phase)

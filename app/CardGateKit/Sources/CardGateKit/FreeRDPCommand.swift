@@ -53,11 +53,13 @@ public struct FreeRDPCommand: Equatable, Sendable {
     ///   - confirmedCertificate: the changed computer certificate the user trusts
     ///     (`SessionLogParser.changedCertificateFingerprint`): it replaces the one trusted before, no other does.
     ///   - displays: the connected displays, to find the one the profile chose for full screen.
+    ///   - titleBar: texts of the controls in the remote desktop window's title bar; without them
+    ///     the client shows none.
     public init(
         executable: URL, profile: ConnectionProfile, pkcs11Module: String, config: FreeRDPClientConfig,
         askPass: AskPassCommand? = nil, screen: ScreenMetrics? = nil, certificateSHA1: String? = nil,
         smartCardReader: String? = nil, options: SessionOptions = .off, security: SecurityPlan = .rdpOnly,
-        confirmedCertificate: String? = nil, displays: [ConnectedDisplay] = []
+        confirmedCertificate: String? = nil, displays: [ConnectedDisplay] = [], titleBar: TitleBarControls? = nil
     ) throws(BuildError) {
         guard profile.gateway != nil else { throw .gatewayRequired }
         guard Self.isUsableModulePath(pkcs11Module) else { throw .invalidModulePath }
@@ -90,6 +92,7 @@ public struct FreeRDPCommand: Equatable, Sendable {
         if let question = options.disconnectQuestion {
             environment.merge(question.environment) { _, new in new }  // patch 0011
         }
+        environment.merge(titleBar?.environment ?? [:]) { _, new in new }  // patch 0023
         // Certificate chosen by CardGate when the card holds several (patched FreeRDP).
         if let certificateSHA1, CardCertificate.isFingerprint(certificateSHA1) {
             environment[Self.certificateVariable] = certificateSHA1.lowercased()

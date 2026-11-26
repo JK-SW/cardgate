@@ -42,6 +42,10 @@ final class AppModel {
     /// The remote desktop was shown, and the session ended (with or without reaching it).
     var onDesktopShown: (() -> Void)?
     var onClientEnded: (() -> Void)?
+    /// The log button in the remote desktop window's title bar was clicked.
+    var onShowLog: (() -> Void)?
+    /// Opens the log window (a SwiftUI action, set by the main window's view).
+    @ObservationIgnored var openLogWindow: (() -> Void)?
     private(set) var middleware: PKCS11ModuleLocator.Middleware?
 
     private let store: ProfileStore?
@@ -72,6 +76,7 @@ final class AppModel {
             self?.rememberNegotiatedSecurity()
             self?.onDesktopShown?()
         }
+        session.onShowLog = { [weak self] in self?.onShowLog?() }
         session.onEnded = { [weak self] end in
             guard let self else { return }
             defer { sessionReachedDesktop = false }
@@ -373,7 +378,8 @@ final class AppModel {
                     executable: executable, profile: profile, pkcs11Module: module,
                     config: clientConfig, askPass: PINPrompt.command(module: module), screen: .current,
                     certificateSHA1: certificate.sha1, smartCardReader: card?.reader, options: options,
-                    security: security, confirmedCertificate: confirmingCertificate, displays: ConnectedDisplay.current)
+                    security: security, confirmedCertificate: confirmingCertificate, displays: ConnectedDisplay.current,
+                    titleBar: Self.titleBarControls)
                 Self.addDebugTracing(to: &command)
                 lastAttempt = (profile, security)
                 session.connect(command, gateway: profile.gateway, preventSleep: options.preventSleep)
@@ -392,6 +398,19 @@ final class AppModel {
                 command.environment["KRB5_TRACE"] = trace
             }
         #endif
+    }
+}
+
+/// Texts the client shows, in the user's language.
+extension AppModel {
+    /// The controls in the remote desktop window's title bar.
+    static var titleBarControls: TitleBarControls {
+        TitleBarControls(
+            scale: String(localized: "Scale of the remote desktop"),
+            smaller: String(localized: "Smaller"),
+            larger: String(localized: "Larger"),
+            connectionScale: String(localized: "Scale When Connected"),
+            log: String(localized: "Connection Log"))
     }
 
     /// What the remote desktop window asks when it is closed (CardGate → Settings can turn it off).

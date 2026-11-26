@@ -26,6 +26,8 @@ public enum ConnectionLogEvent: Equatable, Sendable {
     case connectionInterrupted
     case reconnecting(attempt: Int, total: Int)
     case reconnected
+    /// The desktop scale was changed in the title bar: a percentage, or `nil` for each display's own.
+    case scaleChanged(Int?)
     case ended(SessionEnd)
     /// A warning or error the app does not know, with the client's text (level and source dropped).
     case unknown(String, isError: Bool)
@@ -265,6 +267,11 @@ public struct ConnectionLog: Equatable, Sendable {
             return .changedCertificateTrusted
         }
         if line.contains("verified by Kerberos, replacing the stored one") { return .renewedCertificateVerified }
+        if let range = line.range(of: "[changeScale]: " + TitleBarControls.scaleChange + ": ") {
+            let value = line[range.upperBound...].trimmingCharacters(in: .whitespaces)
+            if value == TitleBarControls.displayScale { return .scaleChanged(nil) }
+            if let percent = Int(value) { return .scaleChanged(percent) }
+        }
         if line.contains("[gdi_init_ex]"), !desktopShown {
             desktopShown = true
             kerberosProblems = []  // the sign-in to the computer succeeded

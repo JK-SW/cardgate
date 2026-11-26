@@ -1,0 +1,700 @@
+--- a/client/SDL/SDL3/CMakeLists.txt
++++ b/client/SDL/SDL3/CMakeLists.txt
+@@ -61,6 +61,8 @@
+     sdl_win32.cpp
+     sdl_x11.hpp
+     sdl_x11.cpp
++    sdl_titlebar.hpp
++    sdl_titlebar.cpp
+ )
+ 
+ # Native X11 helpers for RAIL (_NET_WM_MOVERESIZE, compositor detection); no-op stubs without libX11.
+@@ -166,6 +168,13 @@
+   list(APPEND LIBS ${COREGRAPHICS_FRAMEWORK})
+   # Cmd+Q and the question before disconnecting use AppKit through the runtime (sdl_context.cpp).
+   list(APPEND LIBS objc)
++  # The controls in the title bar of the session window (AppKit). Compiled as C++ with
++  # Objective-C: the project enables no Objective-C language.
++  target_sources(${MODULE_NAME} PRIVATE sdl_titlebar_macos.mm)
++  set_source_files_properties(sdl_titlebar_macos.mm PROPERTIES LANGUAGE CXX
++                              COMPILE_OPTIONS "-xobjective-c++;-fobjc-arc")
++  find_library(APPKIT_FRAMEWORK AppKit REQUIRED)
++  list(APPEND LIBS ${APPKIT_FRAMEWORK})
+ endif()
+ 
+ target_link_libraries(${MODULE_NAME} PRIVATE ${LIBS})
+--- a/client/SDL/SDL3/sdl_context.cpp
++++ b/client/SDL/SDL3/sdl_context.cpp
+@@ -28,6 +28,7 @@
+ #include "sdl_monitor.hpp"
+ #include "sdl_pointer.hpp"
+ #include "sdl_touch.hpp"
++#include "sdl_titlebar.hpp"
+ #include "sdl_prefs.hpp"
+ 
+ #include <sdl_common_utils.hpp>
+@@ -533,6 +534,7 @@
+ 			window.setOffsetY(originY - monitor->y);
+ 		}
+ 
++		sdl::titlebar::attach(window.window());
+ 		_windows.insert({ window.id(), std::move(window) });
+ 	}
+ 
+--- a/client/SDL/SDL3/sdl_disp.cpp
++++ b/client/SDL/SDL3/sdl_disp.cpp
+@@ -17,6 +17,8 @@
+  * limitations under the License.
+  */
+ 
++#include <algorithm>
++#include <string>
+ #include <vector>
+ #include <winpr/sysinfo.h>
+ #include <winpr/assert.h>
+@@ -28,6 +30,7 @@
+ #include "sdl_disp.hpp"
+ #include "sdl_input.hpp"
+ #include "sdl_context.hpp"
++#include "sdl_titlebar.hpp"
+ 
+ #include <freerdp/log.h>
+ #define TAG CLIENT_TAG("sdl.disp")
+@@ -280,10 +283,119 @@
+ 	                              static_cast<UINT32>(len), layouts.data());
+ 	if (ret != CHANNEL_RC_OK)
+ 		return false;
++	const auto primary =
++	    std::find_if(layouts.begin(), layouts.end(), [](const auto& layout)
++		             { return (layout.Flags & DISPLAY_CONTROL_MONITOR_PRIMARY) != 0; });
++	_scale = (primary != layouts.end()) ? primary->DesktopScaleFactor
++	                                    : layouts.front().DesktopScaleFactor;
+ 	_last_sent_layout = std::move(layouts);
++	showScale();
+ 	return true;
+ }
+ 
++UINT32 sdlDispContext::scale() const
++{
++	/* A change waiting to be sent counts already (the next step starts from it). */
++	if (_scaleChanged)
++	{
++		const UINT32 requested = _requestedScale;
++		if (requested >= 100)
++			return requested;
++	}
++	const UINT32 sent = _scale;
++	return (sent >= 100) ? sent : connectionScale();
++}
++
++UINT32 sdlDispContext::connectionScale() const
++{
++	const UINT32 scale = _connectedScale;
++	if (scale >= 100)
++		return scale;
++	/* Before the channel is up nothing changes the settings yet. */
++	const auto connected =
++	    freerdp_settings_get_uint32(_sdl->context()->settings, FreeRDP_DesktopScaleFactor);
++	return (connected >= 100) ? connected : 100;
++}
++
++void sdlDispContext::showScale() const
++{
++	sdl::titlebar::showScale(scale(), connectionScale(), _adjustable);
++}
++
++bool sdlDispContext::changeScale(int request)
++{
++	auto settings = _sdl->context()->settings;
++	WINPR_ASSERT(settings);
++	if (!_adjustable || !_disp)
++		return true;
++
++	const auto key = FreeRDP_MonitorOverrideFlags;
++	const auto flag = FREERDP_MONITOR_OVERRIDE_DESKTOP_SCALE;
++	const bool overridden = (freerdp_settings_get_uint64(settings, key) & flag) != 0;
++	if (!_scaleChanged)
++		_connectedOverride = overridden;
++
++	const auto current = scale();
++	const auto& scales = sdl::titlebar::desktopScales;
++	bool override = true;
++	UINT32 target = 0;
++	if (request == 0)
++	{
++		override = _connectedOverride;
++		target = connectionScale();
++	}
++	else if (request == 1)
++	{
++		auto next =
++		    std::find_if(scales.begin(), scales.end(), [current](UINT32 s) { return s > current; });
++		if (next == scales.end())
++			return true;
++		target = *next;
++	}
++	else if (request == -1)
++	{
++		auto next = std::find_if(scales.rbegin(), scales.rend(),
++		                         [current](UINT32 s) { return s < current; });
++		if (next == scales.rend())
++			return true;
++		target = *next;
++	}
++	else if (std::find(scales.begin(), scales.end(), static_cast<UINT32>(request)) != scales.end())
++		target = static_cast<UINT32>(request);
++	else
++		return true;
++
++	/* Nothing changes (e.g. the scale in effect chosen from the list). */
++	if ((override == overridden) && (!override || (target == current)))
++		return true;
++
++	/* The scale given on the command line applies to every monitor (sendLayout); without it
++	 * each monitor has the scale of its display again. */
++	auto mask = freerdp_settings_get_uint64(settings, key);
++	mask = override ? (mask | flag) : (mask & ~static_cast<UINT64>(flag));
++	if (!freerdp_settings_set_uint64(settings, key, mask))
++		return false;
++	if ((target >= 100) &&
++	    !freerdp_settings_set_uint32(settings, FreeRDP_DesktopScaleFactor, target))
++		return false;
++	_requestedScale = override ? target : 0;
++	_scaleChanged = true;
++	WLog_Print(_sdl->getWLog(), WLOG_INFO, "desktop scale changed in the title bar: %s",
++	           override ? std::to_string(target).c_str() : "the scale of each display");
++
++	/* As after resizing the window: its monitor gets the window's size (not the display's). */
++	if (!freerdp_settings_get_bool(settings, FreeRDP_UseMultimon))
++	{
++		auto window = _sdl->getFirstWindow();
++		if (window && (!_sdl->updateWindow(window->id()) || !_sdl->updateWindowList()))
++			return false;
++	}
++	showScale();
++	/* Sent within RESIZE_MIN_DELAY of the last layout or of the caps, Windows would ignore it:
++	 * the timer sends it once that has passed. */
++	return addTimer();
++}
++
+ bool sdlDispContext::addTimer()
+ {
+ 	if (SDL_WasInit(SDL_INIT_EVENTS) == 0)
+@@ -460,6 +572,10 @@
+ 	/* Windows ignores a layout sent right after the caps. Count the caps as a send, so the timer
+ 	 * sends the layout once RESIZE_MIN_DELAY has passed instead of addTimer() sending it now. */
+ 	_lastSentDate = GetTickCount64();
++	if (_connectedScale == 0)
++		_connectedScale = connectionScale();
++	_adjustable = true;
++	showScale();
+ 
+ 	if (freerdp_settings_get_bool(settings, FreeRDP_Fullscreen))
+ 	{
+@@ -503,6 +619,8 @@
+ 		return false;
+ 
+ 	_disp = nullptr;
++	_adjustable = false;
++	showScale();
+ 	return _sdl->setResizeable(false);
+ }
+ 
+--- a/client/SDL/SDL3/sdl_disp.hpp
++++ b/client/SDL/SDL3/sdl_disp.hpp
+@@ -18,6 +18,7 @@
+  */
+ #pragma once
+ 
++#include <atomic>
+ #include <vector>
+ 
+ #include <freerdp/types.h>
+@@ -46,6 +47,14 @@
+ 	[[nodiscard]] bool handleEvent(const SDL_DisplayEvent& ev);
+ 	[[nodiscard]] bool handleEvent(const SDL_WindowEvent& ev);
+ 
++	/* The desktop scale of the remote computer in percent: of the layout last sent, before
++	 * that the one sent when connecting. Any thread. */
++	[[nodiscard]] UINT32 scale() const;
++	/* Changes the desktop scale while connected (the title bar, sdl_titlebar.hpp): -1 and +1
++	 * step to the next smaller or larger scale Windows offers, 0 returns to the scale of the
++	 * connection, 100 to 500 sets that scale. */
++	[[nodiscard]] bool changeScale(int request);
++
+   private:
+ 	[[nodiscard]] UINT DisplayControlCaps(UINT32 maxNumMonitors, UINT32 maxMonitorAreaFactorA,
+ 	                                      UINT32 maxMonitorAreaFactorB);
+@@ -56,6 +65,10 @@
+ 	[[nodiscard]] bool sendLayout(const rdpMonitor* monitors, size_t nmonitors);
+ 
+ 	[[nodiscard]] bool addTimer();
++	/* The scale changeScale(0) returns to: the one of the connection. */
++	[[nodiscard]] UINT32 connectionScale() const;
++	/* Shows the current scale in the title bar, adjustable while the channel is up. */
++	void showScale() const;
+ 
+ 	[[nodiscard]] bool updateMonitor(SDL_WindowID id);
+ 	[[nodiscard]] bool updateMonitors(SDL_EventType type, SDL_DisplayID displayID);
+@@ -75,4 +88,16 @@
+ 	SDL_TimerID _timer = 0;
+ 	unsigned _timer_retries = 0;
+ 	std::vector<DISPLAY_CONTROL_MONITOR_LAYOUT> _last_sent_layout;
++	/* The title bar reads these on the main thread while the timer and channel threads send
++	 * layouts. The primary monitor's scale of the layout last sent (0: none yet). */
++	std::atomic<UINT32> _scale = 0;
++	/* The scale sent when connecting (the settings before any change in the title bar). */
++	std::atomic<UINT32> _connectedScale = 0;
++	/* The display control channel is up: the scale can be changed. */
++	std::atomic<bool> _adjustable = false;
++	/* Changed in the title bar: the scale it set for every monitor, 0 for each display's own. */
++	std::atomic<bool> _scaleChanged = false;
++	std::atomic<UINT32> _requestedScale = 0;
++	/* Whether the scale was set for every monitor when connecting (main thread only). */
++	bool _connectedOverride = false;
+ };
+--- a/client/SDL/SDL3/sdl_freerdp.cpp
++++ b/client/SDL/SDL3/sdl_freerdp.cpp
+@@ -82,6 +82,7 @@
+ #include "sdl_win32_console.hpp"
+ #endif
+ #include "sdl_utils.hpp"
++#include "sdl_titlebar.hpp"
+ 
+ #if defined(_WIN32)
+ #define SDL_TAG CLIENT_TAG("SDL")
+@@ -323,6 +324,15 @@
+ 						sdl->getRailChannelContext().handleLocalMoveRequested(id, moveType);
+ 					}
+ 					break;
++					case SDL_EVENT_USER_DESKTOP_SCALE:
++						if (!sdl->getDisplayChannelContext().changeScale(windowEvent.user.code))
++							WLog_Print(sdl->getWLog(), WLOG_WARN,
++							           "the desktop scale could not be changed");
++						break;
++					case SDL_EVENT_USER_SHOW_LOG:
++						/* The app which started the client reads its log and shows its own. */
++						WLog_Print(sdl->getWLog(), WLOG_INFO, "%s", sdl::titlebar::showLogRequest);
++						break;
+ 					case SDL_EVENT_USER_QUIT:
+ 					default:
+ 						break;
+--- /dev/null
++++ b/client/SDL/SDL3/sdl_titlebar.cpp
+@@ -0,0 +1,50 @@
++/**
++ * FreeRDP: A Remote Desktop Protocol Implementation
++ * SDL Client: controls in the title bar of the session window
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#include <cstdlib>
++
++#include "sdl_titlebar.hpp"
++#include "sdl_utils.hpp"
++
++namespace sdl::titlebar
++{
++	const char* text(const char* name)
++	{
++		const char* value = getenv(name);
++		return (value && (*value != '\0')) ? value : nullptr;
++	}
++
++	bool requestScale(int request)
++	{
++		return sdl_push_user_event(SDL_EVENT_USER_DESKTOP_SCALE, request);
++	}
++
++	bool requestLog()
++	{
++		return sdl_push_user_event(SDL_EVENT_USER_SHOW_LOG);
++	}
++
++#if !defined(__APPLE__)
++	void attach([[maybe_unused]] SDL_Window* window)
++	{
++	}
++
++	void showScale([[maybe_unused]] UINT32 percent, [[maybe_unused]] UINT32 connectionPercent,
++	               [[maybe_unused]] bool adjustable)
++	{
++	}
++#endif
++} // namespace sdl::titlebar
+--- /dev/null
++++ b/client/SDL/SDL3/sdl_titlebar.hpp
+@@ -0,0 +1,56 @@
++/**
++ * FreeRDP: A Remote Desktop Protocol Implementation
++ * SDL Client: controls in the title bar of the session window
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#pragma once
++
++#include <array>
++
++#include <winpr/wtypes.h>
++
++#include <SDL3/SDL.h>
++
++/* Controls in the title bar of the session window: the desktop scale of the remote computer
++ * (smaller, larger, a list) and a button that asks the app which started the client to show its
++ * connection log. They show only when that app gives their texts in its language:
++ *   FREERDP_TITLEBAR_SCALE          the scale control (its help text)
++ *   FREERDP_TITLEBAR_SMALLER        smaller
++ *   FREERDP_TITLEBAR_LARGER         larger
++ *   FREERDP_TITLEBAR_DEFAULT_SCALE  the scale of the connection (in the list)
++ *   FREERDP_TITLEBAR_LOG            the log button; the request is a log line (showLogRequest)
++ * The actions are SDL user events handled by the main loop on every platform (requestScale,
++ * requestLog); only the controls are native (sdl_titlebar_macos.mm, nothing elsewhere yet). */
++namespace sdl::titlebar
++{
++	/* The scales Windows offers in its display settings (percent). */
++	inline constexpr std::array<UINT32, 12> desktopScales = { 100, 125, 150, 175, 200, 225,
++	                                                          250, 300, 350, 400, 450, 500 };
++
++	/* The INFO line the client logs when the user asks for the connection log. */
++	inline constexpr const char* showLogRequest = "the user asked to show the connection log";
++
++	/* A non-empty environment variable, or nullptr. */
++	[[nodiscard]] const char* text(const char* name);
++
++	/* See sdlDispContext::changeScale. */
++	[[nodiscard]] bool requestScale(int request);
++	[[nodiscard]] bool requestLog();
++
++	/* Adds the controls to a window with a title bar (main thread). */
++	void attach(SDL_Window* window);
++	/* Shows the desktop scale and the one of the connection (percent); adjustable: it can be
++	 * changed now. Any thread. */
++	void showScale(UINT32 percent, UINT32 connectionPercent, bool adjustable);
++} // namespace sdl::titlebar
+--- /dev/null
++++ b/client/SDL/SDL3/sdl_titlebar_macos.mm
+@@ -0,0 +1,271 @@
++/**
++ * FreeRDP: A Remote Desktop Protocol Implementation
++ * SDL Client: controls in the title bar of the session window (macOS)
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#import <AppKit/AppKit.h>
++
++#include <tuple>
++
++#include <unistd.h>
++
++#include "sdl_titlebar.hpp"
++
++static const auto &kScales = sdl::titlebar::desktopScales;
++
++enum
++{
++	kSmaller = 0,
++	kScale = 1,
++	kLarger = 2
++};
++
++/* Main thread only. */
++static UINT32 currentScale = 0;
++static bool scaleAdjustable = false;
++/* The scale sdlDispContext::changeScale(0) returns to. */
++static UINT32 connectionScale = 0;
++static NSHashTable *accessories = nil;
++
++static NSString *textOf(const char *name)
++{
++	const char *value = sdl::titlebar::text(name);
++	return value ? [NSString stringWithUTF8String:value] : nil;
++}
++
++/* "150 %" or "150%", as the user's region writes it. */
++static NSString *percentText(UINT32 percent)
++{
++	static NSNumberFormatter *formatter = nil;
++	if (!formatter)
++	{
++		formatter = [NSNumberFormatter new];
++		formatter.numberStyle = NSNumberFormatterPercentStyle;
++		formatter.locale = NSLocale.autoupdatingCurrentLocale;
++		formatter.maximumFractionDigits = 0;
++	}
++	return [formatter stringFromNumber:@(percent / 100.0)];
++}
++
++@interface SdlTitlebarAccessory : NSTitlebarAccessoryViewController
++@property(nonatomic, strong) NSSegmentedControl *scale;
++@property(nonatomic, strong) NSSegmentedControl *log;
++- (void)update;
++@end
++
++@implementation SdlTitlebarAccessory
++
++- (instancetype)initWithScaleHelp:(NSString *)scaleHelp logHelp:(NSString *)logHelp
++{
++	self = [super init];
++	if (!self)
++		return nil;
++
++	NSMutableArray<NSControl *> *controls = [NSMutableArray new];
++
++	if (scaleHelp)
++	{
++		NSString *smaller = textOf("FREERDP_TITLEBAR_SMALLER") ?: @"-";
++		NSString *larger = textOf("FREERDP_TITLEBAR_LARGER") ?: @"+";
++		NSSegmentedControl *scale = [NSSegmentedControl new];
++		scale.segmentCount = 3;
++		scale.trackingMode = NSSegmentSwitchTrackingMomentary;
++		scale.controlSize = NSControlSizeSmall;
++		scale.font = [NSFont monospacedDigitSystemFontOfSize:NSFont.smallSystemFontSize
++		                                              weight:NSFontWeightRegular];
++		[scale setImage:[NSImage imageWithSystemSymbolName:@"minus.magnifyingglass"
++		                          accessibilityDescription:smaller]
++		     forSegment:kSmaller];
++		[scale setImage:[NSImage imageWithSystemSymbolName:@"plus.magnifyingglass"
++		                          accessibilityDescription:larger]
++		     forSegment:kLarger];
++		[scale setToolTip:smaller forSegment:kSmaller];
++		[scale setToolTip:scaleHelp forSegment:kScale];
++		[scale setToolTip:larger forSegment:kLarger];
++		/* Wide enough for "500 %": the control keeps its size when the scale changes. */
++		[scale setWidth:50 forSegment:kScale];
++		[scale setShowsMenuIndicator:YES forSegment:kScale];
++		scale.target = self;
++		scale.action = @selector(scaleClicked:);
++		/* Keys keep going to the session. */
++		scale.refusesFirstResponder = YES;
++		scale.accessibilityLabel = scaleHelp;
++		self.scale = scale;
++		[controls addObject:scale];
++	}
++
++	if (logHelp)
++	{
++		NSImage *image = [NSImage imageWithSystemSymbolName:@"list.bullet.rectangle"
++		                           accessibilityDescription:logHelp];
++		NSSegmentedControl *log =
++		    [NSSegmentedControl segmentedControlWithImages:@[image]
++		                                      trackingMode:NSSegmentSwitchTrackingMomentary
++		                                            target:self
++		                                            action:@selector(logClicked:)];
++		log.controlSize = NSControlSizeSmall;
++		[log setToolTip:logHelp forSegment:0];
++		log.refusesFirstResponder = YES;
++		self.log = log;
++		[controls addObject:log];
++	}
++
++	/* A title bar accessory keeps the width of its view's frame (Auto Layout does not size it):
++	 * lay the controls out side by side, centred in the height of the title bar. */
++	const CGFloat gap = 8;
++	const CGFloat margin = 8;
++	CGFloat height = 0;
++	for (NSControl *control in controls)
++	{
++		[control sizeToFit];
++		height = MAX(height, NSHeight(control.frame));
++	}
++	NSView *container = [[NSView alloc] initWithFrame:NSZeroRect];
++	CGFloat x = 0;
++	for (NSControl *control in controls)
++	{
++		NSRect frame = control.frame;
++		frame.origin = NSMakePoint(x, floor((height - NSHeight(frame)) / 2));
++		control.frame = frame;
++		control.autoresizingMask = NSViewMinYMargin | NSViewMaxYMargin;
++		[container addSubview:control];
++		x += NSWidth(frame) + gap;
++	}
++	container.frame = NSMakeRect(0, 0, (x > 0) ? x - gap + margin : 0, height);
++	self.view = container;
++	self.layoutAttribute = NSLayoutAttributeTrailing;
++	[self update];
++	return self;
++}
++
++- (void)update
++{
++	if (!self.scale)
++		return;
++	[self.scale setLabel:(currentScale > 0) ? percentText(currentScale) : @"–" forSegment:kScale];
++	[self.scale setEnabled:scaleAdjustable && (currentScale > kScales.front()) forSegment:kSmaller];
++	[self.scale setEnabled:scaleAdjustable forSegment:kScale];
++	[self.scale setEnabled:scaleAdjustable && (currentScale < kScales.back()) forSegment:kLarger];
++}
++
++- (void)scaleClicked:(NSSegmentedControl *)sender
++{
++	switch (sender.selectedSegment)
++	{
++		case kSmaller:
++			std::ignore = sdl::titlebar::requestScale(-1);
++			break;
++		case kLarger:
++			std::ignore = sdl::titlebar::requestScale(1);
++			break;
++		case kScale:
++			[self showScaleMenu];
++			break;
++		default:
++			break;
++	}
++}
++
++/* The list of scales, below the percentage like the menu of a pop-up button. */
++- (void)showScaleMenu
++{
++	NSMenu *menu = [NSMenu new];
++	menu.autoenablesItems = NO;
++	for (const UINT32 scale : kScales)
++	{
++		NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:percentText(scale)
++		                                              action:@selector(scaleChosen:)
++		                                       keyEquivalent:@""];
++		item.target = self;
++		item.tag = scale;
++		item.state = (scale == currentScale) ? NSControlStateValueOn : NSControlStateValueOff;
++		[menu addItem:item];
++	}
++	NSString *name = textOf("FREERDP_TITLEBAR_DEFAULT_SCALE");
++	if (name && (connectionScale > 0))
++	{
++		[menu addItem:NSMenuItem.separatorItem];
++		NSString *title =
++		    [NSString stringWithFormat:@"%@ (%@)", name, percentText(connectionScale)];
++		NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title
++		                                              action:@selector(scaleChosen:)
++		                                       keyEquivalent:@""];
++		item.target = self;
++		item.tag = 0;
++		[menu addItem:item];
++	}
++
++	NSSegmentedControl *control = self.scale;
++	CGFloat left = 0;
++	for (NSInteger segment = 0; segment < kScale; segment++)
++		left += [control widthForSegment:segment];
++	if (left == 0) /* automatic widths: the percentage sits in the middle third */
++		left = (NSWidth(control.bounds) - [control widthForSegment:kScale]) / 2;
++	const CGFloat below = control.isFlipped ? NSMaxY(control.bounds) + 4 : -4;
++	[menu popUpMenuPositioningItem:nil atLocation:NSMakePoint(left, below) inView:control];
++}
++
++- (void)scaleChosen:(NSMenuItem *)item
++{
++	std::ignore = sdl::titlebar::requestScale(static_cast<int>(item.tag));
++}
++
++- (void)logClicked:(NSSegmentedControl *)sender
++{
++	/* The app showing the log is not active: only the active app can let it come forward
++	 * (it started the client, so it is the parent process). */
++	NSRunningApplication *parent =
++	    [NSRunningApplication runningApplicationWithProcessIdentifier:getppid()];
++	if (parent)
++		[NSApp yieldActivationToApplication:parent];
++	std::ignore = sdl::titlebar::requestLog();
++}
++
++@end
++
++namespace sdl::titlebar
++{
++void attach(SDL_Window *window)
++{
++	NSString *scaleHelp = textOf("FREERDP_TITLEBAR_SCALE");
++	NSString *logHelp = textOf("FREERDP_TITLEBAR_LOG");
++	if (!window || (!scaleHelp && !logHelp))
++		return;
++	NSWindow *nswindow = (__bridge NSWindow *)SDL_GetPointerProperty(
++	    SDL_GetWindowProperties(window), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
++	/* Borderless windows (every display) have no title bar. */
++	if (!nswindow || ((nswindow.styleMask & NSWindowStyleMaskTitled) == 0))
++		return;
++
++	SdlTitlebarAccessory *accessory = [[SdlTitlebarAccessory alloc] initWithScaleHelp:scaleHelp
++	                                                                          logHelp:logHelp];
++	if (!accessory)
++		return;
++	if (!accessories)
++		accessories = [NSHashTable weakObjectsHashTable];
++	[accessories addObject:accessory];
++	[nswindow addTitlebarAccessoryViewController:accessory];
++}
++
++void showScale(UINT32 percent, UINT32 connectionPercent, bool adjustable)
++{
++	dispatch_async(dispatch_get_main_queue(), ^{
++		currentScale = percent;
++		connectionScale = connectionPercent;
++		scaleAdjustable = adjustable;
++		for (SdlTitlebarAccessory *accessory in accessories)
++			[accessory update];
++	});
++}
++} // namespace sdl::titlebar
+--- a/client/SDL/SDL3/sdl_utils.cpp
++++ b/client/SDL/SDL3/sdl_utils.cpp
+@@ -154,6 +154,10 @@
+ 			event->data1 = reinterpret_cast<void*>(static_cast<uintptr_t>(va_arg(ap, UINT32)));
+ 			event->code = va_arg(ap, int); /* RAIL_WMSZ_* move/resize type */
+ 			break;
++		case SDL_EVENT_USER_DESKTOP_SCALE:
++			event->code = va_arg(ap, int); /* sdlDispContext::changeScale */
++			break;
++		case SDL_EVENT_USER_SHOW_LOG:
+ 		case SDL_EVENT_USER_WINDOW_MINIMIZE:
+ 		case SDL_EVENT_USER_WINDOW_RESTORE:
+ 		case SDL_EVENT_USER_RELEASE_MODIFIERS:
+@@ -417,6 +421,8 @@
+ 			EV_CASE_STR(SDL_EVENT_USER_POINTER_POSITION);
+ 			EV_CASE_STR(SDL_EVENT_USER_POINTER_SET);
+ 			EV_CASE_STR(SDL_EVENT_USER_RAIL_MOVE);
++			EV_CASE_STR(SDL_EVENT_USER_DESKTOP_SCALE);
++			EV_CASE_STR(SDL_EVENT_USER_SHOW_LOG);
+ 			EV_CASE_STR(SDL_EVENT_USER_QUIT);
+ 
+ 			EV_CASE_STR(SDL_EVENT_LAST);
+--- a/client/SDL/SDL3/sdl_utils.hpp
++++ b/client/SDL/SDL3/sdl_utils.hpp
+@@ -49,6 +49,8 @@
+ 	SDL_EVENT_USER_POINTER_POSITION,
+ 	SDL_EVENT_USER_POINTER_SET,
+ 	SDL_EVENT_USER_RAIL_MOVE,
++	SDL_EVENT_USER_DESKTOP_SCALE,
++	SDL_EVENT_USER_SHOW_LOG,
+ 	SDL_EVENT_USER_QUIT,
+ 	SDL_EVENT_USER_CERT_DIALOG,
+ 	SDL_EVENT_USER_SHOW_DIALOG,
