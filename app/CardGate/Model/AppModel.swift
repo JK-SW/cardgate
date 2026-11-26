@@ -35,7 +35,7 @@ final class AppModel {
     private(set) var gatewayStatus: GatewayReachability?
     private var gatewayCheck: Task<Void, Never>?
     private var gatewaySchedule = GatewayCheckSchedule()
-    private let networkMonitor = NWPathMonitor()
+    let networkMonitor = NWPathMonitor()
     /// Status and interfaces of the network as last reported, to react only to real changes.
     private var networkSignature: String?
     private var networkSettling: Task<Void, Never>?
@@ -46,6 +46,8 @@ final class AppModel {
     var onShowLog: (() -> Void)?
     /// Opens the log window (a SwiftUI action, set by the main window's view).
     @ObservationIgnored var openLogWindow: (() -> Void)?
+    /// The update settings and the last check (`Updater.diagnostics`), for the saved log.
+    @ObservationIgnored var updateStatus: (() -> [(String, String)])?
     private(set) var middleware: PKCS11ModuleLocator.Middleware?
 
     private let store: ProfileStore?
@@ -67,6 +69,9 @@ final class AppModel {
             self?.session.clearFinished()
             // The card check that follows loads the module: check it first (cached while unchanged).
             self?.refreshMiddleware()
+        }
+        cards.onReaderChange = { [weak self] reader, present in
+            self?.session.cardInReader(reader, present: present)
         }
         session.onConnected = { [weak self] in
             self?.sessionReachedDesktop = true
@@ -197,11 +202,6 @@ final class AppModel {
     private(set) var isPreparingConnection = false
 
     private(set) var moduleProblem: ModuleProblem?
-
-    /// The system lists the card but the middleware's PKCS#11 module does not see it.
-    var cardNeedsReinsert: Bool {
-        cards.pkcs11State == .noToken && !cards.certificates.isEmpty
-    }
 
     var selectedProfile: ConnectionProfile? {
         profiles.first { $0.id == selectedID } ?? profiles.first
@@ -448,5 +448,17 @@ extension ScreenMetrics {
         let frame = screen.visibleFrame
         return ScreenMetrics(
             visibleSize: .init(width: Int(frame.width), height: Int(frame.height)), scale: screen.backingScaleFactor)
+    }
+}
+
+extension AppModel {
+    /// The signature of the module found when it was checked before loading (`ModuleTrustChecker`).
+    func checkedSignature(ofModuleAt path: String) -> ModuleSignature? {
+        moduleChecker.checkedSignature(ofModuleAt: path)
+    }
+
+    /// The system lists the card but the middleware's PKCS#11 module does not see it.
+    var cardNeedsReinsert: Bool {
+        cards.pkcs11State == .noToken && !cards.certificates.isEmpty
     }
 }

@@ -209,7 +209,7 @@ public struct SecurityPlan: Equatable, Sendable {
             // RDP security it cannot say so; the gateway reports it unreachable).
             return .letComputerChooseAgain
         }
-        if remembersOutcome, failure == .kerberosFailed, (floor ?? .rdp) < .nla {
+        if remembersOutcome, failure.isNLASignInFailure, (floor ?? .rdp) < .nla {
             return .rememberNLAFailed
         }
         return .keep
@@ -250,4 +250,21 @@ public func kerberosRealm(of computer: HostAddress) -> String? {
     // Written into krb5.conf as a section name: only what a DNS domain consists of.
     let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-")
     return realm.unicodeScalars.allSatisfy(allowed.contains) ? realm : nil
+}
+
+extension SessionFailure {
+    /// The sign-in to the computer with the card (NLA: Kerberos through the gateway) failed in a way
+    /// connecting without NLA avoids: Windows then signs in with the card on its own (its clock, its
+    /// way to the domain – also when the computer's DNS suffix is not the realm CardGate derives, or
+    /// the account is in another domain). Not for a disabled or locked account or a refused card
+    /// certificate: Windows refuses them too, turning NLA off would only weaken the connection.
+    public var isNLASignInFailure: Bool {
+        switch self {
+        case .kerberosFailed, .domainUnreachable, .domainNotTrusted, .clockSkew, .computerUnknownToDomain,
+            .accountUnknownToDomain:
+            true
+        default:
+            false
+        }
+    }
 }

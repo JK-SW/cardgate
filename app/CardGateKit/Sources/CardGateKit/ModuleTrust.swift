@@ -116,6 +116,12 @@ public struct ModuleTrustChecker: Sendable {
         return approvals.isApproved(path: path, sha256: sha256) ? .trusted : .needsApproval(sha256: sha256)
     }
 
+    /// The signature found by `trust(ofModuleAt:approvals:)`, if the file has not changed since.
+    public func checkedSignature(ofModuleAt path: String) -> ModuleSignature? {
+        guard let entry = checked[path], entry.identity == identity(Self.resolved(path)) else { return nil }
+        return entry.signature
+    }
+
     /// The file a path leads to, with symbolic links resolved (the path itself if it cannot be).
     static func resolved(_ path: String) -> String {
         guard let real = realpath(path, nil) else { return path }

@@ -1,3 +1,4 @@
+import CardGateKit
 import Foundation
 import Observation
 import Sparkle
@@ -54,6 +55,26 @@ final class Updater {
     }
 
     var isAvailable: Bool { controller != nil }
+
+    /// The update settings and the last check, for the diagnostic information of the saved log.
+    var diagnostics: [(String, String)] {
+        let sparkle = Bundle(for: SPUUpdater.self).infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        guard let updater = controller?.updater else {
+            return [("Updates", "not available in this build"), ("Sparkle", sparkle)]
+        }
+        let skipped = ["SUSkippedMinorVersion", "SUSkippedMajorVersion"].compactMap {
+            UserDefaults.standard.string(forKey: $0)
+        }
+        return [
+            ("Automatic checks", DiagnosticReport.yesNo(updater.automaticallyChecksForUpdates)),
+            ("Automatic downloads", DiagnosticReport.yesNo(updater.automaticallyDownloadsUpdates)),
+            ("Check interval", "\(Int(updater.updateCheckInterval / 3600)) h"),
+            ("Last check", updater.lastUpdateCheckDate.map { DiagnosticReport.time($0) } ?? "never"),
+            ("Skipped version", skipped.isEmpty ? "-" : skipped.joined(separator: ", ")),
+            ("Feed", updater.feedURL?.absoluteString ?? "?"),
+            ("Sparkle", sparkle),
+        ]
+    }
 
     func checkForUpdates() {
         controller?.checkForUpdates(nil)

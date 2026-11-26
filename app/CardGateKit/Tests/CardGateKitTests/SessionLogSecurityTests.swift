@@ -339,6 +339,10 @@ struct SessionLogSecurityTests {
         parser.consume(
             Log.line("ERROR", "com.freerdp.core", "[rdg_process_tunnel_authorization]: E_PROXY_RAP_ACCESSDENIED"))
         parser.consume(Log.line("ERROR", "com.freerdp.core", "[rdg_connect]: ERRCONNECT_ACCESS_DENIED [0x00020016]"))
-        #expect(parser.processExited(status: 1) == .ended(.failed(.gatewayDenied)))
+        #expect(parser.processExited(status: 1) == .ended(.failed(.computerNotAllowedByGateway)))
+
+        var user = afterGateway()
+        user.consume(Log.line("ERROR", "com.freerdp.core", "[rdg_x]: E_PROXY_NAP_ACCESSDENIED [0x800759DA]"))
+        #expect(user.processExited(status: 1) == .ended(.failed(.gatewayDenied)))
     }
 }

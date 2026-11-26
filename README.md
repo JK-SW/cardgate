@@ -37,8 +37,10 @@ způsob přihlášení k bráně neumí. CardGate ano, včetně přihlášení k
 - Zabezpečení připojení k počítači NLA, TLS nebo Zabezpečení RDP, automaticky to nejsilnější, které
   počítač přijme; s NLA stačí jeden PIN i pro přihlášení do Windows.
 - Přihlášení do Windows kartou, nebo jménem a heslem tam, kde Windows na počítači kartu nepřijme.
-- Celá obrazovka, více monitorů, schránka, zvuk, přesměrování karty do vzdálené plochy.
+- Celá obrazovka, více monitorů, změna měřítka plochy za běhu, schránka, zvuk, přesměrování karty
+  do vzdálené plochy.
 - Udržení připojení a obnovení po krátkém výpadku sítě bez nového PINu; Mac během připojení neusne.
+- Přehledný log připojení; uložený log (ZIP) je bez jmen počítače a brány, takže ho lze poslat bez úprav.
 - Čeština, slovenština a angličtina.
 
 <p align="center">

@@ -36,8 +36,9 @@ level authentication (Kerberos PKINIT with the card through the gateway's KDC pr
 RDP Security – by default the strongest the computer accepts.
 
 It bundles a patched [FreeRDP](https://github.com/FreeRDP/FreeRDP) client and adds a native UI:
-connection profiles, `.rdp` import, a guarded PIN dialog, card and certificate checks and clear
-error messages.
+connection profiles, `.rdp` import, a guarded PIN dialog, card and certificate checks, clear
+error messages and a readable connection log whose saved archive hides the computer's and gateway's
+names.
 
 <p align="center">
   <img width="720" src="docs/images/en/main-window.png" alt="CardGate main window">

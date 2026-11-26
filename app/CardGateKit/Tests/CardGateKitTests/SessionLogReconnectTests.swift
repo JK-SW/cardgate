@@ -132,7 +132,7 @@ struct SessionLogReconnectTests {
         parser.consume(Log.gdiInit)
         parser.consume(Log.networkDisconnect)
         parser.consume(Log.reconnecting(0))
-        #expect(parser.processExited(status: SIGSEGV, crashed: true) == .ended(.failed(.other("signal 11"))))
+        #expect(parser.processExited(status: SIGSEGV, crashed: true) == .ended(.failed(.clientCrashed(signal: 11))))
     }
 
     /// The card is used again only with the gateway certificate checked before connecting.
@@ -169,5 +169,29 @@ struct SessionLogReconnectTests {
         parser.consume(Log.line("ERROR", "com.freerdp.crypto", "[tls_verify_certificate]: certificate not trusted"))
         // Closing the window then does not hide it.
         #expect(parser.consume(Self.abortedByUser) == .ended(.failed(.gatewayCertificateNotPublic)))
+    }
+}
+
+extension SessionLogReconnectTests {
+    /// The client crashed after reconnecting failed (no card): the user has to act on the failure.
+    @Test func crashAfterReconnectFailure() {
+        var parser = SessionLogParser()
+        for line in [Log.gdiInit, Log.networkDisconnect, Log.reconnecting(0), Log.noCertificate] {
+            parser.consume(line)
+        }
+        #expect(parser.reconnectFailure == .noCertificate)
+        #expect(parser.processExited(status: SIGSEGV, crashed: true) == .ended(.failed(.noCertificate)))
+    }
+
+    @Test func crashSignals() {
+        #expect(SessionLogParser.isCrash(signal: SIGSEGV))
+        #expect(SessionLogParser.isCrash(signal: SIGKILL))
+        #expect(!SessionLogParser.isCrash(signal: SIGTERM))
+    }
+
+    @Test func exitDescription() {
+        #expect(SessionLogParser.exitDescription(status: SIGSEGV, crashed: true) == "signal 11 (SIGSEGV)")
+        #expect(SessionLogParser.exitDescription(status: 77, crashed: true) == "signal 77")
+        #expect(SessionLogParser.exitDescription(status: 1, crashed: false) == "exit status 1")
     }
 }

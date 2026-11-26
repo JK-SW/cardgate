@@ -69,7 +69,8 @@ ponúkne rovno heslo. Karta zostane vo Windows k dispozícii (napr. na podpisy).
 V **CardGate → Nastavenia…** (⌘,) sú tri voľby, všetky predvolene zapnuté:
 - **Udržiavať pripojenie a po výpadku ho obnoviť** – pri krátkom výpadku siete sa CardGate pripojí
   znova sám, bez nového PINu. Plocha medzitým ukazuje posledný obraz a nereaguje; nad ňou je okienko
-  „Pripojenie sa prerušilo. Obnovujem…“ s tlačidlom Odpojiť. Po 2,5–5 minútach to vzdá.
+  „Pripojenie sa prerušilo. Obnovujem…“ s tlačidlom Odpojiť. Po 2,5–5 minútach to vzdá. Karta musí byť
+  v čítačke: bez nej sa obnova nepodarí (CardGate ukáže, že na karte nenašiel certifikát).
 - **Počas pripojenia nenechať Mac uspať** – Mac sa pri nečinnosti neuspí a pripojenie vydrží; displej
   môže zhasnúť podľa nastavení macOS. Zatvorenie veka alebo ručné uspanie Mac uspí aj tak.
 - **Pýtať sa pred odpojením** – zatvorenie okna vzdialenej plochy (alebo ⌘Q v ňom) sa najprv opýta.
@@ -125,29 +126,40 @@ z GitHubu a nič o vás neodosiela.
 | Softvér pre čipovú kartu sa nenašiel | Nainštalujte softvér ku karte (napr. ProID+). |
 | Chybný PIN | Zadajte správny PIN – opakované chyby kartu zablokujú. |
 | Karta prihlásenie odmietla | PIN mohol byť chybný, alebo zlyhala karta či čítačka. Vytiahnite kartu, vložte ju znova a pripojte sa. Opakované chybné PINy kartu zablokujú. |
-| Typ kľúča na karte nie je podporovaný | K bráne sa dá prihlásiť len kartou s kľúčom RSA. Obráťte sa na IT oddelenie. |
+| Typ kľúča na karte nie je podporovaný | K bráne sa dá prihlásiť len kartou s kľúčom RSA. Kontaktujte IT oddelenie. |
 | Bránu nie je možné kontaktovať | Skontrolujte pripojenie k internetu a adresu brány. |
 | Pripojenie nemá zadanú bránu | CardGate sa pripája len cez bránu. Kliknite na **Upraviť pripojenie** a doplňte adresu brány. |
 | Spojenie bolo prerušené | Sieť vypadla a obnovenie sa nepodarilo (alebo je v Nastaveniach vypnuté). Skontrolujte pripojenie k internetu a pripojte sa znova. |
 | Modul čipovej karty nie je od overeného vydavateľa | Modul ku karte nepochádza od overeného výrobcu. Použite ho (**Použiť tento modul…**), len ak viete, odkiaľ je (napr. od IT oddelenia). |
 | Modul čipovej karty nastavený pre toto pripojenie sa nenašiel | Opravte cestu v **Upraviť pripojenie** (časť Pokročilé), alebo ju nechajte prázdnu. |
-| Počítač vyžaduje silnejšie zabezpečenie pripojenia | V nastaveniach pripojenia zvoľte **Zabezpečenie: Automaticky**. Ak už je zvolené, počítač vyžaduje NLA, ktoré sa nepodarilo použiť – postupujte podľa hlásenia, prípadne sa obráťte na IT oddelenie. |
-| Počítač ponúka len slabšie zabezpečenie pripojenia | Ak to správca počítača zmenil zámerne, kliknite na **Pripojiť sa slabším zabezpečením**. Inak sa nepripájajte a obráťte sa na IT oddelenie. |
+| Počítač vyžaduje silnejšie zabezpečenie pripojenia | V nastaveniach pripojenia zvoľte **Zabezpečenie: Automaticky**. Ak už je zvolené, počítač vyžaduje NLA, ktoré sa nepodarilo použiť – postupujte podľa hlásenia, prípadne kontaktujte IT oddelenie. |
+| Počítač ponúka len slabšie zabezpečenie pripojenia | Ak to správca počítača zmenil zámerne, kliknite na **Pripojiť sa slabším zabezpečením**. Inak sa nepripájajte a kontaktujte IT oddelenie. |
 | Certifikát počítača sa zmenil | Novému certifikátu dôverujte, len keď správca potvrdí jeho obnovenie a odtlačok (pozri Bezpečnosť). |
 | Váš účet sa k tomuto počítaču nesmie pripojiť | Požiadajte správcu počítača o pridanie do skupiny Používatelia vzdialenej pracovnej plochy. |
+| Čas na Macu sa líši od času v doméne | Skontrolujte dátum a čas v Nastaveniach systému → Všeobecné → Dátum a čas a pripojte sa znova. |
+| Doména tento počítač nepozná | V nastaveniach pripojenia zadajte celé meno počítača s doménou (napr. `pc01.example.com`). |
+| Brána nepovoľuje pripojenie k tomuto počítaču | Skontrolujte celé meno počítača; ak je správne, kontaktujte IT oddelenie. |
+| Brána je dočasne nedostupná | Brána je preťažená alebo v údržbe. Skúste to o chvíľu znova. |
+| Váš účet je zakázaný / zablokovaný, Platnosť vášho účtu skončila | Kontaktujte IT oddelenie. |
+| Počítač nemá licenciu pre vzdialenú plochu | Kontaktujte IT oddelenie. |
+| Program vzdialenej plochy neočakávane skončil | Pripojte sa znova. Ak sa to opakuje, nahláste chybu v Issues a priložte archív z **Uložiť log…** (pozri nižšie). |
 | Windows pri prihlásení kartou ukáže chybu (napr. „Hash generation … is not enabled on the server“) | Windows na tomto počítači prihlásenie kartou neprijíma. V nastaveniach pripojenia zvoľte **Prihlásenie do Windows: Menom a heslom**. |
-| Prihlásenie k počítaču kartou sa nepodarilo | Pripojte sa znova, CardGate sa potom pripojí bez NLA. Ak počítač NLA vyžaduje, obráťte sa na IT oddelenie (brána potrebuje KDC proxy). |
+| Prihlásenie k počítaču kartou sa nepodarilo | Pripojte sa znova, CardGate sa potom pripojí bez NLA. Ak počítač NLA vyžaduje, kontaktujte IT oddelenie (brána potrebuje KDC proxy). |
 | Pri tomto pripojení nemožno použiť NLA | Zadajte celé meno počítača s doménou (napr. `pc01.example.com`) a skontrolujte pripojenie k internetu, prípadne k sieti organizácie (kvôli stiahnutiu certifikačnej autority karty). |
 
 Podrobnosti nájdete v menu **Okno → Log pripojenia**. V predvolenom zobrazení **Dôležité** ukazuje
-zrozumiteľne priebeh pripojenia: upozornenia oranžovo (napr. slabšie zabezpečenie RDP alebo výpadok
-siete), chyby červeno. V zobrazení **Podrobnosti** uvidíte všetky riadky logu; známe neškodné správy
-sú sivé. Tlačidlo **Kopírovať log** skopíruje a **Uložiť log…** uloží do súboru vždy celý log so všetkými
-podrobnosťami, aby ste ho mohli poslať IT oddeleniu. Log neobsahuje PIN.
+zrozumiteľne priebeh pripojenia: upozornenia oranžovo (napr. slabšie zabezpečenie RDP, výpadok
+siete alebo vybratie karty z čítačky), chyby červeno. V zobrazení **Podrobnosti** uvidíte všetky
+riadky logu; známe neškodné správy sú sivé. Tlačidlo **Kopírovať log** skopíruje to, čo okno práve
+ukazuje (dôležité správy, alebo celý log). **Uložiť log…** uloží archív ZIP s tromi súbormi – dôležité
+správy (`important.txt`), celý log so všetkými podrobnosťami (`connection.log`) a anonymné diagnostické
+údaje (`diagnostics.txt`: verzia aplikácie a macOS, model Macu, displeje, softvér a typ karty, nastavenia
+pripojenia bez adries) – aby ste ho mohli poslať IT oddeleniu. Mená počítača a brány, názov pripojenia
+a účet Windows sú v archíve nahradené `***`, takže ho môžete poslať bez úprav. Log nikdy neobsahuje PIN.
 Logy posledných piatich pripojení sú aj v priečinku `~/Library/Logs/CardGate`.
 
-Chybu aplikácie alebo námet nahláste v [Issues](https://github.com/JK-SW/cardgate/issues) (log pred vložením skontrolujte a adresy
-nahraďte napr. `pc01.example.com`). Bezpečnostný problém hláste neverejne
+Chybu aplikácie alebo námet nahláste v [Issues](https://github.com/JK-SW/cardgate/issues) a priložte archív
+z **Uložiť log…** (skopírovaný log mená počítača a brány obsahuje). Bezpečnostný problém hláste neverejne
 ([Report a vulnerability](https://github.com/JK-SW/cardgate/security/advisories/new)).
 
 ## Pre správcov IT
@@ -170,7 +182,8 @@ NLA s kartou potrebuje:
   (`pc01.example.com` → `EXAMPLE.COM`); pri počítači v inej DNS zóne NLA zlyhá a CardGate sa pripojí bez neho,
 - certifikáty radičov domény vydané pod rovnakou koreňovou certifikačnou autoritou ako certifikáty kariet
   (CardGate ju stiahne podľa adries v certifikáte karty a uloží),
-- používateľa s oprávnením prihlásiť sa cez Vzdialenú pracovnú plochu.
+- používateľa s oprávnením prihlásiť sa cez Vzdialenú pracovnú plochu,
+- čas na Macu zhodný s časom v doméne (Kerberos; inak CardGate ohlási rozdiel času a pripojí sa bez NLA).
 
 Na počítači sa zabezpečenie nastavuje politikami skupiny v **Konfigurácia počítača → Šablóny na správu →
 Súčasti systému Windows → Služby vzdialenej pracovnej plochy → Hostiteľ relácie vzdialenej pracovnej plochy →

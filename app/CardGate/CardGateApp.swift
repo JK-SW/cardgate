@@ -45,7 +45,10 @@ struct CardGateApp: App {
         Window("CardGate", id: WindowID.main) {
             ContentView()
                 .environment(model)
-                .onAppear { delegate.model = model }
+                .onAppear {
+                    delegate.model = model
+                    model.updateStatus = { [updater] in updater.diagnostics }
+                }
                 // The window's default is also its smallest size (the toolbar adds 52 points): it fits
                 // the usual content; when several long notices show together, it scrolls.
                 .frame(minWidth: 760, minHeight: 428)

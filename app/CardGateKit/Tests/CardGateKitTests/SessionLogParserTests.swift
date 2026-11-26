@@ -103,7 +103,12 @@ struct SessionLogParserTests {
         ("ERRINFO_RPC_INITIATED_DISCONNECT", .failed(.disconnectedByServer)),
         ("ERRINFO_RPC_INITIATED_DISCONNECT_BY_USER", .closedByUser),
         ("ERRINFO_LOGON_TIMEOUT", .failed(.disconnectedByServer)),
-        ("ERRINFO_SERVER_INSUFFICIENT_PRIVILEGES", .failed(.other("ERRINFO_SERVER_INSUFFICIENT_PRIVILEGES"))),
+        ("ERRINFO_SERVER_INSUFFICIENT_PRIVILEGES", .failed(.notAllowedOnComputer)),
+        ("ERRINFO_SERVER_DENIED_CONNECTION", .failed(.computerRefused)),
+        ("ERRINFO_SERVER_DWM_CRASH", .failed(.windowsFailed)),
+        ("ERRINFO_OUT_OF_MEMORY", .failed(.windowsFailed)),
+        ("ERRINFO_LICENSE_NO_LICENSE_SERVER", .failed(.noLicense)),
+        ("ERRINFO_SERVER_FRESH_CREDENTIALS_REQUIRED", .failed(.other("ERRINFO_SERVER_FRESH_CREDENTIALS_REQUIRED"))),
     ])
     func windowsSaysWhyTheSessionEnded(code: String, end: SessionEnd) {
         var parser = SessionLogParser()
@@ -322,11 +327,11 @@ struct SessionLogParserTests {
     @Test func crashAfterConnectingIsAnError() {
         var parser = SessionLogParser()
         parser.consume(Log.gdiInit)
-        #expect(parser.processExited(status: 11, crashed: true) == .ended(.failed(.other("signal 11"))))
+        #expect(parser.processExited(status: 11, crashed: true) == .ended(.failed(.clientCrashed(signal: 11))))
 
         var connecting = SessionLogParser()
         connecting.consume(Log.cardReady)
-        #expect(connecting.processExited(status: 6, crashed: true) == .ended(.failed(.other("signal 6"))))
+        #expect(connecting.processExited(status: 6, crashed: true) == .ended(.failed(.clientCrashed(signal: 6))))
 
         // A reason logged before wins over the crash.
         var refused = SessionLogParser()

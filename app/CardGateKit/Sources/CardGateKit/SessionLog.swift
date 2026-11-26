@@ -32,7 +32,7 @@ public enum SessionEnd: Equatable, Sendable {
     case failed(SessionFailure)
 }
 
-public enum SessionFailure: Equatable, Sendable {
+public enum SessionFailure: Hashable, Sendable {
     /// No usable certificate on the card (card not inserted, reader asleep, wrong middleware).
     case noCertificate
     /// The PIN was rejected.
@@ -72,6 +72,39 @@ public enum SessionFailure: Equatable, Sendable {
     /// Network level authentication: Kerberos with the card failed (domain controller not reached
     /// through the gateway's KDC proxy, account or computer not found).
     case kerberosFailed
+    /// Kerberos said why the sign-in to the computer failed (NLA): this Mac's clock differs from
+    /// the domain's.
+    case clockSkew
+    /// Kerberos: the domain (its KDC proxy on the gateway) could not be reached.
+    case domainUnreachable
+    /// Kerberos: the domain does not know the computer (e.g. its short name or a mistyped name).
+    case computerUnknownToDomain
+    /// Kerberos: the domain does not know the card's account.
+    case accountUnknownToDomain
+    /// Kerberos: the account is disabled or locked in the domain.
+    case accountRevoked
+    /// Kerberos: this Mac does not trust the domain controller's certificate.
+    case domainNotTrusted
+    /// Kerberos: the domain refused the card's certificate (invalid, untrusted, revocation unknown).
+    case cardCertificateRejected
+    /// The computer refused the account (NLA): disabled, locked out, expired, or restricted (e.g.
+    /// its sign-in hours).
+    case accountDisabled
+    case accountLockedOut
+    case accountExpired
+    case accountRestricted
+    /// The gateway's policy does not allow connecting to this computer (E_PROXY_RAP_ACCESSDENIED).
+    case computerNotAllowedByGateway
+    /// The gateway is full or in maintenance (E_PROXY_MAXCONNECTIONSREACHED, HTTP 502–504).
+    case gatewayTemporarilyUnavailable
+    /// The gateway does not accept the sign-in with a smart card.
+    case gatewayNoSmartCard
+    /// Windows refused the connection (ERRINFO_SERVER_DENIED_CONNECTION).
+    case computerRefused
+    /// The computer has no license for remote desktop connections (ERRINFO_LICENSE_*).
+    case noLicense
+    /// Windows failed and ended the session (a crash of its desktop parts, out of memory).
+    case windowsFailed
     /// The connection broke while working (network outage, gateway restart).
     case connectionLost
     /// Someone signed in to the computer, or the user connected to it from another device.
@@ -80,6 +113,9 @@ public enum SessionFailure: Equatable, Sendable {
     case idleTimeout
     /// An administrator or the computer itself ended the session (e.g. before a restart).
     case disconnectedByServer
+    /// The client crashed (`signal`, e.g. `SIGSEGV`) and nothing it logged before explains why.
+    /// `SIGKILL` means the system ended it (e.g. out of memory).
+    case clientCrashed(signal: Int32)
     /// Any other error; carries FreeRDP's error name (e.g. `ERRCONNECT_CONNECT_TRANSPORT_FAILED`).
     case other(String)
 }
@@ -112,6 +148,10 @@ public struct SessionLogParser: Sendable {
     private var kerberosError = false
     /// While reconnecting: the gateway accepted the card again, what follows is the computer's.
     private var reconnectPastGateway = false
+    /// Why Kerberos failed, if it said a reason the user can act on (`kerberosProblem(in:)`): the last
+    /// one said. A later error of another kind (e.g. of the next call) does not hide it; an earlier
+    /// reason may have been recovered from, so a later one replaces it.
+    private var kerberosProblem: SessionFailure?
     /// The security the client last negotiated with the computer.
     public private(set) var negotiatedSecurity: SecurityMethod?
     /// The computer certificate that changed since it was first trusted (`CertificateFingerprint`);
@@ -127,8 +167,9 @@ public struct SessionLogParser: Sendable {
     private let gatewayTrustedBySystem: Bool
     /// The connection of a shown desktop broke ("Network disconnect!"); the client may reconnect.
     private var connectionBroke = false
-    /// Why reconnecting failed, if the client said so.
-    private var reconnectFailure: SessionFailure?
+    /// Why reconnecting failed, if the client said so: the first failure the user has to act on,
+    /// until the connection is restored.
+    public private(set) var reconnectFailure: SessionFailure?
     /// The client reconnects after an outage (`FreeRDPCommand.reconnects`); without it an outage
     /// ends the session at once.
     private let reconnects: Bool
@@ -183,24 +224,41 @@ public struct SessionLogParser: Sendable {
             phase = .ended(.failed(failure))
         } else if kerberosError, !phase.hasDesktop, !cancelled, !crashed, status != 0 {
             // Nothing else explains why the client gave up (a Kerberos error may be recovered from).
-            phase = .ended(.failed(.kerberosFailed))
-        } else if crashed, !Self.quitSignals.contains(status) {
+            phase = .ended(.failed(kerberosProblem ?? .kerberosFailed))
+        } else if crashed, Self.isCrash(signal: status) {
             // A crash is never a normal end, not even after the desktop was shown or while
-            // reconnecting (CardGate's own kill after Disconnect is handled above).
-            phase = .ended(.failed(.other("signal \(status)")))
+            // reconnecting (CardGate's own kill after Disconnect is handled above). Reconnecting
+            // failed before (e.g. no card in the reader): that is what the user has to act on.
+            let reconnectFailure = phase.hasDesktop && connectionBroke ? reconnectFailure : nil
+            phase = .ended(.failed(reconnectFailure ?? .clientCrashed(signal: status)))
         } else if phase.hasDesktop, connectionBroke {
             // Not reconnecting (turned off), or it gave up.
             phase = .ended(.failed(reconnectFailure ?? .connectionLost))
         } else if phase.hasDesktop || status == 0 {
             phase = .ended(.closedByUser)
         } else {
-            phase = .ended(.failed(.other("exit status \(status)")))
+            phase = .ended(.failed(.other(Self.exitDescription(status: status, crashed: false))))
         }
         return phase
     }
 
     /// Signals that ask a process to quit (`killall`, logout, closing a terminal): not a crash.
     static let quitSignals: Set<Int32> = [SIGTERM, SIGINT, SIGHUP]
+
+    /// The signal that ended the client is a crash, not a request to quit (`killall`, logout).
+    public static func isCrash(signal: Int32) -> Bool {
+        !quitSignals.contains(signal)
+    }
+
+    /// How the client process ended, for the connection log: "exit status 1", "signal 11 (SIGSEGV)".
+    public static func exitDescription(status: Int32, crashed: Bool) -> String {
+        guard crashed else { return "exit status \(status)" }
+        let names: [Int32: String] = [
+            SIGSEGV: "SIGSEGV", SIGBUS: "SIGBUS", SIGABRT: "SIGABRT", SIGILL: "SIGILL", SIGTRAP: "SIGTRAP",
+            SIGFPE: "SIGFPE", SIGKILL: "SIGKILL", SIGTERM: "SIGTERM", SIGINT: "SIGINT", SIGHUP: "SIGHUP",
+        ]
+        return names[status].map { "signal \(status) (\($0))" } ?? "signal \(status)"
+    }
 
     private mutating func nextPhase(for line: String) -> SessionPhase? {
         // Reconnecting goes through the connection steps again: they are not shown.
@@ -221,7 +279,7 @@ public struct SessionLogParser: Sendable {
             return .ended(.closedByUser)
         }
         noteNegotiation(line)
-        if noteCancelOrKerberosError(line) { return nil }
+        if noteCancelOrKerberosError(line) || noteGatewayUnavailable(line) { return nil }
         if !stoppedByApp, var failure = Self.failure(in: line) {
             // The gateway accepted the sign-in, then the connection to the computer failed. If the
             // computer answered with a negotiation failure it was reached but refuses the security;
@@ -244,11 +302,19 @@ public struct SessionLogParser: Sendable {
         return nil
     }
 
+    /// The gateway answered it is overloaded or in maintenance (a warning, no error follows that says so).
+    private mutating func noteGatewayUnavailable(_ line: String) -> Bool {
+        guard !stoppedByApp, Self.gatewayTemporarilyUnavailable(line) else { return false }
+        failure = failure ?? .gatewayTemporarilyUnavailable
+        return true
+    }
+
     /// Notes a cancel and a Kerberos error (only a possible cause, see `kerberosError`); true for the latter.
     private mutating func noteCancelOrKerberosError(_ line: String) -> Bool {
         if line.contains("ERRCONNECT_CONNECT_CANCELLED") { cancelled = true }
         guard Self.isKerberosError(line) else { return false }
         kerberosError = true
+        kerberosProblem = Self.kerberosProblem(in: line) ?? kerberosProblem  // the last reason said
         return true
     }
 
@@ -322,7 +388,8 @@ public struct SessionLogParser: Sendable {
         case .gatewayDenied where negotiatedSecurity == .nla || kerberosError:
             // With network level authentication, access denied and failed authentication now are
             // the computer's, not the gateway's.
-            return line.contains("ERRCONNECT_ACCESS_DENIED") ? .notAllowedOnComputer : .kerberosFailed
+            return line.contains("ERRCONNECT_ACCESS_DENIED")
+                ? .notAllowedOnComputer : kerberosProblem ?? .kerberosFailed
         default:
             return failure
         }
@@ -360,6 +427,7 @@ public struct SessionLogParser: Sendable {
             reconnectPastGateway = false
             negotiatedSecurity = nil
             kerberosError = false
+            kerberosProblem = nil
             connectionBroke = true
             return .reconnecting
         }
@@ -379,7 +447,10 @@ public struct SessionLogParser: Sendable {
     private mutating func noteReconnectFailure(_ line: String) {
         if line.contains("RD Gateway smart card authentication done") { reconnectPastGateway = true }
         noteNegotiation(line)
-        if Self.isKerberosError(line) { kerberosError = true }
+        if Self.isKerberosError(line) {
+            kerberosError = true
+            kerberosProblem = Self.kerberosProblem(in: line) ?? kerberosProblem  // the last reason said
+        }
         guard !stoppedByApp, reconnectFailure == nil, var failure = Self.failure(in: line) else { return }
         // As when connecting: after the gateway accepted the card, a refusal may be the computer's (NLA).
         if reconnectPastGateway { failure = computerFailure(failure, line: line) }
@@ -397,7 +468,9 @@ public struct SessionLogParser: Sendable {
         switch failure {
         case .wrongPIN, .cardLocked, .cardRefusedLogin, .noCertificate, .multipleCertificates, .untrustedCertificate,
             .gatewayCertificateNotPublic, .gatewayCertificateChanged, .gatewayDenied, .computerCertificateChanged,
-            .notAllowedOnComputer, .kerberosFailed:
+            .notAllowedOnComputer, .kerberosFailed, .clockSkew, .domainUnreachable, .computerUnknownToDomain,
+            .accountUnknownToDomain, .accountRevoked, .domainNotTrusted, .cardCertificateRejected, .accountDisabled,
+            .accountLockedOut, .accountExpired, .accountRestricted, .computerNotAllowedByGateway, .gatewayNoSmartCard:
             failure
         default:
             nil
@@ -407,7 +480,8 @@ public struct SessionLogParser: Sendable {
     /// Windows' reasons for ending a session ([MS-RDPBCGR] 2.2.5.1.1). An unknown code is an error
     /// unless the user closed the window (that logs a cancel and wins).
     static func serverEnd(_ code: String) -> SessionEnd? {
-        switch code {
+        if let failure = windowsCodes[code] { return .failed(failure) }
+        return switch code {
         case "ERRINFO_SUCCESS": nil
         // Signed out or disconnected in Windows (Start menu, logoff, tsdiscon).
         case "ERRINFO_LOGOFF_BY_USER", "ERRINFO_RPC_INITIATED_DISCONNECT_BY_USER": .closedByUser
@@ -416,6 +490,7 @@ public struct SessionLogParser: Sendable {
         // LOGON_TIMEOUT: the limit for an active session elapsed, not inactivity.
         case "ERRINFO_RPC_INITIATED_DISCONNECT", "ERRINFO_RPC_INITIATED_LOGOFF", "ERRINFO_LOGON_TIMEOUT":
             .failed(.disconnectedByServer)
+        case let code where code.hasPrefix("ERRINFO_LICENSE_"): .failed(.noLicense)
         default: .failed(.other(code))
         }
     }

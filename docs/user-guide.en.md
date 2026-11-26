@@ -71,7 +71,8 @@ available in Windows (e.g. for signing).
 - **Keep the connection alive and restore it after an outage** – after a short network outage
   CardGate connects again on its own, without a new PIN. Meanwhile the desktop shows its last picture
   and does not respond; a small window over it says "The connection was interrupted. Reconnecting…"
-  and has a Disconnect button. It gives up after 2.5–5 minutes.
+  and has a Disconnect button. It gives up after 2.5–5 minutes. The card must be in the reader: without
+  it reconnecting fails (CardGate says no certificate was found on the card).
 - **Keep the Mac awake while connected** – the Mac does not sleep when idle and the connection stays
   up; the display may turn off as set in macOS. Closing the lid or choosing Sleep still puts it to sleep.
 - **Ask before disconnecting** – closing the remote desktop window (or ⌘Q in it) asks first.
@@ -138,19 +139,31 @@ GitHub and sends nothing about you.
 | The computer offers only weaker connection security | If the computer's administrator changed this on purpose, click **Connect with Weaker Security**. Otherwise do not connect and contact your IT department. |
 | The computer's certificate changed | Trust the new certificate only when the administrator confirms its renewal and fingerprint (see Security). |
 | Your account may not connect to this computer | Ask the computer's administrator to add you to the Remote Desktop Users. |
+| This Mac's time differs from the domain's | Check the date and time in System Settings → General → Date & Time, then connect again. |
+| The domain does not know this computer | Enter the computer's full name with its domain (e.g. `pc01.example.com`) in the connection settings. |
+| The gateway does not allow connecting to this computer | Check the computer's full name; if it is correct, contact your IT department. |
+| The gateway is temporarily unavailable | The gateway is overloaded or in maintenance. Try again in a while. |
+| Your account is disabled / locked, Your account has expired | Contact your IT department. |
+| The computer has no remote desktop license | Contact your IT department. |
+| The remote desktop program quit unexpectedly | Connect again. If it happens again, report it in Issues and attach the archive from **Save Log…** (see below). |
 | Windows shows an error when signing in with the card (e.g. "Hash generation … is not enabled on the server") | Windows on this computer does not accept the card. In the connection settings choose **Sign in to Windows: With user name and password**. |
 | Signing in to the computer with the card failed | Connect again; CardGate then connects without NLA. If the computer requires NLA, contact your IT department (the gateway needs a KDC proxy). |
 | NLA cannot be used for this connection | Enter the computer's full name with its domain (e.g. `pc01.example.com`) and check your internet connection, or the connection to your organization's network (the card's certification authority is downloaded). |
 
 Details are in **Window → Connection Log**. By default (**Important**) it shows the course of the
-connection in words: warnings in orange (e.g. weaker RDP Security or a network outage), errors in red.
-**Details** shows every line of the log; known harmless messages are gray. **Copy Log**
-and **Save Log…** always take the whole log with every detail, to send it to your IT department. The log never
-contains the PIN.
+connection in words: warnings in orange (e.g. weaker RDP Security, a network outage or the card
+removed from the reader), errors in red.
+**Details** shows every line of the log; known harmless messages are gray. **Copy Log** copies what the
+window shows (the important messages, or the whole log). **Save Log…** saves a ZIP archive with three
+files – the important messages (`important.txt`), the whole log with every detail (`connection.log`) and
+anonymous diagnostic information (`diagnostics.txt`: app and macOS versions, Mac model, displays, the
+card's software and type, connection settings without addresses) – to send it to your IT department. The
+computer's and gateway's names, the connection's name and the Windows account are replaced with `***` in
+the archive, so it can be sent as it is. The log never contains the PIN.
 The logs of the last five connections are also in the folder `~/Library/Logs/CardGate`.
 
-Report a bug or an idea in [Issues](https://github.com/JK-SW/cardgate/issues) (check the log before you paste it and replace addresses,
-e.g. with `pc01.example.com`). Report a security problem privately
+Report a bug or an idea in [Issues](https://github.com/JK-SW/cardgate/issues) and attach the archive from
+**Save Log…** (a copied log contains the computer's and gateway's names). Report a security problem privately
 ([Report a vulnerability](https://github.com/JK-SW/cardgate/security/advisories/new)).
 
 ## For IT administrators
@@ -174,7 +187,9 @@ before the sign-in). NLA with the card needs:
   without it,
 - domain controller certificates issued under the same root certification authority as the card
   certificates (CardGate downloads it from the addresses in the card certificate and keeps it),
-- users allowed to sign in through Remote Desktop.
+- users allowed to sign in through Remote Desktop,
+- the Mac's clock in step with the domain's (Kerberos; otherwise CardGate reports the time difference and
+  connects without NLA).
 
 On the computer, security is set by Group Policy in **Computer Configuration → Administrative Templates →
 Windows Components → Remote Desktop Services → Remote Desktop Session Host → Security**: "Require use of
