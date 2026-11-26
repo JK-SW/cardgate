@@ -19,6 +19,12 @@ struct HelperIntegrationTests {
         #expect(try Self.clientContains(marker), "FreeRDP no longer logs '\(marker)'")
     }
 
+    /// CardGate reacts to these lines of the title bar's controls (`TitleBarControls`).
+    @Test(.enabled(if: helper != nil), arguments: TitleBarControls.logMarkers)
+    func clientContainsTitleBarMarker(_ marker: String) throws {
+        #expect(try Self.clientContains(marker), "FreeRDP no longer logs '\(marker)'")
+    }
+
     /// Texts of patches that cannot be tested without a session: their loss (e.g. a FreeRDP update
     /// that no longer applies them) must not go unnoticed.
     @Test(
@@ -34,6 +40,7 @@ struct HelperIntegrationTests {
             "released the modifier keys before disconnecting",  // 0014: Cmd+Q leaves no Windows key
             "points at the top left out (notch)",  // 0021: full screen below the notch, taskbar visible
             "full screen on the chosen display",  // 0022: full screen on the display chosen in the profile
+            "FREERDP_TITLEBAR_SCALE",  // 0023: the controls in the title bar
         ])
     func clientContainsPatch(_ text: String) throws {
         #expect(try Self.clientContains(text), "the client lacks the patch with '\(text)'")

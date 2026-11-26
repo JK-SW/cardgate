@@ -192,10 +192,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         didSet {
             model?.onDesktopShown = { [weak self] in self?.desktopShown() }
             model?.onClientEnded = { [weak self] in self?.clientEnded() }
+            model?.onShowLog = { [weak self] in self?.showLog() }
             followSession()
         }
     }
     private var windows = SessionWindowPolicy()
+    /// The log window is being opened from the remote desktop's title bar (`showLog`): until it
+    /// becomes the key window, or a few seconds pass (the latest request counts).
+    private var openingLog: Int?
     private let reconnectNotice = ReconnectNotice()
     /// Quitting waits for the client to end (`applicationShouldTerminate`).
     private var quit = PendingQuit()
@@ -236,6 +240,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate()
     }
 
+    /// The log button in the remote desktop window's title bar: the client let CardGate come
+    /// forward (it was the active app), and the log window keeps it there (`forwardActivation`).
+    private func showLog() {
+        // SwiftUI may show the window only after the activation: until then it must not go back
+        // to the remote desktop (`forwardActivation`).
+        let request = (openingLog ?? 0) + 1
+        openingLog = request
+        model?.openLogWindow?()
+        NSApp.activate()
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            if self?.openingLog == request { self?.openingLog = nil }
+        }
+    }
+
+    /// The log window came forward: activation follows the usual rules again.
+    @objc private func windowBecameKey(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+            window.identifier?.rawValue.hasPrefix(WindowID.log) == true
+        else { return }
+        openingLog = nil
+    }
+
     private func showDesktop() {
         guard windows.isShowingDesktop, let client = model?.session.clientApplication else { return }
         NSApp.yieldActivation(to: client)
@@ -244,6 +271,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         SingleInstance.endOrphanedClients()
+        // Windows become key on the main thread.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(windowBecameKey(_:)), name: NSWindow.didBecomeKeyNotification, object: nil)
     }
 
     func applicationDidBecomeActive(_: Notification) {
@@ -256,6 +286,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Dock or app switcher while connected: the user wants the remote desktop.
     private func forwardActivation() {
+        guard openingLog == nil else { return }
         // The reconnect notice stays over the desktop; it is not a CardGate window to keep in front.
         let windowVisible = NSApp.windows.contains {
             $0.isVisible && ($0.canBecomeMain || $0.canBecomeKey) && $0 !== reconnectNotice.window

@@ -380,3 +380,20 @@ struct AskPassCommandTests {
         #expect(AskPassCommand.host(fromPrompt: "something else") == nil)
     }
 }
+
+extension FreeRDPCommandTests {
+    /// The client shows the controls in its title bar only with their texts (patch 0023).
+    @Test func titleBarControls() throws {
+        let texts = TitleBarControls(
+            scale: "Scale", smaller: "Smaller", larger: "Larger", connectionScale: "When connected", log: "Log")
+        let with = try FreeRDPCommand(
+            executable: client, profile: profile(), pkcs11Module: module, config: config, titleBar: texts)
+        let without = try FreeRDPCommand(executable: client, profile: profile(), pkcs11Module: module, config: config)
+        #expect(with.environment["FREERDP_TITLEBAR_SCALE"] == "Scale")
+        #expect(with.environment["FREERDP_TITLEBAR_SMALLER"] == "Smaller")
+        #expect(with.environment["FREERDP_TITLEBAR_LARGER"] == "Larger")
+        #expect(with.environment["FREERDP_TITLEBAR_DEFAULT_SCALE"] == "When connected")
+        #expect(with.environment["FREERDP_TITLEBAR_LOG"] == "Log")
+        #expect(!without.environment.keys.contains { $0.hasPrefix("FREERDP_TITLEBAR") })
+    }
+}

@@ -60,6 +60,11 @@ available in Windows (e.g. for signing).
 4. The remote desktop opens and the CardGate window hides. The Dock still shows only CardGate:
    click it (or use ⌘Tab) to return to the remote desktop. The green button in the window's title
    bar switches full screen. Right-click the Dock icon for **Disconnect**.
+   On the right of the title bar is the scale of the remote desktop (e.g. 150%): the magnifiers make it
+   smaller or larger, a click on the number offers a list (including the scale when connected). Windows
+   resizes text and apps at once, without disconnecting; the next connection uses the scale of the
+   connection settings again. The button next to it opens the connection log. In full screen, move the
+   pointer to the top edge to show the title bar.
 5. When you disconnect or close the remote desktop, the CardGate window comes back.
 
 **CardGate → Settings…** (⌘,) has three options, all on by default:

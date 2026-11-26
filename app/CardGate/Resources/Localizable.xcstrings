@@ -2198,6 +2198,22 @@
         }
       }
     },
+    "Larger": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zvětšit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zväčšiť"
+          }
+        }
+      }
+    },
     "Last attempt! Another wrong PIN locks the card.": {
       "localizations": {
         "cs": {
@@ -2790,6 +2806,38 @@
         }
       }
     },
+    "Scale When Connected": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Měřítko při připojení"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mierka pri pripojení"
+          }
+        }
+      }
+    },
+    "Scale of the remote desktop": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Měřítko vzdálené plochy"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mierka vzdialenej plochy"
+          }
+        }
+      }
+    },
     "Scroll in the same direction as on this Mac": {
       "localizations": {
         "cs": {
@@ -3106,6 +3154,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Veľkosť textu a aplikácií na vzdialenej ploche."
+          }
+        }
+      }
+    },
+    "Smaller": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zmenšit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zmenšiť"
           }
         }
       }
@@ -4178,6 +4242,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vzdialená plocha je otvorená."
+          }
+        }
+      }
+    },
+    "The remote desktop uses the scale of each display again.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzdálená plocha znovu používá měřítko každého displeje."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vzdialená plocha opäť používa mierku každého displeja."
+          }
+        }
+      }
+    },
+    "The scale of the remote desktop was changed to %@.": {
+      "localizations": {
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Měřítko vzdálené plochy bylo změněno na %@."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mierka vzdialenej plochy bola zmenená na %@."
           }
         }
       }

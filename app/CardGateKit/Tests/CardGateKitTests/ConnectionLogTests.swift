@@ -342,3 +342,30 @@ struct ConnectionLogTests {
         #expect(log.entries.dropLast().last?.event == .unknown("problem 25", isError: false))
     }
 }
+
+extension ConnectionLogTests {
+    /// The controls in the title bar of the remote desktop window (patch 0023).
+    @Test func titleBarRequests() {
+        var log = ConnectionLog()
+        let lines = [
+            Log.line("INFO", "com.freerdp.client.SDL", "[sdl_run]: the user asked to show the connection log"),
+            Log.line("INFO", "com.freerdp.client.SDL", "[changeScale]: desktop scale changed in the title bar: 150"),
+            Log.line(
+                "INFO", "com.freerdp.client.SDL",
+                "[changeScale]: desktop scale changed in the title bar: the scale of each display"),
+        ]
+        #expect(lines.map { log.consume($0) } == [.normal, .normal, .normal])
+        _ = log.consume(
+            Log.line("INFO", "com.freerdp.client.SDL", "[changeScale]: desktop scale changed in the title bar: 150 %"))
+        #expect(log.entries.map(\.event) == [.scaleChanged(150), .scaleChanged(nil)])
+        #expect(log.entries.map(\.event.severity) == [.info, .info])
+        #expect(TitleBarControls.asksForLog(lines[0]))
+        #expect(!TitleBarControls.asksForLog(lines[1]))
+        // Not the text quoted in another line.
+        #expect(
+            !TitleBarControls.asksForLog(
+                Log.line("ERROR", "com.freerdp.core", "[rdg]: 'the user asked to show the connection log'")))
+        _ = log.consume(Log.line("INFO", "com.freerdp.core", "[x]: desktop scale changed in the title bar: 300"))
+        #expect(log.entries.count == 2)
+    }
+}

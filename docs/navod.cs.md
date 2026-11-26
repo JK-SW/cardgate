@@ -60,6 +60,10 @@ rovnou heslo. Karta zůstane ve Windows k dispozici (např. pro podpisy).
 4. Otevře se okno se vzdálenou plochou a okno CardGate se schová. V Docku je stále jen ikona
    CardGate: kliknutím na ni (nebo přes ⌘Tab) se vrátíte ke vzdálené ploše. Zelené tlačítko
    v záhlaví okna přepíná celou obrazovku. Pravým tlačítkem na ikoně v Docku zvolíte **Odpojit**.
+   Vpravo v záhlaví je měřítko vzdálené plochy (např. 150 %): lupami ho zmenšíte nebo zvětšíte,
+   kliknutím na číslo vyberete ze seznamu (i měřítko při připojení). Windows změní velikost textu
+   a aplikací hned, bez odpojení; při dalším připojení platí zase měřítko z nastavení připojení.
+   Tlačítko vedle otevře log připojení. Na celé obrazovce se záhlaví ukáže po najetí myší k hornímu okraji.
 5. Po odpojení nebo zavření vzdálené plochy se okno CardGate zase zobrazí.
 
 V **CardGate → Nastavení…** (⌘,) jsou tři volby, všechny výchozí zapnuté:
