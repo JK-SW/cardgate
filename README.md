@@ -79,10 +79,11 @@ bude jednodušší pro všechny.
 | Něco nefunguje, chybná hláška, nápad na vylepšení | **Veřejně** v [Issues](https://github.com/JK-SW/cardgate/issues/new/choose) – vyberte *Chyba* nebo *Námět*. |
 | Bezpečnostní problém: může někdo získat PIN, zneužít kartu, podvrhnout bránu nebo aktualizaci, obejít ochranu aplikace | **Neveřejně** přes [Report a vulnerability](https://github.com/JK-SW/cardgate/security/advisories/new) (vidí to jen autor). Ne do Issues. Podrobnosti v [SECURITY.md](SECURITY.md). |
 
-Pokud si nejste jistí, hlaste neveřejně. K chybě pomůže verze CardGate (menu **CardGate → O aplikaci CardGate**),
-verze macOS, typ karty a log připojení (menu **Okno → Log připojení → Kopírovat log**).
-Nikdy nepřikládejte PIN, certifikát ani skutečné adresy brány a počítače – nahraďte je např.
-`gateway.example.com`.
+Pokud si nejste jistí, hlaste neveřejně. Podporovaná je jen poslední verze – nejdřív aktualizujte
+(**CardGate → Zkontrolovat aktualizace…**). K chybě přiložte archiv z **Okno → Log připojení → Uložit log…** –
+obsahuje verzi CardGate a macOS, software karty i log a jména počítače a brány, název připojení a účet Windows
+jsou v něm nahrazená `***`, takže ho stačí přiložit bez úprav. Nikdy nepřikládejte PIN ani certifikát; skutečné
+adresy brány a počítače v popisu a na snímcích nahraďte např. `gateway.example.com`.
 
 ## Licence
 

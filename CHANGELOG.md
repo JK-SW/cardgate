@@ -5,6 +5,11 @@ verze se číslují podle [Semantic Versioning](https://semver.org/lang/cs/). Ak
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-11-26
+
+Srozumitelnější log a důvody selhání připojení, archiv logu k odeslání bez úprav, měřítko plochy přímo
+v záhlaví okna a oprava pádu při obnovení připojení bez karty.
+
 ### Přidáno
 - Tlačítko **Uložit log…** v okně logu uloží archiv ZIP s důležitými zprávami, celým logem a anonymními
   diagnostickými údaji (verze aplikace a macOS, model Macu, displeje, software a typ karty, nastavení
