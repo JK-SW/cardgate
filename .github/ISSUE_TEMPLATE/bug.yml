@@ -5,9 +5,12 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Bezpečnostní problém nehlaste tady**, ale neveřejně (SECURITY.md). Nikdy nepřikládejte PIN, certifikát
-        ani skutečné adresy brány a počítače – nahraďte je např. `gateway.example.com`.
-        **Do not report security problems here** (see SECURITY.md). Never include a PIN, a certificate or real addresses.
+        **Bezpečnostní problém nehlaste tady**, ale neveřejně (SECURITY.md). Podporovaná je jen poslední verze:
+        nejdřív aktualizujte (**CardGate → Zkontrolovat aktualizace…**) a ověřte, že problém trvá. Nikdy nepřikládejte PIN
+        ani certifikát; skutečné adresy brány a počítače v popisu a na snímcích nahraďte např. `gateway.example.com`.
+        **Do not report security problems here** (see SECURITY.md). Only the latest version is supported: update first
+        (**CardGate → Check for Updates…**). Never include a PIN or a certificate; replace real addresses in the description
+        and screenshots, e.g. with `gateway.example.com`.
   - type: textarea
     id: what
     attributes:
@@ -15,21 +18,12 @@ body:
       description: Co jste dělali, co jste čekali a co se stalo (případně text hlášky). What you did, expected and got.
     validations:
       required: true
-  - type: input
-    id: version
-    attributes:
-      label: Verze CardGate a macOS / CardGate and macOS version
-      placeholder: CardGate 0.6.0, macOS 26.1
-    validations:
-      required: true
-  - type: input
-    id: card
-    attributes:
-      label: Karta a software ke kartě / Card and card software
-      placeholder: např. ProID+ 4.x, čtečka …
   - type: textarea
     id: log
     attributes:
       label: Log připojení / Connection log
-      description: Okno → Log připojení → Kopírovat log. Adresy nahraďte. Window → Connection Log → Copy Log; replace addresses.
-      render: text
+      description: |
+        Přetáhněte sem archiv ZIP z **Okno → Log připojení → Uložit log…** – obsahuje verze aplikace a macOS, software karty
+        a log; jména počítače a brány, název připojení a účet Windows jsou v něm nahrazená `***`. Drag here the ZIP from
+        **Window → Connection Log → Save Log…** (versions, card software and the log; the names of the computer and gateway,
+        the connection name and the Windows account are replaced with `***`).
